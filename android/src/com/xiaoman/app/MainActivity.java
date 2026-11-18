@@ -55,6 +55,8 @@ public class MainActivity extends Activity {
     private java.util.Map<String, String> pendingImages = new java.util.HashMap<>();
     private static final int APP_VERSION_CODE = 40;
     private static final int BRAND_SCHEMA = 1;
+    private static final String BRAND_DATA_API_URL =
+            "https://api.github.com/repos/HanYunChenLuo/xiaoman/contents/data/brands.json";
     private static final String BRAND_DATA_URL =
             "https://raw.githubusercontent.com/HanYunChenLuo/xiaoman/main/data/brands.json";
     private static final String BRAND_DATA_TAG = "XiaomanBrandData";
@@ -189,27 +191,43 @@ public class MainActivity extends Activity {
         return true;
     }
 
+    private String fetchBrandJson(String url, String accept) throws Exception {
+        java.net.HttpURLConnection c = (java.net.HttpURLConnection) new java.net.URL(url).openConnection();
+        c.setConnectTimeout(8000);
+        c.setReadTimeout(8000);
+        c.setRequestProperty("Accept", accept);
+        c.setRequestProperty("User-Agent", "Xiaoman/" + APP_VERSION_CODE);
+        c.setRequestProperty("Cache-Control", "no-cache");
+        c.setRequestProperty("Pragma", "no-cache");
+        c.setUseCaches(false);
+        c.setInstanceFollowRedirects(true);
+        int code = c.getResponseCode();
+        if (code != 200) throw new java.io.IOException("HTTP " + code);
+        java.io.ByteArrayOutputStream bos = new java.io.ByteArrayOutputStream();
+        try (java.io.InputStream in = c.getInputStream()) {
+            byte[] buf = new byte[8192]; int n;
+            while ((n = in.read(buf)) > 0) {
+                bos.write(buf, 0, n);
+                if (bos.size() > 2 * 1024 * 1024) throw new java.io.IOException("too large");
+            }
+        }
+        return new String(bos.toByteArray(), java.nio.charset.StandardCharsets.UTF_8);
+    }
+
     private void checkBrandDataUpdate(boolean manual) {
         if (manual) toast("正在检查品牌数据更新…");
         new Thread(() -> {
             try {
-                java.net.HttpURLConnection c = (java.net.HttpURLConnection)
-                        new java.net.URL(BRAND_DATA_URL).openConnection();
-                c.setConnectTimeout(8000);
-                c.setReadTimeout(8000);
-                c.setRequestProperty("Accept", "application/json");
-                c.setInstanceFollowRedirects(true);
-                int code = c.getResponseCode();
-                if (code != 200) throw new java.io.IOException("HTTP " + code);
-                java.io.ByteArrayOutputStream bos = new java.io.ByteArrayOutputStream();
-                try (java.io.InputStream in = c.getInputStream()) {
-                    byte[] buf = new byte[8192]; int n;
-                    while ((n = in.read(buf)) > 0) {
-                        bos.write(buf, 0, n);
-                        if (bos.size() > 2 * 1024 * 1024) throw new java.io.IOException("too large");
-                    }
+                String text = null;
+                try {
+                    // Contents API 不走 raw CDN 缓存，能立即读到最新提交
+                    text = fetchBrandJson(BRAND_DATA_API_URL, "application/vnd.github.raw");
+                } catch (Exception e) {
+                    android.util.Log.w(BRAND_DATA_TAG, "api fetch failed: " + e);
                 }
-                String text = new String(bos.toByteArray(), java.nio.charset.StandardCharsets.UTF_8);
+                if (text == null) {
+                    text = fetchBrandJson(BRAND_DATA_URL + "?t=" + System.currentTimeMillis(), "application/json");
+                }
                 JSONObject remote = new JSONObject(text);
                 int schema = remote.optInt("schema", 1);
                 JSONObject sup = remote.optJSONObject("supportedApp");

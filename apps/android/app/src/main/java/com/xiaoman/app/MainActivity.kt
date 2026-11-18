@@ -821,10 +821,23 @@ class MainActivity : Activity() {
         login.addView(avatar, LinearLayout.LayoutParams(dp(46f), dp(46f)))
         val texts = ui.vbox()
         texts.setPadding(dp(12f), 0, 0, 0)
-        texts.addView(ui.text("点击登录", 15f, ui.ink(), ui.medium))
-        texts.addView(ui.text("登录后同步数据，换机不丢", 11f, ui.gray()))
+        val gh = cloud.githubLoggedIn()
+        val g = cloud.googleLoggedIn()
+        val primary = when {
+            gh -> "GitHub · " + cloud.githubLogin()
+            g -> "Google · " + cloud.googleEmail().ifEmpty { "已登录" }
+            else -> "点击登录"
+        }
+        val secondary = if (gh || g) "已登录，点击管理云备份" else "使用 GitHub 或 Google 账号登录并同步数据"
+        texts.addView(ui.text(primary, 15f, ui.ink(), ui.medium))
+        texts.addView(ui.text(secondary, 11f, ui.gray()))
         login.addView(texts)
-        login.setOnClickListener { toast("登录功能暂未开放") }
+        login.setOnClickListener {
+            if (gh || g) showCloudPage()
+            else DialogKit.list(this, "账号登录", arrayOf("GitHub 登录", "Google 登录"), IntConsumer { idx ->
+                if (idx == 0) githubAccountAction() else googleAccountAction()
+            }, null, null)
+        }
         body.addView(login)
 
         section(body, "数值与单位")

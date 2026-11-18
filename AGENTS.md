@@ -45,7 +45,7 @@ Tauri 通过 `frontendDist: ../../web/dist` 加载 Web 端；正式打包需安�
 
 ## 云同步（Android）
 
-`apps/android/.../CloudSync.kt` 实现 GitHub 设备码 OAuth + Gist、Google PKCE loopback + Drive appDataFolder；云端内容为 `.ias` 字节（Gist 用 Base64 文本），手动上传/恢复。Client ID 可写在 `apps/android/local.properties` 的 `oauth.github.clientId` / `oauth.google.clientId`，或在 App 内「设置 → 数据同步」填写。Google 构建时 Client ID（local.properties）会生成自定义 Scheme 回调并注册 intent-filter（授权后直接跳回 App）；应用内填写的 ID 因 Scheme 不可动态注册，自动回退 loopback（需「桌面应用」类型客户端）。MainActivity 为 singleTask 并在 onNewIntent 处理回调。GitHub 仍用设备码（OAuth App 需启用 Device Flow），不使用重定向（交换令牌需 client_secret）。Web/桌面云同步尚未实现。
+`apps/android/.../CloudSync.kt` 实现 GitHub 设备码 OAuth + Gist、Google PKCE + Drive appDataFolder；**当前 GitHub 通过 `ENABLE_GITHUB_LOGIN=false` 隐藏（TODO: 提供真实 OAuth App Client ID 后恢复，并去掉界面条件）**；只有 Google 显示在设置登录入口与云同步页；云端内容为 `.ias` 字节（Gist 用 Base64 文本），手动上传/恢复。Client ID 可写在 `apps/android/local.properties` 的 `oauth.github.clientId` / `oauth.google.clientId`，或在 App 内「设置 → 数据同步」填写。Google 构建时 Client ID（local.properties）会生成自定义 Scheme 回调并注册 intent-filter（授权后直接跳回 App）；应用内填写的 ID 因 Scheme 不可动态注册，自动回退 loopback（需「桌面应用」类型客户端）。MainActivity 为 singleTask 并在 onNewIntent 处理回调。GitHub 仍用设备码（OAuth App 需启用 Device Flow），不使用重定向（交换令牌需 client_secret）。Web/桌面云同步尚未实现。
 
 ## 品牌/型号数据
 

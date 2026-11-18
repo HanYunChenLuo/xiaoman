@@ -82,7 +82,7 @@ class CloudSync(private val ctx: Context) {
     fun hasGithubBackup(): Boolean = prefs.getString("gh_gist", "")?.isNotEmpty() == true
     fun hasGoogleBackup(): Boolean = prefs.getString("g_file", "")?.isNotEmpty() == true
 
-    // ---------- GitHub 设备码登录 ----------
+    // ---------- GitHub 设备码登录（暂时隐藏，TODO: 配置真实 OAuth App 后启用）----------
     fun startGithubLogin(
         activity: Activity,
         onCode: (userCode: String, url: String) -> Unit,
@@ -149,7 +149,7 @@ class CloudSync(private val ctx: Context) {
         }.start()
     }
 
-    // ---------- GitHub Gist 备份 ----------
+    // ---------- GitHub Gist 备份（暂时隐藏，TODO: 与登录一起恢复）----------
     fun githubUpload(bytes: ByteArray, onDone: () -> Unit, onError: (String) -> Unit) {
         val token = prefs.getString("gh_token", "") ?: ""
         if (token.isEmpty()) {

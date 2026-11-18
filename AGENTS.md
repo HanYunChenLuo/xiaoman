@@ -71,6 +71,7 @@ Tauri 通过 `frontendDist: ../../web/dist` 加载 Web 端；正式打包需安�
 - Web 品牌数据会缓存到 localStorage（`xiaoman_brands_v1`），设置页「品牌与型号数据」可通过 GitHub（Contents API，失败回退 raw）拉取最新版本；分类/标签支持重命名与上下移动；到期提醒使用浏览器 Notification（页面打开时检查，需手动授权）；提供 `public/manifest.webmanifest` 支持安装为 PWA。
 - 计算与 `.ias` 编解码以 Rust `core/` 为准，跨端保持一致；改动后在 Android + Web 两端验证导入导出。
 - 品牌数据只改 `data/brands.json`；各端构建/启动时同步。
+- 应用图标/Logo：`apps/android/app/src/main/res/drawable/appicon.png`（浅色版，启动器图标）；`apps/android/app/src/main/assets/img/logo_light.png` 与 `logo_dark.png` 用于 Android 首页顶栏随主题切换；Web 端 `web/public/logo_light.png`/`logo_dark.png`（由 sync-data 从 Android assets 复制，gitignore）用于页面 Logo，favicon/PWA 图标使用浅色版。
 - 暗色模式：Android 表单图标用 `themedIcon()`，品牌 Logo 需白色底板；Web 使用 CSS 变量。
 - 升级版本：`apps/android/app/build.gradle` 的 `versionCode/versionName`；Android 的 `APP_VERSION_CODE` 取自 `BuildConfig`。
 - 测试设备时先导出 `.ias` 备份，避免破坏数据。

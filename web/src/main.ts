@@ -166,7 +166,7 @@ class App {
       E(
         'div',
         { class: 'hero-top' },
-        E('div', { class: 'logo', text: '小满' }),
+        E('img', { class: 'logo-img', attrs: { src: this.dark() ? './logo_dark.png' : './logo_light.png', alt: '小满' } }),
         E(
           'div',
           { class: 'hero-actions' },
@@ -374,7 +374,7 @@ class App {
       { class: 'filters' },
       ...defs.map(([key, label]) =>
         E('button', {
-          class: 'chip soft' + (this.filter === key ? ' on' : ''),
+          class: 'chip' + (this.filter === key ? ' on' : ''),
           text: label,
           on: {
             click: () => {

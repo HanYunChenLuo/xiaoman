@@ -136,9 +136,12 @@ class MainActivity : Activity() {
         bar.background = ui.round(ui.card(), 32f)
         bar.elevation = dp(8f).toFloat()
         bar.setPadding(dp(6f), 0, dp(6f), 0)
-        val bp = FrameLayout.LayoutParams(-1, dp(64f), Gravity.BOTTOM)
-        bp.setMargins(dp(14f), 0, dp(78f), dp(22f))
-        host.addView(bar, bp)
+        val group = ui.hbox()
+        group.gravity = Gravity.CENTER_VERTICAL
+        group.addView(bar, LinearLayout.LayoutParams(-2, dp(64f)))
+        val gp = FrameLayout.LayoutParams(-2, -2, Gravity.BOTTOM or Gravity.CENTER_HORIZONTAL)
+        gp.bottomMargin = dp(22f)
+        host.addView(group, gp)
 
         val tabs = arrayOf(
             arrayOf("home", "小满", "tab_home"),
@@ -161,17 +164,17 @@ class MainActivity : Activity() {
             label.setPadding(0, dp(2f), 0, 0)
             item.addView(label)
             item.setOnClickListener { switchTab(t[0]) }
-            bar.addView(item, lpw(1f, -1))
+            bar.addView(item, LinearLayout.LayoutParams(dp(84f), -1))
         }
 
         val fab = ui.text("+", 28f, if (dark) 0xFF111111.toInt() else 0xFFFFFFFF.toInt(), ui.regular)
         fab.gravity = Gravity.CENTER
         fab.background = ui.circle(if (dark) 0xFFF2F2F2.toInt() else 0xFF111111.toInt())
         fab.elevation = dp(8f).toFloat()
-        val fp = FrameLayout.LayoutParams(dp(64f), dp(64f), Gravity.BOTTOM or Gravity.END)
-        fp.setMargins(0, 0, dp(14f), dp(22f))
         fab.setOnClickListener { openAdd(null, if ("wishes" == tab) "wish" else "asset") }
-        host.addView(fab, fp)
+        val fp = LinearLayout.LayoutParams(dp(64f), dp(64f))
+        fp.leftMargin = dp(16f)
+        group.addView(fab, fp)
         return host
     }
 
@@ -373,9 +376,12 @@ class MainActivity : Activity() {
         bg.scaleType = ImageView.ScaleType.FIT_XY
         head.addView(bg, FrameLayout.LayoutParams(-1, -1))
         val row = ui.hbox()
-        row.setPadding(dp(14f), dp(12f), dp(14f), 0)
-        val logo = ui.text("小满", 24f, 0xFF1A1A1A.toInt(), ui.bold)
-        row.addView(logo, lpw(1f, -2))
+        row.setPadding(dp(14f), dp(8f), dp(14f), 0)
+        val logo = ImageView(this)
+        logo.setImageBitmap(ui.bitmap(if (dark) "img/logo_dark.png" else "img/logo_light.png"))
+        logo.scaleType = ImageView.ScaleType.FIT_CENTER
+        row.addView(logo, LinearLayout.LayoutParams(dp(44f), dp(44f)))
+        row.addView(View(this), lpw(1f, 1))
         val search = ui.icon("ic_search", 22)
         row.addView(search)
         val fav = BookmarkView(this, ui.ink())
@@ -444,7 +450,7 @@ class MainActivity : Activity() {
         }
 
         val cardLp = LinearLayout.LayoutParams(-1, -2)
-        cardLp.setMargins(dp(12f), -dp(100f), dp(12f), 0)
+        cardLp.setMargins(dp(12f), -dp(84f), dp(12f), 0)
         val holder = FrameLayout(this)
         holder.addView(card, FrameLayout.LayoutParams(-1, -2))
         holder.layoutParams = cardLp
@@ -572,9 +578,7 @@ class MainActivity : Activity() {
         card.addView(inner, FrameLayout.LayoutParams(-1, -2))
 
         val status = a.optString("status", "serving")
-        val badge = ui.text(Store.statusText(status), 9f, badgeInk(status), ui.medium)
-        badge.background = ui.round(badgeBg(status), 10f)
-        badge.setPadding(dp(7f), dp(3f), dp(7f), dp(3f))
+        val badge = ui.text("● " + Store.statusText(status), 9f, badgeInk(status), ui.medium)
         val bp = FrameLayout.LayoutParams(-2, -2, Gravity.TOP or Gravity.END)
         bp.setMargins(0, dp(10f), dp(10f), 0)
         card.addView(badge, bp)

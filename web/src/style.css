@@ -89,6 +89,13 @@ button {
   color: #1a1a1a;
 }
 
+.logo-img {
+  height: 52px;
+  width: 52px;
+  border-radius: 14px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
 .hero-actions {
   display: flex;
   gap: 10px;
@@ -300,11 +307,18 @@ button {
   position: absolute;
   top: 14px;
   right: 14px;
-  padding: 3px 8px;
-  border-radius: 10px;
   font-size: 10px;
-  background: var(--lime-soft);
-  color: #5d7a14;
+  color: #6f9718;
+}
+
+.badge::before {
+  content: '';
+  display: inline-block;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: currentColor;
+  margin-right: 4px;
 }
 
 body.dark .badge {
@@ -312,17 +326,14 @@ body.dark .badge {
 }
 
 .badge.retired {
-  background: var(--line);
   color: var(--gray);
 }
 
 .badge.sold {
-  background: #fff0e8;
   color: #c75b28;
 }
 
 body.dark .badge.sold {
-  background: #3a2419;
   color: #e08a5e;
 }
 

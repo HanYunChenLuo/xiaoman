@@ -8,6 +8,7 @@
     <application
         android:label="小满"
         android:icon="@drawable/appicon"
+        android:roundIcon="@drawable/appicon"
         android:allowBackup="true"
         android:supportsRtl="false"
         android:theme="@android:style/Theme.Material.Light.NoActionBar">

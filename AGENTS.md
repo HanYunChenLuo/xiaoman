@@ -5,6 +5,7 @@
 ## 目录结构
 
 ```
+README.md / README.en.md  # 中英文说明（顶部互相切换）
 settings.gradle             # 单模块 :app
 build.gradle                # AGP 9.5.1
 gradle.properties

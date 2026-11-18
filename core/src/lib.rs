@@ -213,4 +213,43 @@ mod wasm {
     pub fn days_between(from: &str, to: &str) -> i32 {
         crate::calc::days_between(from, to)
     }
+
+    fn parse(s: &str) -> serde_json::Value {
+        serde_json::from_str(s).unwrap_or(serde_json::Value::Null)
+    }
+
+    #[wasm_bindgen]
+    pub fn age_days(asset_json: &str, today: &str) -> i32 {
+        crate::calc::age_days(&parse(asset_json), today)
+    }
+
+    #[wasm_bindgen]
+    pub fn usage_count(asset_json: &str) -> i32 {
+        crate::calc::usage_count(&parse(asset_json))
+    }
+
+    #[wasm_bindgen]
+    pub fn net_cost(asset_json: &str) -> f64 {
+        crate::calc::net_cost(&parse(asset_json))
+    }
+
+    #[wasm_bindgen]
+    pub fn daily_cost(asset_json: &str, now_ms: f64, tz_offset_ms: f64) -> f64 {
+        crate::calc::daily_cost(&parse(asset_json), now_ms as i64, tz_offset_ms as i64)
+    }
+
+    #[wasm_bindgen]
+    pub fn total_of_kind(assets_json: &str, kind: &str) -> f64 {
+        crate::calc::total(&parse(assets_json), kind)
+    }
+
+    #[wasm_bindgen]
+    pub fn daily_of_kind(assets_json: &str, kind: &str, now_ms: f64, tz_offset_ms: f64) -> f64 {
+        crate::calc::daily(&parse(assets_json), kind, now_ms as i64, tz_offset_ms as i64)
+    }
+
+    #[wasm_bindgen]
+    pub fn count_of_kind(assets_json: &str, kind: &str, status: &str) -> i32 {
+        crate::calc::count(&parse(assets_json), kind, status)
+    }
 }

@@ -66,7 +66,7 @@ def rustTarget = 'aarch64-linux-android'
 def ndkToolDir = ndkDir != null ? new File(ndkDir, 'toolchains/llvm/prebuilt/darwin-x86_64/bin') : null
 
 tasks.register('buildRustAndroid', Exec) {
-    workingDir rootProject.file('core')
+    workingDir rootProject.file('../../core')
     commandLine 'cargo', 'build', '--target', rustTarget, '--release'
     if (ndkToolDir != null) {
         environment 'CARGO_TARGET_AARCH64_LINUX_ANDROID_LINKER', new File(ndkToolDir, 'aarch64-linux-android24-clang').absolutePath
@@ -76,14 +76,14 @@ tasks.register('buildRustAndroid', Exec) {
 }
 
 tasks.register('copyRustAndroid', Copy) {
-    from rootProject.file("core/target/${rustTarget}/release/libxiaoman_core.so")
+    from rootProject.file("../../core/target/${rustTarget}/release/libxiaoman_core.so")
     into layout.projectDirectory.dir('src/main/jniLibs/arm64-v8a')
 }
 copyRustAndroid.dependsOn buildRustAndroid
 preBuild.dependsOn copyRustAndroid
 
 tasks.register('syncBrandData', Copy) {
-    from rootProject.file('data/brands.json')
+    from rootProject.file('../../data/brands.json')
     into layout.projectDirectory.dir('src/main/assets/brands')
 }
 preBuild.dependsOn syncBrandData

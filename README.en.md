@@ -2,16 +2,17 @@
 
 [简体中文](README.md) | English
 
-**Xiaoman** is a **local-first** Android app for tracking the things you own, built in native Java. It records assets, wishlists and daily cost, so the value of every item stays visible. All features are available, with no membership screens or paywalls; all data stays on your device.
+**Xiaoman** is a **local-first** multi-platform app (Android / Web / Desktop) for tracking the things you own. It records assets, wishlists and daily cost, so the value of every item stays visible. All features are available, with no membership screens or paywalls; data stays on your device by default.
 
 - Package: `com.xiaoman.app` — Version 1.0.0 (versionCode 1)
 - Minimum OS: Android 7.0 (API 24), portrait UI for tablets and phones
-- Stack: native Java, single Activity, custom-drawn charts — no Kotlin / AndroidX / WebView
+- Stack: Kotlin UI + Rust core; Web uses Vite/TypeScript + WASM; Desktop uses Tauri
 
 ## Platforms
 
 - **Android**: Kotlin UI + Rust core (available now)
-- **Web / Desktop**: share the `core/` Rust library via WASM (web) and Tauri (desktop); planned
+- **Web**: Vite + TypeScript consuming the Rust core via WASM
+- **Desktop**: Tauri shell loading the web build
 - Business logic (data, backup, brand matching, cloud sync) lives in Rust; each platform only provides UI and system integration
 
 ## Features
@@ -29,7 +30,7 @@ Build from source for now (no APK is shipped with the repository):
 
 ```bash
 git clone git@github.com:HanYunChenLuo/xiaoman.git
-cd xiaoman
+cd xiaoman/apps/android
 echo "sdk.dir=/path/to/android-sdk" > local.properties   # or export ANDROID_SDK_ROOT
 ./gradlew assembleRelease
 adb install -r app/build/outputs/apk/release/app-release.apk
@@ -38,8 +39,16 @@ adb install -r app/build/outputs/apk/release/app-release.apk
 Requirements:
 
 - JDK 17+ (developed on JDK 27)
-- Android SDK Platform 34 and Build-Tools 34
-- Gradle is fetched by the wrapper (configured with a Tencent mirror for this network)
+- Android SDK Platform 34 and Build-Tools 34, NDK 30
+- Rust (`aarch64-linux-android` target) and the Gradle wrapper
+
+Web / Desktop:
+```bash
+cd web && npm install && npm run dev      # web dev
+npm run build                             # web build
+cd ../desktop/src-tauri && cargo build    # desktop (build web first)
+```
+Requires Node 22+, Rust `wasm32-unknown-unknown` and the `wasm-bindgen` CLI.
 
 Signing: if `replica.keystore` exists at the repository root and `local.properties` provides `signing.storePassword`, `signing.keyPassword` and `signing.keyAlias`, both debug and release builds are signed with it so `adb install -r` can upgrade in place. Neither the keystore nor the passwords are committed; without them the release APK is unsigned.
 
@@ -67,17 +76,18 @@ Brands, aliases and models are remotely updatable data. The single source of tru
 ## Project layout
 
 ```
-app/src/main/java/com/xiaoman/app/   # application source
-app/src/main/res/                    # resources and app icon
-app/src/main/assets/                 # bundled images and brand logos (brands.json synced at build time)
-data/brands.json                     # brand/model data (remote update entry point)
-AGENTS.md                            # development conventions
+apps/android/        # Android project (Kotlin UI + Gradle)
+core/                # Rust core (calc, backup, JNI/WASM exports)
+web/                 # Web client (Vite + TypeScript + WASM)
+desktop/             # Desktop shell (Tauri)
+data/brands.json     # brand/model data (remote update entry point)
+AGENTS.md            # development conventions
 ```
 
 ## Data & privacy
 
-- Assets, categories, tags, settings and images are stored locally (SharedPreferences + app-private storage)
-- No accounts, no cloud sync, no user data is uploaded
+- Android stores data locally (SharedPreferences + app-private storage); web uses localStorage; desktop reuses web storage
+- No accounts or cloud sync by default; nothing is uploaded (GitHub/Google sign-in and sync are upcoming)
 - Backups are exported by the user as encrypted `.ias` files that can be exchanged with compatible backup tools
 
 ## Third-party assets & trademarks

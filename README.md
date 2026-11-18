@@ -2,16 +2,17 @@
 
 简体中文 | [English](README.en.md)
 
-「小满」是一款**本地优先**的 Android 资产记录应用：记录你拥有的物品、心愿单与日均成本，让每一件物品的价值清晰可见。功能完整，无会员页与付费锁；全部数据仅保存在本机。
+「小满」是一款**本地优先**的多端资产记录应用（Android / Web / 桌面）：记录你拥有的物品、心愿单与日均成本，让每一件物品的价值清晰可见。功能完整，无会员页与付费锁；数据默认保存在本机。
 
 - 包名：`com.xiaoman.app`　版本：1.0.0（versionCode 1）
 - 最低系统：Android 7.0（API 24），适配平板 / 手机竖屏
-- 技术栈：原生 Java、单 Activity、自绘图表，不使用 Kotlin / AndroidX / WebView
+- 技术栈：Kotlin UI + Rust 核心；Web 用 Vite/TypeScript + WASM，桌面用 Tauri
 
 ## 平台支持
 
 - **Android**：Kotlin UI + Rust 核心（当前可用）
-- **Web / 桌面**：共用 `core/` Rust 核心，通过 WASM（Web）与 Tauri（桌面）提供外壳，正在规划实现
+- **Web**：Vite + TypeScript，通过 WASM 复用 `core/`
+- **桌面**：Tauri 外壳加载 Web 构建产物
 - 业务核心（数据、备份、品牌匹配、云同步）集中于 Rust，各平台仅维护 UI 与系统集成
 
 ## 功能
@@ -29,7 +30,7 @@
 
 ```bash
 git clone git@github.com:HanYunChenLuo/xiaoman.git
-cd xiaoman
+cd xiaoman/apps/android
 echo "sdk.dir=/path/to/android-sdk" > local.properties   # 或设置 ANDROID_SDK_ROOT
 ./gradlew assembleRelease
 adb install -r app/build/outputs/apk/release/app-release.apk
@@ -38,8 +39,16 @@ adb install -r app/build/outputs/apk/release/app-release.apk
 要求：
 
 - JDK 17+（开发环境使用 JDK 27）
-- Android SDK Platform 34、Build-Tools 34
-- Gradle 由 wrapper 自动下载（本机网络下使用腾讯镜像）
+- Android SDK Platform 34、Build-Tools 34、NDK 30
+- Rust（`aarch64-linux-android` 目标）与 Gradle wrapper（本机网络下使用腾讯镜像）
+
+Web / 桌面：
+```bash
+cd web && npm install && npm run dev      # Web 开发
+npm run build                             # Web 产物 dist/
+cd ../desktop/src-tauri && cargo build    # 桌面（需先构建 Web）
+```
+需要 Node 22+、Rust `wasm32-unknown-unknown`、`wasm-bindgen` CLI。
 
 签名：若仓库根目录存在 `replica.keystore`，且 `local.properties` 配置了 `signing.storePassword`、`signing.keyPassword` 与 `signing.keyAlias`，debug 与 release 都会使用它签名，便于覆盖升级；密钥与口令均不入库，缺少时 release 产物未签名。
 
@@ -76,8 +85,8 @@ AGENTS.md                            # 开发约定与维护说明
 
 ## 数据与隐私
 
-- 资产、分类、标签、设置与图片均保存在应用本地（SharedPreferences + 应用私有目录）
-- 无账号体系、无云端同步、不上传任何用户数据
+- Android 数据保存在应用本地（SharedPreferences + 私有目录），Web 保存在浏览器 localStorage，桌面复用 Web 本地存储
+- 默认无账号体系、不上传用户数据（GitHub/Google 登录与云同步为后续功能）
 - 备份文件由用户主动导出，格式为加密的 `.ias`，可在兼容的备份工具之间互相导入
 
 ## 第三方资源与商标

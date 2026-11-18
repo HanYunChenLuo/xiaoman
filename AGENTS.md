@@ -1,75 +1,71 @@
 # AGENTS.md
 
-本仓库是「小满」Android 应用（功能完整，无会员页与付费锁）。Kotlin 单 Activity UI（AGP 内置 Kotlin，无 Kotlin 插件），自绘图表与对话框；业务核心逐步迁移到 Rust（`core/`），Android 通过 JNI 调用，后续 Web/桌面共用同一核心。**不使用 AndroidX / WebView**。
+本仓库是「小满」多端资产记录应用：Android / Web / 桌面（Tauri）共用 `core/` Rust 核心，各端只维护 UI 与系统集成。功能完整，无会员页与付费锁。
 
 ## 目录结构
 
 ```
-README.md / README.en.md  # 中英文说明（顶部互相切换）
-settings.gradle             # 单模块 :app
-build.gradle                # AGP 9.5.1
-gradle.properties
-gradlew / gradle/           # Gradle 9.9.1 wrapper（distributionUrl 使用腾讯镜像）
-app/build.gradle            # namespace/applicationId com.xiaoman.app，versionCode 1 / 1.0.0
-app/src/main/AndroidManifest.xml   # 无 package/uses-sdk 属性，由 Gradle 注入
-core/                       # Rust 核心库（cdylib/staticlib/rlib），JNI + wasm 导出
-core/src/lib.rs
-app/src/main/java/com/xiaoman/app/
-  MainActivity.kt         # 全部页面：首页/心愿/趋势/设置/新增编辑/详情/备份
-  DialogKit.kt            # 底部弹层、对话框、图标/品牌/型号选择器
-  Ui.kt                   # dp、字体、主题色、圆角、图标
-  Store.kt                # SharedPreferences JSON 数据层
-  Backup.kt               # 官方 .ias（WinZip AES-256）导入导出
-  NotificationHelper.kt   # 到期提醒 / AlarmManager
-  Widgets.kt              # 柱状图、折线图、书签等自绘 View
-app/src/main/assets/        # 内置图片、图标、品牌 Logo；brands/brands.json 由 data/ 同步（已 gitignore）
-app/src/main/res/           # 应用图标等资源
-data/brands.json            # 品牌与型号数据唯一来源（远程更新入口）
-reference/                  # 原 App 截图参考（本地，不入库）
+apps/android/            # Android 工程（Gradle 单模块 :app）
+  app/src/main/java/com/xiaoman/app/   # Kotlin UI（MainActivity/DialogKit/Ui/Store/Backup/NativeCore 等）
+  app/src/main/assets/                 # 内置图标；brands/brands.json 由 data/ 同步（gitignore）
+  app/build.gradle                     # 版本号、Rust 构建任务、签名配置
+core/                    # Rust 核心：calc.rs（计算）、backup.rs（.ias 编解码）、lib.rs（JNI/wasm 导出）
+web/                     # Vite + TypeScript Web 端（wasm-bindgen）
+desktop/src-tauri/       # Tauri 桌面外壳，加载 web/dist
+data/brands.json         # 品牌与型号数据唯一来源（远程更新入口）
+README.md / README.en.md
 ```
 
-## 构建与安装
+## 构建
 
+### Android
 ```bash
-./gradlew assembleRelease        # 产物：app/build/outputs/apk/release/app-release.apk
+cd apps/android
+./gradlew assembleRelease        # 产物 apps/android/app/build/outputs/apk/release/app-release.apk
 adb install -r app/build/outputs/apk/release/app-release.apk
-adb shell am start -n com.xiaoman.app/.MainActivity
 ```
+依赖：JDK 17+、SDK platform/build-tools 34、NDK 30、Rust（`aarch64-linux-android` 目标）。Gradle 任务 `buildRustAndroid`/`copyRustAndroid` 自动构建 `core` 并打包 `libxiaoman_core.so`。`apps/android/local.properties` 提供 `sdk.dir` 与签名口令；`apps/android/replica.keystore` 均不入库。
 
-- 需要 JDK 17+（本机为 JDK 27）、Android SDK platform 34 / build-tools 34、**NDK 30** 与 Rust（`aarch64-linux-android` 目标）；`local.properties` 写 `sdk.dir`（不入库，默认 `/opt/homebrew/share/android-commandlinetools`）。
-- `replica.keystore` 与签名口令均不入库；`local.properties` 提供 `signing.storePassword` / `signing.keyPassword` / `signing.keyAlias` 时 debug/release 共用签名，便于 `adb install -r` 覆盖升级。
-- Gradle 任务 `buildRustAndroid`/`copyRustAndroid` 在 `preBuild` 前用 cargo 构建 `core` 并复制 `libxiaoman_core.so` 到 `app/src/main/jniLibs/arm64-v8a`。
-- Gradle 发行包走腾讯镜像（GitHub 的 gradle-distributions 下载在本机不通）；AGP 依赖来自 `dl.google.com`，cargo 依赖走 rsproxy 镜像。
-- `./gradlew assembleDebug` 亦可；Release 未开启 minify。
+### Web
+```bash
+cd web
+npm install
+npm run dev        # http://localhost:5173（predev 自动构建 WASM 并同步 data/brands.json）
+npm run build      # 产物 web/dist
+```
+依赖 Node 22+、Rust `wasm32-unknown-unknown`、`wasm-bindgen` CLI（与 crate 版本一致，当前 0.2.130）。
 
-## 品牌/型号数据更新（无需发版）
+### 桌面（Tauri）
+```bash
+cd web && npm run build
+cd ../desktop/src-tauri && cargo build
+./target/debug/xiaoman-desktop
+```
+Tauri 通过 `frontendDist: ../../web/dist` 加载 Web 端；正式打包需安装 Tauri CLI。
+
+## 品牌/型号数据
 
 `data/brands.json` 结构：
-
 ```json
 {
   "schema": 1,
-  "dataVersion": 20261119,
-  "dataVersionName": "2026.11.19",
-  "updatedAt": "2026-11-19",
-  "supportedApp": { "minVersionCode": 40, "maxVersionCode": 0 },
-  "brands": { "digital": [...], "car": [...], "bike": [...] }
+  "dataVersion": 20261120,
+  "dataVersionName": "2026.11.20",
+  "updatedAt": "2026-11-20",
+  "supportedApp": { "minVersionCode": 1, "maxVersionCode": 0 },
+  "brands": { "digital": [], "car": [], "bike": [] }
 }
 ```
-
 品牌条目为 `[显示名, id, 别名数组, [[组名, [型号...]], ...]]`。
 
-发布流程：修改 `data/brands.json` → 提升 `dataVersion` / `dataVersionName` → commit 并 push `main`。App 启动时优先通过 GitHub Contents API（失败回退 raw + 时间戳）读取，校验 `schema` 与 `supportedApp` 版本区间，版本更新则缓存到 SharedPreferences 并即时生效；设置页「数据管理 → 品牌与型号数据」可手动检查。
-
-- Gradle 任务 `syncBrandData` 在 `preBuild` 前把 `data/brands.json` 复制到 `app/src/main/assets/brands/brands.json` 作为离线回退，不要手改该副本。
-- 仓库：https://github.com/HanYunChenLuo/xiaoman
+发布：修改 `data/brands.json` → 提升 `dataVersion/dataVersionName` → commit/push `main`。Android 启动时经 GitHub Contents API（回退 raw）拉取；Web 构建时复制到 `public/brands.json`。仓库：https://github.com/HanYunChenLuo/xiaoman
 
 ## 修改约定
 
-- 改 UI/功能主要改 `MainActivity.java`，弹层与选择器在 `DialogKit.kt`；保持与原 App 的圆角、字号、灰阶风格一致。
-- 暗色模式：表单图标用 `themedIcon()`；分段控件选中底 `#3F3F3F`；品牌 Logo 在暗色下需要白色圆角底板。
-- 品牌数据只改 `data/brands.json`。
-- `.ias` 备份格式与密钥在 `Backup.kt`；改动备份字段时同步导入与导出两侧，并与原 App 双向验证。
-- 不要随意修改包名 `com.xiaoman.app`（会影响数据与远程更新）；升级版本时修改 `app/build.gradle` 的 `versionCode/versionName`，`APP_VERSION_CODE` 取自 `BuildConfig`。
-- 测试设备时避免破坏用户数据：验证前导出备份，验证后恢复；不要在未获允许时写入原 App `com.zhumeng.assets`。
-- 本机 github.com HTTPS 不通，`origin` 使用 SSH：`git@github.com:HanYunChenLuo/xiaoman.git`。
+- UI：Android 改 `apps/android/app/src/main/java/com/xiaoman/app/`；Web 改 `web/src/`；桌面仅外壳。
+- 计算与 `.ias` 编解码以 Rust `core/` 为准，跨端保持一致；改动后在 Android + Web 两端验证导入导出。
+- 品牌数据只改 `data/brands.json`；各端构建/启动时同步。
+- 暗色模式：Android 表单图标用 `themedIcon()`，品牌 Logo 需白色底板；Web 使用 CSS 变量。
+- 升级版本：`apps/android/app/build.gradle` 的 `versionCode/versionName`；Android 的 `APP_VERSION_CODE` 取自 `BuildConfig`。
+- 测试设备时先导出 `.ias` 备份，避免破坏数据。
+- 本机 github.com HTTPS 不通，`origin` 使用 SSH：`git@github.com:HanYunChenLuo/xiaoman.git`；cargo 走 rsproxy 镜像。

@@ -3,6 +3,13 @@ plugins {
 }
 
 def keystore = rootProject.file('replica.keystore')
+def localProps = new Properties()
+def localPropsFile = rootProject.file('local.properties')
+if (localPropsFile.exists()) localPropsFile.withInputStream { localProps.load(it) }
+def storePass = localProps.getProperty('signing.storePassword')
+def keyPass = localProps.getProperty('signing.keyPassword')
+def keyAliasName = localProps.getProperty('signing.keyAlias', 'replica')
+def signingReady = keystore.exists() && storePass && keyPass
 
 android {
     namespace 'com.xiaoman.app'
@@ -16,13 +23,13 @@ android {
         versionName '1.6.0'
     }
 
-    if (keystore.exists()) {
+    if (signingReady) {
         signingConfigs {
             release {
                 storeFile keystore
-                storePassword 'xiaoman123'
-                keyAlias 'replica'
-                keyPassword 'xiaoman123'
+                storePassword storePass
+                keyAlias keyAliasName
+                keyPassword keyPass
             }
         }
     }
@@ -30,10 +37,10 @@ android {
     buildTypes {
         release {
             minifyEnabled false
-            if (keystore.exists()) signingConfig signingConfigs.release
+            if (signingReady) signingConfig signingConfigs.release
         }
         debug {
-            if (keystore.exists()) signingConfig signingConfigs.release
+            if (signingReady) signingConfig signingConfigs.release
         }
     }
 

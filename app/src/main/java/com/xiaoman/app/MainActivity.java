@@ -951,7 +951,7 @@ public class MainActivity extends Activity {
         texts.addView(ui.text("点击登录", 15, ui.ink(), ui.medium));
         texts.addView(ui.text("登录后同步数据，换机不丢", 11, ui.gray()));
         login.addView(texts);
-        login.setOnClickListener(v -> toast("本地复刻版未接入登录"));
+        login.setOnClickListener(v -> toast("登录功能暂未开放"));
         body.addView(login);
 
         section(body, "数值与单位");
@@ -974,7 +974,7 @@ public class MainActivity extends Activity {
         g2.addView(row("ic_tags", "标签管理", store.objs("tags").size() + " 个", true, v -> manageTags()));
         g2.addView(row("ic_view", "品牌与型号数据", "v" + brandDataVersionName, true, v -> checkBrandDataUpdate(true)));
         g2.addView(row("ic_backup", "备份与恢复", null, true, v -> showBackupPage()));
-        g2.addView(row("ic_cloud", "数据同步", null, true, v -> toast("本地复刻版暂未接入该功能")));
+        g2.addView(row("ic_cloud", "数据同步", null, true, v -> toast("数据同步暂未开放")));
         body.addView(g2);
 
         section(body, "显示与外观");
@@ -1018,25 +1018,32 @@ public class MainActivity extends Activity {
 
         section(body, "反馈与支持");
         LinearLayout g5 = group();
-        g5.addView(row("ic_wechat", "微信客服", null, true, v -> doc("微信客服",
-                "请添加客服微信或访问：\nhttps://www.gzzmxx.cn/user/xiaoman/service")));
-        g5.addView(row("ic_wechat", "微信用户群", null, true, v -> doc("微信用户群",
-                "请访问用户群入口：\nhttps://www.gzzmxx.cn/user/xiaoman/group")));
+        g5.addView(row("ic_wechat", "客服支持", null, true, v -> doc("客服支持",
+                "请通过项目主页提交问题：\nhttps://github.com/HanYunChenLuo/xiaoman/issues")));
+        g5.addView(row("ic_wechat", "用户交流", null, true, v -> doc("用户交流",
+                "欢迎在项目主页参与讨论：\nhttps://github.com/HanYunChenLuo/xiaoman")));
         g5.addView(row("ic_feedback", "我要提意见", null, true, v -> doc("我要提意见",
-                "请发送邮件至：support@gzzmxx.cn\n或在客服微信中留言。")));
+                "请通过项目主页提交 Issue：\nhttps://github.com/HanYunChenLuo/xiaoman/issues")));
         g5.addView(row("ic_contact", "联系我们", null, true, v -> doc("联系我们",
-                "官网：https://www.gzzmxx.cn\n客服：https://www.gzzmxx.cn/user/xiaoman/service")));
+                "项目主页：https://github.com/HanYunChenLuo/xiaoman")));
         body.addView(g5);
 
         section(body, "关于");
         LinearLayout g6 = group();
         g6.addView(row("ic_terms", "用户协议", null, true, v -> doc("用户协议",
-                "这里是《用户协议》的本地复刻示意内容。\n\n小满 App 仅将资产数据保存在本机，本次复刻同样只保存在本机。")));
+                "这里是《用户协议》的示例内容。\n\n小满仅将资产数据保存在本机，不会上传任何内容。")));
         g6.addView(row("ic_privacy", "隐私政策", null, true, v -> doc("隐私政策",
-                "这里是《隐私政策》的本地复刻示意内容。\n\n复刻版本不收集任何个人信息。")));
+                "这里是《隐私政策》的示例内容。\n\n小满不收集任何个人信息，全部数据仅保存在本机。")));
         body.addView(g6);
 
-        TextView ver = ui.text("版本 1.5.3(39)\n粤ICP备2024266440号-4A · 本地复刻版", 9, ui.gray());
+        String vn = "";
+        long vc = 0;
+        try {
+            android.content.pm.PackageInfo pi = getPackageManager().getPackageInfo(getPackageName(), 0);
+            vn = pi.versionName;
+            vc = Build.VERSION.SDK_INT >= 28 ? pi.getLongVersionCode() : pi.versionCode;
+        } catch (Exception ignored) {}
+        TextView ver = ui.text("版本 " + vn + "(" + vc + ")\n全部数据仅保存在本机", 9, ui.gray());
         ver.setGravity(Gravity.CENTER);
         ver.setPadding(0, dp(14), 0, dp(20));
         body.addView(ver);

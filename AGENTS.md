@@ -1,6 +1,6 @@
 # AGENTS.md
 
-本仓库是「小满」Android 应用（原《小满》复刻，默认按付费版呈现）。原生 Java 实现，单 Activity，自绘图表与对话框，**不使用 Kotlin / AndroidX / WebView**。
+本仓库是「小满」Android 应用（功能完整，无会员页与付费锁）。原生 Java 实现，单 Activity，自绘图表与对话框，**不使用 Kotlin / AndroidX / WebView**。
 
 ## 目录结构
 
@@ -35,7 +35,7 @@ adb shell am start -n com.xiaoman.app/.MainActivity
 ```
 
 - 需要 JDK 17+（本机为 JDK 27）与 Android SDK platform 34 / build-tools 34；`local.properties` 写 `sdk.dir`（不入库，默认 `/opt/homebrew/share/android-commandlinetools`）。
-- `replica.keystore` 不入库；存在时 debug/release 均用它签名，便于 `adb install -r` 覆盖升级。
+- `replica.keystore` 与签名口令均不入库；`local.properties` 提供 `signing.storePassword` / `signing.keyPassword` / `signing.keyAlias` 时 debug/release 共用签名，便于 `adb install -r` 覆盖升级。
 - Gradle 发行包走腾讯镜像（GitHub 的 gradle-distributions 下载在本机不通）；AGP 依赖来自 `dl.google.com`。
 - `./gradlew assembleDebug` 亦可；Release 未开启 minify。
 

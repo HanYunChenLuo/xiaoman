@@ -2,7 +2,7 @@
 
 [简体中文](README.md) | English
 
-**Xiaoman** is a **local-first** Android app for tracking the things you own, built in native Java as a reproduction of the "Xiaoman" (小满) experience. It records assets, wishlists and daily cost, so the value of every item stays visible. It ships with the paid-tier experience unlocked and no membership screens; all data stays on your device.
+**Xiaoman** is a **local-first** Android app for tracking the things you own, built in native Java. It records assets, wishlists and daily cost, so the value of every item stays visible. All features are available, with no membership screens or paywalls; all data stays on your device.
 
 - Package: `com.xiaoman.app` — Version 1.6.0 (versionCode 40)
 - Minimum OS: Android 7.0 (API 24), portrait UI for tablets and phones
@@ -15,7 +15,7 @@
 - **Details**: notes, cover and note images, second-hand value with residual deduction, expiry reminders, app lock
 - **Insights**: daily-cost chart with category and status filters
 - **Brands & models**: 70+ brands and 2000+ models across digital, cars and bicycles, grouped by product line; automatic brand and icon detection
-- **Backup & restore**: two-way compatibility with the official "Xiaoman" `.ias` backups (WinZip AES-256)
+- **Backup & restore**: import and export encrypted `.ias` backups (WinZip AES-256)
 
 ## Download & install
 
@@ -35,7 +35,7 @@ Requirements:
 - Android SDK Platform 34 and Build-Tools 34
 - Gradle is fetched by the wrapper (configured with a Tencent mirror for this network)
 
-Signing: if `replica.keystore` exists at the repository root, both debug and release builds are signed with it so `adb install -r` can upgrade in place. The keystore is not committed; without it the release APK is unsigned.
+Signing: if `replica.keystore` exists at the repository root and `local.properties` provides `signing.storePassword`, `signing.keyPassword` and `signing.keyAlias`, both debug and release builds are signed with it so `adb install -r` can upgrade in place. Neither the keystore nor the passwords are committed; without them the release APK is unsigned.
 
 ## Brand & model data
 
@@ -72,10 +72,10 @@ AGENTS.md                            # development conventions
 
 - Assets, categories, tags, settings and images are stored locally (SharedPreferences + app-private storage)
 - No accounts, no cloud sync, no user data is uploaded
-- Backups are exported by the user; the encrypted format is interchangeable with the official "Xiaoman" `.ias` backups
+- Backups are exported by the user as encrypted `.ias` files that can be exchanged with compatible backup tools
 
 ## Third-party assets & trademarks
 
 - Brand logos and trademarks belong to their respective owners and are used for local personal display only; some logos come from Simple Icons, worldvectorlogo, logo.wine and official brand sites
 - Item icons are rendered locally from macOS Apple Color Emoji and are for personal local use only — see `app/src/main/assets/apple/NOTICE.txt`
-- This project is not affiliated with the original "Xiaoman" authors or any of the brands above; it is provided for learning and personal use
+- This project is provided for learning and personal use

@@ -67,6 +67,18 @@ function emptyBook(): BrandBook {
   return { categories: {}, byId: new Map(), aliases: [], versionName: '' }
 }
 
+async function fileToDataUrl(file: File, maxSize = 1280): Promise<string> {
+  const bitmap = await createImageBitmap(file)
+  const scale = Math.min(1, maxSize / Math.max(bitmap.width, bitmap.height))
+  const canvas = document.createElement('canvas')
+  canvas.width = Math.max(1, Math.round(bitmap.width * scale))
+  canvas.height = Math.max(1, Math.round(bitmap.height * scale))
+  const ctx = canvas.getContext('2d')
+  if (!ctx) return ''
+  ctx.drawImage(bitmap, 0, 0, canvas.width, canvas.height)
+  return canvas.toDataURL('image/jpeg', 0.82)
+}
+
 function toast(msg: string): void {
   const el = E('div', {
     text: msg,
@@ -388,7 +400,7 @@ class App {
           click: () => this.openDetail(a)
         }
       },
-      E('img', { class: 'icon', attrs: { src: a.icon || autoIcon(model), alt: '' } }),
+      E('img', { class: 'icon', attrs: { src: a.coverData || a.icon || autoIcon(model), alt: '' } }),
       E('span', { class: 'badge ' + a.status, text: statusText(a.status) }),
       E('h3', { text: displayName(a) }),
       E('div', { class: 'sub', text: `${a.brandName ? a.brandName + ' ｜ ' : ''}${this.money(a.price)} ｜ ${ageDays(a, todayStr())} 天` }),
@@ -753,6 +765,7 @@ class App {
       if ((a.targetCost ?? 0) > 0) rows.push(['目标价格', this.money(a.targetCost!)])
       if (a.targetDate) rows.push(['目标日期', a.targetDate])
     }
+    if (a.expireAt) rows.push(['到期时间', a.expireAt])
     if (a.note) rows.push(['备注', a.note])
     if (a.excludeTotal) rows.push(['计入总资产', '否'])
 
@@ -762,7 +775,7 @@ class App {
       E(
         'div',
         { class: 'detail-head' },
-        E('img', { attrs: { src: a.icon || autoIcon(a.model || a.name), alt: '' } }),
+        E('img', { attrs: { src: a.coverData || a.icon || autoIcon(a.model || a.name), alt: '' } }),
         E('h2', { text: displayName(a) }),
         E('div', { class: 'detail-cost', text: `${this.money(dailyCost(a))}/天` }),
         E('div', { class: 'meta', text: `总价：${this.money(a.price)}  |  已服役 ${ageDays(a, todayStr())} 天` })
@@ -774,6 +787,15 @@ class App {
           E('div', { class: 'detail-row' }, E('span', { class: 'k', text: k }), E('span', { text: v }))
         )
       ),
+      ...(a.noteImagesData?.length
+        ? [
+            E(
+              'div',
+              { class: 'tag-picker', style: { marginTop: '12px' } },
+              ...a.noteImagesData.map((d) => E('img', { class: 'thumb', attrs: { src: d, alt: '' } }))
+            )
+          ]
+        : []),
       E(
         'div',
         { class: 'form-actions' },
@@ -1047,6 +1069,77 @@ class App {
     const exclude = E('input', { attrs: { type: 'checkbox' } }) as HTMLInputElement
     exclude.checked = !!draft.excludeTotal
 
+    const expireInput = E('input', { attrs: { type: 'date' } }) as HTMLInputElement
+    expireInput.value = draft.expireAt || ''
+
+    let coverData = draft.coverData
+    const noteData = [...(draft.noteImagesData ?? [])]
+    const coverInput = E('input', { attrs: { type: 'file', accept: 'image/*' } }) as HTMLInputElement
+    const notesFile = E('input', { attrs: { type: 'file', accept: 'image/*', multiple: 'multiple' } }) as HTMLInputElement
+    const coverBox = E('div', { class: 'tag-picker' })
+    const noteBox = E('div', { class: 'tag-picker' })
+
+    const renderCover = () => {
+      coverBox.innerHTML = ''
+      coverBox.append(coverInput)
+      if (coverData) {
+        coverBox.append(E('img', { class: 'thumb', attrs: { src: coverData, alt: '主图' } }))
+        coverBox.append(
+          E('button', {
+            class: 'tag-chip',
+            text: '× 移除主图',
+            on: {
+              click: () => {
+                coverData = undefined
+                renderCover()
+              }
+            }
+          })
+        )
+      }
+    }
+    const renderNotes = () => {
+      noteBox.innerHTML = ''
+      noteBox.append(notesFile)
+      noteData.forEach((d, i) => {
+        noteBox.append(
+          E(
+            'span',
+            { style: { position: 'relative' } },
+            E('img', { class: 'thumb', attrs: { src: d, alt: '' } }),
+            E('button', {
+              class: 'tag-chip',
+              text: '×',
+              style: { position: 'absolute', right: '-6px', top: '-6px', padding: '2px 6px' },
+              on: {
+                click: () => {
+                  noteData.splice(i, 1)
+                  renderNotes()
+                }
+              }
+            })
+          )
+        )
+      })
+    }
+    coverInput.addEventListener('change', async () => {
+      const f = coverInput.files?.[0]
+      if (!f) return
+      coverData = await fileToDataUrl(f)
+      renderCover()
+    })
+    notesFile.addEventListener('change', async () => {
+      const files = [...(notesFile.files ?? [])]
+      for (const f of files) {
+        if (noteData.length >= 9) break
+        const d = await fileToDataUrl(f)
+        if (d) noteData.push(d)
+      }
+      renderNotes()
+    })
+    renderCover()
+    renderNotes()
+
     const field = (label: string, control: HTMLElement, full = false) =>
       E('label', { class: 'field' + (full ? ' full' : '') }, E('span', { text: label }), control)
 
@@ -1074,6 +1167,9 @@ class App {
         field('退役日期', retireDate),
         field('目标价格', targetPrice),
         field('目标日期', targetDate),
+        field('到期时间', expireInput),
+        E('div', { class: 'field full' }, E('span', { text: '主图' }), coverBox),
+        E('div', { class: 'field full' }, E('span', { text: '备注图片（最多 9 张）' }), noteBox),
         E('div', { class: 'field full' }, E('span', { text: '标签' }), tagBox),
         field('备注', noteInput, true),
         E('label', { class: 'toggle field full' }, deduct, E('span', { text: '扣减二手残值' })),
@@ -1114,6 +1210,9 @@ class App {
       draft.targetDate = targetDate.value
       draft.uses = Number(uses.value) || 0
       draft.customDays = Number(customDays.value) || 0
+      draft.expireAt = expireInput.value
+      draft.coverData = coverData
+      draft.noteImagesData = noteData.slice(0, 9)
       draft.icon = autoIcon(model || name)
       const brand = this.brands.byId.get(brandSelect.value)
       draft.brandId = brand?.id ?? ''

@@ -11,7 +11,7 @@
 ## Platforms
 
 - **Android**: Kotlin UI + Rust core (available now)
-- **Web**: Vite + TypeScript consuming the Rust core via WASM
+- **Web**: Vite + TypeScript consuming the Rust core via WASM; assets/wishes/trends/settings, cover and note images, expiry dates, `.ias` import/export
 - **Desktop**: Tauri shell loading the web build
 - Business logic (data, backup, brand matching, cloud sync) lives in Rust; each platform only provides UI and system integration
 

@@ -31,6 +31,9 @@ export interface Asset {
   targetDate?: string
   uses?: number
   customDays?: number
+  coverData?: string
+  noteImagesData?: string[]
+  expireAt?: string
 }
 
 export interface Settings {
@@ -243,13 +246,29 @@ interface BackupImage {
 }
 
 export function exportIas(state: State): Uint8Array {
-  const data = toBackupData(state)
-  return encodeIas({ data, images: [] as BackupImage[] })
+  const { data, images } = toBackupData(state)
+  return encodeIas({ data, images })
 }
 
 export function importIas(bytes: Uint8Array): { state: Partial<State>; count: number } {
   const parsed = decodeIas(bytes) as { data: any; images?: Record<string, string> }
-  return fromBackupData(parsed.data)
+  return fromBackupData(parsed.data, parsed.images ?? {})
+}
+
+function dataUrlToBase64(dataUrl: string): string {
+  const i = dataUrl.indexOf('base64,')
+  return i >= 0 ? dataUrl.slice(i + 7) : ''
+}
+
+function extOf(dataUrl: string): string {
+  return dataUrl.startsWith('data:image/png') ? '.png' : '.jpg'
+}
+
+function dataUrlOf(name: string, map: Record<string, string>): string | undefined {
+  const b = map[name]
+  if (!b) return undefined
+  const mime = name.toLowerCase().endsWith('.png') ? 'png' : 'jpeg'
+  return `data:image/${mime};base64,${b}`
 }
 
 function dateFromEpoch(sec: number): string {
@@ -264,81 +283,135 @@ function epoch(date: string): number {
   return Math.floor(d.getTime() / 1000)
 }
 
-function toBackupData(state: State): unknown {
+function toBackupData(state: State): { data: unknown; images: BackupImage[] } {
+  const images: BackupImage[] = []
+  const imageRecords: any[] = []
+  let imgId = 0
   let sort = 0
-  const assets = state.assets.map((a) => ({
-    id: a.id,
-    name: a.name ?? '',
-    model: a.model ?? '',
-    icon_name: 'icon_default_object',
-    cover_image: '',
-    price: a.price ?? 0,
-    type: a.kind === 'wish' ? 1 : 0,
-    category_id: a.categoryId ?? '',
-    state: 0,
-    buy_date: epoch(a.buyDate),
-    tag_ids: a.tagIds ?? [],
-    target_type: 0,
-    target_cost_unit: '',
-    target_each_increment: 0,
-    target_date: epoch(a.targetDate ?? ''),
-    target_usage_days: 0,
-    target_cost: a.targetCost ?? 0,
-    target_value: 0,
-    additional_item_ids: [],
-    additional_calculation_mode: 0,
-    note: a.note ?? '',
-    note_images: [],
-    is_top: false,
-    is_retirement: a.status === 'retired',
-    retirement_date: epoch(a.retireDate ?? ''),
-    is_sell: a.status === 'sold',
-    used_price: a.soldPrice ?? 0,
-    secondhand_value: a.secondhandValue ?? 0,
-    secondhand_in_cost: a.secondhandInCost ?? true,
-    brand_id: a.brandId ?? '',
-    brand_name: a.brandName ?? '',
-    sell_date: epoch(a.soldDate ?? ''),
-    wish_date: epoch(a.targetDate ?? ''),
-    is_not_include_total: !!a.excludeTotal,
-    is_excluded_from_total: !!a.excludeTotal,
-    sort: sort++,
-    is_deleted: false,
-    created_at: 0,
-    update_at: 0
-  }))
+  const assets = state.assets.map((a) => {
+    let coverName = ''
+    if (a.coverData) {
+      coverName = `images/${a.id}_cover${extOf(a.coverData)}`
+      images.push({ name: coverName, data: dataUrlToBase64(a.coverData) })
+      imageRecords.push({
+        id: `img_${imgId++}`,
+        asset_id: a.id,
+        image_name: coverName,
+        type: 'cover',
+        sort: 0,
+        is_deleted: false,
+        created_at: 0,
+        update_at: 0
+      })
+    }
+    const noteNames: string[] = []
+    ;(a.noteImagesData ?? []).slice(0, 9).forEach((d, i) => {
+      const nm = `images/${a.id}_note${i}${extOf(d)}`
+      noteNames.push(nm)
+      images.push({ name: nm, data: dataUrlToBase64(d) })
+      imageRecords.push({
+        id: `img_${imgId++}`,
+        asset_id: a.id,
+        image_name: nm,
+        type: 'note',
+        sort: i,
+        is_deleted: false,
+        created_at: 0,
+        update_at: 0
+      })
+    })
+    return {
+      id: a.id,
+      name: a.name ?? '',
+      model: a.model ?? '',
+      icon_name: 'icon_default_object',
+      cover_image: coverName,
+      price: a.price ?? 0,
+      type: a.kind === 'wish' ? 1 : 0,
+      category_id: a.categoryId ?? '',
+      state: 0,
+      buy_date: epoch(a.buyDate),
+      tag_ids: a.tagIds ?? [],
+      target_type: 0,
+      target_cost_unit: '',
+      target_each_increment: 0,
+      target_date: epoch(a.targetDate ?? ''),
+      target_usage_days: 0,
+      target_cost: a.targetCost ?? 0,
+      target_value: 0,
+      additional_item_ids: [],
+      additional_calculation_mode: 0,
+      note: a.note ?? '',
+      note_images: noteNames,
+      is_top: false,
+      is_retirement: a.status === 'retired',
+      retirement_date: epoch(a.retireDate ?? ''),
+      is_sell: a.status === 'sold',
+      used_price: a.soldPrice ?? 0,
+      secondhand_value: a.secondhandValue ?? 0,
+      secondhand_in_cost: a.secondhandInCost ?? true,
+      brand_id: a.brandId ?? '',
+      brand_name: a.brandName ?? '',
+      sell_date: epoch(a.soldDate ?? ''),
+      wish_date: epoch(a.targetDate ?? ''),
+      is_not_include_total: !!a.excludeTotal,
+      is_excluded_from_total: !!a.excludeTotal,
+      sort: sort++,
+      is_deleted: false,
+      created_at: 0,
+      update_at: 0
+    }
+  })
+
+  const reminders = state.assets
+    .filter((a) => a.expireAt)
+    .map((a) => ({
+      id: a.id,
+      asset_id: a.id,
+      expiry_at: epoch(a.expireAt!),
+      expiry_remind: 0,
+      remind_time_unit: 'day',
+      remind_at: 0,
+      is_deleted: false,
+      created_at: 0,
+      update_at: 0
+    }))
+
   return {
-    categories: state.categories.map((c, i) => ({
-      id: c.id,
-      title: c.name,
-      sort: i,
-      is_deleted: false,
-      created_at: 0,
-      update_at: 0
-    })),
-    tags: state.tags.map((t, i) => ({
-      id: t.id,
-      title: t.name,
-      sort: i,
-      is_deleted: false,
-      created_at: 0,
-      update_at: 0
-    })),
-    assets,
-    asset_images: [],
-    usages: [],
-    income_categories: [],
-    income_records: [],
-    asset_price_records: [],
-    save_money: [],
-    expire_reminders: [],
-    platform: 'WEB',
-    version: '1.0.0',
-    exported_at: Math.floor(Date.now() / 1000)
+    data: {
+      categories: state.categories.map((c, i) => ({
+        id: c.id,
+        title: c.name,
+        sort: i,
+        is_deleted: false,
+        created_at: 0,
+        update_at: 0
+      })),
+      tags: state.tags.map((t, i) => ({
+        id: t.id,
+        title: t.name,
+        sort: i,
+        is_deleted: false,
+        created_at: 0,
+        update_at: 0
+      })),
+      assets,
+      asset_images: imageRecords,
+      usages: [],
+      income_categories: [],
+      income_records: [],
+      asset_price_records: [],
+      save_money: [],
+      expire_reminders: reminders,
+      platform: 'WEB',
+      version: '1.0.0',
+      exported_at: Math.floor(Date.now() / 1000)
+    },
+    images
   }
 }
 
-function fromBackupData(data: any): { state: Partial<State>; count: number } {
+function fromBackupData(data: any, imageMap: Record<string, string>): { state: Partial<State>; count: number } {
   const categories: Category[] = []
   for (const c of data?.categories ?? []) {
     if (!c || c.is_deleted) continue
@@ -349,16 +422,43 @@ function fromBackupData(data: any): { state: Partial<State>; count: number } {
     if (!t || t.is_deleted) continue
     tags.push({ id: String(t.id ?? uid('tag_')), name: String(t.title ?? '') })
   }
+
+  const imageRecords: any[] = Array.isArray(data?.asset_images) ? data.asset_images : []
+  const coverByName = new Map<string, string>()
+  const noteByAsset = new Map<string, string[]>()
+  for (const r of imageRecords) {
+    if (!r || r.is_deleted) continue
+    const name = String(r.image_name ?? '')
+    const url = dataUrlOf(name, imageMap)
+    if (!url) continue
+    const type = String(r.type ?? '')
+    if (type === 'cover' || type === '0') {
+      coverByName.set(String(r.asset_id ?? ''), url)
+    } else {
+      const key = String(r.asset_id ?? '')
+      const list = noteByAsset.get(key) ?? []
+      list.push(url)
+      noteByAsset.set(key, list)
+    }
+  }
+
+  const reminders: any[] = Array.isArray(data?.expire_reminders) ? data.expire_reminders : []
+  const expireByAsset = new Map<string, string>()
+  for (const r of reminders) {
+    if (!r || r.is_deleted) continue
+    const key = String(r.asset_id ?? r.assetId ?? r.id ?? '')
+    if (r.expiry_at) expireByAsset.set(key, dateFromEpoch(Number(r.expiry_at)))
+  }
+
   const assets: Asset[] = []
   for (const a of data?.assets ?? []) {
     if (!a || a.is_deleted) continue
-    const status: Asset['status'] = a.is_sell
-      ? 'sold'
-      : a.is_retirement
-        ? 'retired'
-        : 'serving'
+    const status: Asset['status'] = a.is_sell ? 'sold' : a.is_retirement ? 'retired' : 'serving'
+    const id = String(a.id ?? uid('a_'))
+    const coverName = String(a.cover_image ?? '')
+    const noteNames: string[] = Array.isArray(a.note_images) ? a.note_images.map(String) : []
     const item: Asset = {
-      id: String(a.id ?? uid('a_')),
+      id,
       name: String(a.name ?? ''),
       model: String(a.model ?? ''),
       price: Number(a.price ?? a.target_cost ?? 0),
@@ -382,6 +482,14 @@ function fromBackupData(data: any): { state: Partial<State>; count: number } {
       targetCost: Number(a.target_cost ?? 0),
       targetDate: a.target_date ? dateFromEpoch(Number(a.target_date)) : ''
     }
+    const cover = dataUrlOf(coverName, imageMap) ?? coverByName.get(id)
+    if (cover) item.coverData = cover
+    const notes = noteNames.map((n) => dataUrlOf(n, imageMap)).filter((x): x is string => !!x)
+    const extraNotes = noteByAsset.get(id) ?? []
+    const allNotes = [...notes, ...extraNotes]
+    if (allNotes.length) item.noteImagesData = allNotes.slice(0, 9)
+    const expire = expireByAsset.get(id)
+    if (expire) item.expireAt = expire
     assets.push(item)
   }
   return { state: { assets, categories, tags }, count: assets.length }

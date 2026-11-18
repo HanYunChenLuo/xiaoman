@@ -67,6 +67,7 @@ Tauri 通过 `frontendDist: ../../web/dist` 加载 Web 端；正式打包需安�
 ## 修改约定
 
 - UI：Android 改 `apps/android/app/src/main/java/com/xiaoman/app/`；Web 改 `web/src/`；桌面仅外壳。
+- Web 端已支持主图/备注图片（Canvas 压缩为 JPEG data URL，存 localStorage；随 `.ias` 的 images/ 条目互通，已在 Android 导入验证）与到期时间字段；图片数量/体积受 localStorage 限制。
 - 计算与 `.ias` 编解码以 Rust `core/` 为准，跨端保持一致；改动后在 Android + Web 两端验证导入导出。
 - 品牌数据只改 `data/brands.json`；各端构建/启动时同步。
 - 暗色模式：Android 表单图标用 `themedIcon()`，品牌 Logo 需白色底板；Web 使用 CSS 变量。

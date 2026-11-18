@@ -43,6 +43,10 @@ cd ../desktop/src-tauri && cargo build
 ```
 Tauri 通过 `frontendDist: ../../web/dist` 加载 Web 端；正式打包需安装 Tauri CLI。
 
+## 云同步（Android）
+
+`apps/android/.../CloudSync.kt` 实现 GitHub 设备码 OAuth + Gist、Google PKCE loopback + Drive appDataFolder；云端内容为 `.ias` 字节（Gist 用 Base64 文本），手动上传/恢复。Client ID 可写在 `apps/android/local.properties` 的 `oauth.github.clientId` / `oauth.google.clientId`，或在 App 内「设置 → 数据同步」填写。Google 客户端类型需为「桌面应用」；GitHub OAuth App 需启用 Device Flow。Web/桌面云同步尚未实现。
+
 ## 品牌/型号数据
 
 `data/brands.json` 结构：

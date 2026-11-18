@@ -23,6 +23,7 @@
 - **趋势统计**：日均成本曲线、分类与状态筛选
 - **品牌与型号**：数码 / 汽车 / 自行车 70+ 品牌、2000+ 型号，按产品线分组；支持自动识别品牌与实物图标
 - **备份与恢复**：支持加密 `.ias` 备份的导入与导出（WinZip AES-256）
+- **云同步**（Android）：GitHub 设备码登录 + Gist、Google 登录 + Drive 应用数据文件夹，手动上传/恢复加密备份
 
 ## 下载与安装
 
@@ -72,6 +73,15 @@ cd ../desktop/src-tauri && cargo build    # 桌面（需先构建 Web）
 - `supportedApp`：可接受该数据的 App 版本区间（`maxVersionCode` 为 0 表示不限）
 - App 启动时通过 GitHub Contents API（失败回退 raw）读取，校验版本区间，`dataVersion` 更新后即时生效；设置 → 数据管理 → 品牌与型号数据可手动检查
 - 构建时 `syncBrandData` 会把 `data/brands.json` 复制进 assets 作为离线内置数据
+
+## 登录与云同步配置（Android）
+
+云同步需要自备 OAuth 客户端（不会随仓库分发）：
+
+- **GitHub**：创建 OAuth App 并勾选 Device Flow，得到 Client ID；在 App 设置 → 数据同步 → GitHub Client ID 中粘贴。
+- **Google**：在 Google Cloud 创建项目、启用 Drive API、配置 OAuth 同意屏幕，创建「桌面应用」类型 OAuth 客户端；将 Client ID 粘贴到 App 内对应项（Google 登录使用 127.0.0.1 loopback 回调）。
+
+也可在 `apps/android/local.properties` 写入 `oauth.github.clientId=...` 与 `oauth.google.clientId=...` 作为默认值。云端保存的是加密 `.ias` 备份；Web/桌面端的云同步尚未接入。
 
 ## 目录结构
 

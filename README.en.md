@@ -23,6 +23,7 @@
 - **Insights**: daily-cost chart with category and status filters
 - **Brands & models**: 70+ brands and 2000+ models across digital, cars and bicycles, grouped by product line; automatic brand and icon detection
 - **Backup & restore**: import and export encrypted `.ias` backups (WinZip AES-256)
+- **Cloud sync** (Android): GitHub device-flow sign-in with Gist, Google sign-in with the Drive app data folder; manual encrypted backup upload/restore
 
 ## Download & install
 
@@ -72,6 +73,15 @@ Brands, aliases and models are remotely updatable data. The single source of tru
 - `supportedApp`: app version range allowed to consume the data (`maxVersionCode: 0` means unlimited)
 - On launch the app fetches via the GitHub Contents API (falling back to raw), validates the version range, and applies newer `dataVersion` immediately. Manual check: Settings → Data → Brand & model data
 - At build time the `syncBrandData` task copies `data/brands.json` into assets as the offline fallback
+
+## Sign-in & cloud setup (Android)
+
+Cloud sync uses your own OAuth clients (none are shipped):
+
+- **GitHub**: create an OAuth App with Device Flow enabled and paste its Client ID in Settings → Data sync → GitHub Client ID.
+- **Google**: create a Google Cloud project, enable the Drive API, configure the OAuth consent screen, then create a Desktop-app OAuth client and paste its Client ID in the app (Google sign-in uses a 127.0.0.1 loopback redirect).
+
+You can also set `oauth.github.clientId` / `oauth.google.clientId` in `apps/android/local.properties` as defaults. Cloud storage holds encrypted `.ias` backups; web/desktop cloud sync is not wired yet.
 
 ## Project layout
 

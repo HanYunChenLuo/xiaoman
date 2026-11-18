@@ -21,6 +21,9 @@ android {
         targetSdk 34
         versionCode 1
         versionName '1.0.0'
+
+        buildConfigField 'String', 'GITHUB_CLIENT_ID', "\"${localProps.getProperty('oauth.github.clientId', '')}\""
+        buildConfigField 'String', 'GOOGLE_CLIENT_ID', "\"${localProps.getProperty('oauth.google.clientId', '')}\""
     }
 
     if (signingReady) {

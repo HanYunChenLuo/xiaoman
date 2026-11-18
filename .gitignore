@@ -1,8 +1,11 @@
 .DS_Store
+app/build/
+.gradle/
+local.properties
 build/
 *.apk
 *.apk.idsig
 replica.keystore
-assets/brands/brands.json
+app/src/main/assets/brands/brands.json
 reference/
 xiaoman.cany/

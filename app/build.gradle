@@ -1,0 +1,50 @@
+plugins {
+    id 'com.android.application'
+}
+
+def keystore = rootProject.file('replica.keystore')
+
+android {
+    namespace 'com.xiaoman.app'
+    compileSdk 34
+
+    defaultConfig {
+        applicationId 'com.xiaoman.app'
+        minSdk 24
+        targetSdk 34
+        versionCode 40
+        versionName '1.6.0'
+    }
+
+    if (keystore.exists()) {
+        signingConfigs {
+            release {
+                storeFile keystore
+                storePassword 'xiaoman123'
+                keyAlias 'replica'
+                keyPassword 'xiaoman123'
+            }
+        }
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            if (keystore.exists()) signingConfig signingConfigs.release
+        }
+        debug {
+            if (keystore.exists()) signingConfig signingConfigs.release
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_11
+        targetCompatibility JavaVersion.VERSION_11
+    }
+}
+
+tasks.register('syncBrandData', Copy) {
+    from rootProject.file('data/brands.json')
+    into layout.projectDirectory.dir('src/main/assets/brands')
+}
+preBuild.dependsOn syncBrandData

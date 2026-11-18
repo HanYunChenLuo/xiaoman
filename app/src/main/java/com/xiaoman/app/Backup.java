@@ -321,7 +321,7 @@ final class Backup {
         root.put("save_money", smRaw != null ? smRaw : new JSONArray());
         root.put("expire_reminders", reminders(store));
         root.put("platform", "AOS");
-        root.put("version", "1.5.3");
+        root.put("version", "1.0.0");
         root.put("exported_at", System.currentTimeMillis() / 1000);
 
         List<Object[]> entries = new ArrayList<>();

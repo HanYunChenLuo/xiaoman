@@ -53,7 +53,7 @@ public class MainActivity extends Activity {
     private String entered = "";
     private boolean backgrounded = false;
     private java.util.Map<String, String> pendingImages = new java.util.HashMap<>();
-    private static final int APP_VERSION_CODE = 40;
+    private static final int APP_VERSION_CODE = BuildConfig.VERSION_CODE;
     private static final int BRAND_SCHEMA = 1;
     private static final String BRAND_DATA_API_URL =
             "https://api.github.com/repos/HanYunChenLuo/xiaoman/contents/data/brands.json";
@@ -405,12 +405,10 @@ public class MainActivity extends Activity {
         foot.addView(dots, lpw(1, -2));
 
         FrameLayout next = new FrameLayout(this);
-        next.setBackground(ui.circle(Ui.LIME));
-        next.setElevation(dp(6));
-        ImageView arrow = ui.iconTint("ic_chevron", 22, 0xFF1A1A1A);
-        arrow.setRotation(-90);
-        FrameLayout.LayoutParams arp = new FrameLayout.LayoutParams(dp(22), dp(22), Gravity.CENTER);
-        next.addView(arrow, arp);
+        next.setBackground(ui.round(Ui.LIME, 16));
+        ImageView arrow = new ImageView(this);
+        arrow.setImageResource(R.drawable.ic_next);
+        next.addView(arrow, new FrameLayout.LayoutParams(dp(24), dp(24), Gravity.CENTER));
         next.setOnClickListener(v -> {
             if (obPage < OB.length - 1) { obPage++; showOnboarding(); }
             else { store.setBool("onboarded", true); showHome(); }

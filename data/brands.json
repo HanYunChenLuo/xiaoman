@@ -1,10 +1,10 @@
 {
  "schema": 1,
- "dataVersion": 20261119,
- "dataVersionName": "2026.11.19",
- "updatedAt": "2026-11-19",
+ "dataVersion": 20261120,
+ "dataVersionName": "2026.11.20",
+ "updatedAt": "2026-11-20",
  "supportedApp": {
-  "minVersionCode": 40,
+  "minVersionCode": 1,
   "maxVersionCode": 0
  },
  "brands": {

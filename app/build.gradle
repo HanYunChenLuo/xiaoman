@@ -19,8 +19,8 @@ android {
         applicationId 'com.xiaoman.app'
         minSdk 24
         targetSdk 34
-        versionCode 40
-        versionName '1.6.0'
+        versionCode 1
+        versionName '1.0.0'
     }
 
     if (signingReady) {
@@ -42,6 +42,10 @@ android {
         debug {
             if (signingReady) signingConfig signingConfigs.release
         }
+    }
+
+    buildFeatures {
+        buildConfig true
     }
 
     compileOptions {

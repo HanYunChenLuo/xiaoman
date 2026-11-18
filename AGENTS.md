@@ -10,7 +10,7 @@ settings.gradle             # 单模块 :app
 build.gradle                # AGP 9.5.1
 gradle.properties
 gradlew / gradle/           # Gradle 9.9.1 wrapper（distributionUrl 使用腾讯镜像）
-app/build.gradle            # namespace/applicationId com.xiaoman.app，versionCode 40 / 1.6.0
+app/build.gradle            # namespace/applicationId com.xiaoman.app，versionCode 1 / 1.0.0
 app/src/main/AndroidManifest.xml   # 无 package/uses-sdk 属性，由 Gradle 注入
 app/src/main/java/com/xiaoman/app/
   MainActivity.java         # 全部页面：首页/心愿/趋势/设置/新增编辑/详情/备份

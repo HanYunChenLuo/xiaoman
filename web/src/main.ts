@@ -16,6 +16,7 @@ import {
   autoIcon,
   displayName,
   exportIas,
+  fetchRemoteBrands,
   fmt,
   importIas,
   loadBrands,
@@ -112,6 +113,7 @@ class App {
     this.brands = await loadBrands()
     this.applyTheme()
     this.render()
+    this.checkExpiryNotifications()
     media.addEventListener('change', () => {
       if (this.state.settings.theme === 'system') this.render()
     })
@@ -611,6 +613,26 @@ class App {
       ]))
     )
     root.append(
+      E('div', { class: 'section' }, E('h2', { text: '提醒' }), this.group([
+        this.rowCheck('到期提醒（浏览器通知）', !!s.notifyExpiry, async (v) => {
+          if (v) {
+            if (!('Notification' in window)) {
+              toast('当前环境不支持通知')
+              return
+            }
+            const perm = await Notification.requestPermission()
+            if (perm !== 'granted') {
+              toast('未授予通知权限')
+              return
+            }
+          }
+          s.notifyExpiry = v
+          this.save()
+          this.render()
+        })
+      ]))
+    )
+    root.append(
       E('div', { class: 'section' }, E('h2', { text: '关于' }), this.group([
         this.linkRow('项目主页', 'GitHub', () => window.open('https://github.com/HanYunChenLuo/xiaoman', '_blank')),
         this.linkRow('核心版本', coreVersion(), null)
@@ -675,11 +697,38 @@ class App {
   }
 
   checkBrands(): void {
-    loadBrands().then((book) => {
-      this.brands = book
-      toast('已刷新品牌数据')
-      this.render()
-    })
+    toast('正在检查品牌数据…')
+    fetchRemoteBrands()
+      .then(async (ver) => {
+        this.brands = await loadBrands()
+        toast(ver ? '品牌数据已更新至 ' + ver : '品牌数据已更新')
+        this.render()
+      })
+      .catch((e) => toast('检查更新失败：' + (e as Error).message))
+  }
+
+  checkExpiryNotifications(): void {
+    if (!this.state.settings.notifyExpiry) return
+    if (!('Notification' in window) || Notification.permission !== 'granted') return
+    const today = todayStr()
+    const soon = new Date()
+    soon.setDate(soon.getDate() + 7)
+    const limit = `${soon.getFullYear()}-${pad(soon.getMonth() + 1)}-${pad(soon.getDate())}`
+    const items = this.state.assets.filter((a) => a.expireAt && a.expireAt <= limit)
+    if (!items.length) return
+    const key = 'xiaoman_noticed_' + today
+    if (localStorage.getItem(key)) return
+    localStorage.setItem(key, '1')
+    try {
+      new Notification('小满 · 到期提醒', {
+        body: items
+          .slice(0, 3)
+          .map((a) => `${displayName(a)} 将于 ${a.expireAt} 到期`)
+          .join('\n')
+      })
+    } catch {
+      /* ignore */
+    }
   }
 
   manageList(kind: 'categories' | 'tags'): void {
@@ -687,12 +736,49 @@ class App {
     const content = E('div', {})
     content.append(E('h2', { text: kind === 'categories' ? '分类管理' : '标签管理' }))
     const rows = E('div', { class: 'group' })
-    for (const item of list) {
+    const move = (index: number, delta: number) => {
+      const target = index + delta
+      if (target < 0 || target >= list.length) return
+      const arr = this.state[kind]
+      const tmp = arr[index]
+      arr[index] = arr[target]
+      arr[target] = tmp
+      this.save()
+      this.closeModal()
+      this.manageList(kind)
+      this.render()
+    }
+    list.forEach((item, index) => {
       rows.append(
         E(
           'div',
           { class: 'row' },
           E('span', { class: 'grow', text: item.name }),
+          E('button', {
+            class: 'tag-chip',
+            text: '↑',
+            on: { click: () => move(index, -1) }
+          }),
+          E('button', {
+            class: 'tag-chip',
+            text: '↓',
+            on: { click: () => move(index, 1) }
+          }),
+          E('button', {
+            class: 'tag-chip',
+            text: '重命名',
+            on: {
+              click: () => {
+                const name = prompt('新名称', item.name)
+                if (!name?.trim()) return
+                item.name = name.trim()
+                this.save()
+                this.closeModal()
+                this.manageList(kind)
+                this.render()
+              }
+            }
+          }),
           E('button', {
             class: 'btn danger',
             text: '删除',
@@ -714,7 +800,7 @@ class App {
           })
         )
       )
-    }
+    })
     if (!list.length) rows.append(E('div', { class: 'empty', text: '暂无内容' }))
     content.append(rows)
     content.append(

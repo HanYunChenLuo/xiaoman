@@ -41,6 +41,7 @@ export interface Settings {
   decimals: number
   thousands: boolean
   theme: 'system' | 'light' | 'dark'
+  notifyExpiry?: boolean
 }
 
 export interface State {
@@ -82,7 +83,8 @@ export function normalize(s: State): State {
     currency: s.settings?.currency ?? 'CNY',
     decimals: s.settings?.decimals ?? 2,
     thousands: s.settings?.thousands ?? false,
-    theme: s.settings?.theme ?? 'system'
+    theme: s.settings?.theme ?? 'system',
+    notifyExpiry: s.settings?.notifyExpiry ?? false
   }
   return s
 }
@@ -154,44 +156,97 @@ export interface BrandBook {
   versionName: string
 }
 
+const BRANDS_CACHE = 'xiaoman_brands_v1'
+
 export async function loadBrands(): Promise<BrandBook> {
-  const book: BrandBook = { categories: {}, byId: new Map(), aliases: [], versionName: '' }
+  let json: any = null
   try {
-    const res = await fetch('./brands.json', { cache: 'no-cache' })
-    const json = await res.json()
-    const source = json.brands ?? json
-    book.versionName = json.dataVersionName ?? ''
-    for (const cat of Object.keys(source)) {
-      const list: Brand[] = []
-      for (const item of source[cat] as unknown[]) {
-        const arr = item as [string, string, string[], Array<[string, string[]]>]
-        const brand: Brand = {
-          name: arr[0],
-          id: arr[1],
-          aliases: arr[2] ?? [],
-          groups: arr[3] ?? []
-        }
-        list.push(brand)
-        book.byId.set(brand.id, brand)
-        for (const alias of brand.aliases) {
-          if (!alias) continue
-          book.aliases.push({
-            alias: alias.toLowerCase(),
-            name: brand.name,
-            id: brand.id,
-            latin: /[A-Za-z]/.test(alias)
-          })
-        }
-      }
-      book.categories[cat] = list
-    }
-    book.aliases.sort((a, b) => b.alias.length - a.alias.length)
+    const raw = localStorage.getItem(BRANDS_CACHE)
+    if (raw) json = JSON.parse(raw)
   } catch {
-    /* offline: empty book */
+    json = null
   }
+  if (!json) {
+    try {
+      const res = await fetch('./brands.json', { cache: 'no-cache' })
+      json = await res.json()
+    } catch {
+      json = null
+    }
+  }
+  return json ? parseBrandBook(json) : emptyBrandBook()
+}
+
+function emptyBrandBook(): BrandBook {
+  return { categories: {}, byId: new Map(), aliases: [], versionName: '' }
+}
+
+function parseBrandBook(json: any): BrandBook {
+  const book: BrandBook = emptyBrandBook()
+  const source = json.brands ?? json
+  book.versionName = json.dataVersionName ?? ''
+  for (const cat of Object.keys(source)) {
+    const list: Brand[] = []
+    for (const item of source[cat] as unknown[]) {
+      const arr = item as [string, string, string[], Array<[string, string[]]>]
+      const brand: Brand = {
+        name: arr[0],
+        id: arr[1],
+        aliases: arr[2] ?? [],
+        groups: arr[3] ?? []
+      }
+      list.push(brand)
+      book.byId.set(brand.id, brand)
+      for (const alias of brand.aliases) {
+        if (!alias) continue
+        book.aliases.push({
+          alias: alias.toLowerCase(),
+          name: brand.name,
+          id: brand.id,
+          latin: /[A-Za-z]/.test(alias)
+        })
+      }
+    }
+    book.categories[cat] = list
+  }
+  book.aliases.sort((a, b) => b.alias.length - a.alias.length)
   return book
 }
 
+async function fetchBrandText(url: string, accept?: string): Promise<string> {
+  const res = await fetch(url, {
+    cache: 'no-store',
+    headers: accept ? { Accept: accept } : undefined
+  })
+  if (!res.ok) throw new Error('HTTP ' + res.status)
+  return res.text()
+}
+
+/** 从 GitHub 拉取最新品牌数据并写入本地缓存；返回版本名。 */
+export async function fetchRemoteBrands(): Promise<string> {
+  let text: string
+  try {
+    text = await fetchBrandText(
+      'https://api.github.com/repos/HanYunChenLuo/xiaoman/contents/data/brands.json',
+      'application/vnd.github.raw'
+    )
+  } catch {
+    text = await fetchBrandText(
+      'https://raw.githubusercontent.com/HanYunChenLuo/xiaoman/main/data/brands.json?t=' + Date.now()
+    )
+  }
+  const json = JSON.parse(text)
+  const schema = Number(json.schema ?? 1)
+  if (schema > 1) throw new Error('数据格式版本过高')
+  const sup = json.supportedApp
+  if (sup) {
+    const min = Number(sup.minVersionCode ?? 0)
+    const max = Number(sup.maxVersionCode ?? 0)
+    if (1 < min || (max > 0 && 1 > max)) throw new Error('当前版本不支持该数据')
+  }
+  localStorage.setItem(BRANDS_CACHE, JSON.stringify(json))
+  return String(json.dataVersionName ?? '')
+}
 export function matchBrand(text: string, book: BrandBook): Brand | null {
   const lower = text.trim().toLowerCase()
   if (!lower) return null

@@ -11,7 +11,7 @@
 ## 平台支持
 
 - **Android**：Kotlin UI + Rust 核心（当前可用）
-- **Web**：Vite + TypeScript，通过 WASM 复用 `core/`；支持资产/心愿/趋势/设置、主图与备注图片、到期时间、`.ias` 导入导出
+- **Web**：Vite + TypeScript，通过 WASM 复用 `core/`；支持资产/心愿/趋势/设置、主图与备注图片、到期时间与浏览器提醒、品牌数据在线更新、`.ias` 导入导出，可安装为 PWA
 - **桌面**：Tauri 外壳加载 Web 构建产物
 - 业务核心（数据、备份、品牌匹配、云同步）集中于 Rust，各平台仅维护 UI 与系统集成
 

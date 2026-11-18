@@ -8,6 +8,12 @@
 - 最低系统：Android 7.0（API 24），适配平板 / 手机竖屏
 - 技术栈：原生 Java、单 Activity、自绘图表，不使用 Kotlin / AndroidX / WebView
 
+## 平台支持
+
+- **Android**：Kotlin UI + Rust 核心（当前可用）
+- **Web / 桌面**：共用 `core/` Rust 核心，通过 WASM（Web）与 Tauri（桌面）提供外壳，正在规划实现
+- 业务核心（数据、备份、品牌匹配、云同步）集中于 Rust，各平台仅维护 UI 与系统集成
+
 ## 功能
 
 - **资产与心愿**：总价、日均成本、服役天数，支持退役 / 卖出 / 不计入总资产

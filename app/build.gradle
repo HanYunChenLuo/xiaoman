@@ -52,7 +52,35 @@ android {
         sourceCompatibility JavaVersion.VERSION_11
         targetCompatibility JavaVersion.VERSION_11
     }
+
 }
+
+def sdkDirProp = localProps.getProperty('sdk.dir') ?: System.getenv('ANDROID_HOME')
+def ndkBase = sdkDirProp ? new File(sdkDirProp, 'ndk') : null
+def ndkDir = null
+if (ndkBase != null && ndkBase.exists()) {
+    def dirs = ndkBase.listFiles()
+    if (dirs != null && dirs.length > 0) ndkDir = dirs.sort { it.name }.last()
+}
+def rustTarget = 'aarch64-linux-android'
+def ndkToolDir = ndkDir != null ? new File(ndkDir, 'toolchains/llvm/prebuilt/darwin-x86_64/bin') : null
+
+tasks.register('buildRustAndroid', Exec) {
+    workingDir rootProject.file('core')
+    commandLine 'cargo', 'build', '--target', rustTarget, '--release'
+    if (ndkToolDir != null) {
+        environment 'CARGO_TARGET_AARCH64_LINUX_ANDROID_LINKER', new File(ndkToolDir, 'aarch64-linux-android24-clang').absolutePath
+        environment 'CC_aarch64_linux_android', new File(ndkToolDir, 'aarch64-linux-android24-clang').absolutePath
+        environment 'AR_aarch64_linux_android', new File(ndkToolDir, 'llvm-ar').absolutePath
+    }
+}
+
+tasks.register('copyRustAndroid', Copy) {
+    from rootProject.file("core/target/${rustTarget}/release/libxiaoman_core.so")
+    into layout.projectDirectory.dir('src/main/jniLibs/arm64-v8a')
+}
+copyRustAndroid.dependsOn buildRustAndroid
+preBuild.dependsOn copyRustAndroid
 
 tasks.register('syncBrandData', Copy) {
     from rootProject.file('data/brands.json')

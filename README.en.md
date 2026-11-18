@@ -8,6 +8,12 @@
 - Minimum OS: Android 7.0 (API 24), portrait UI for tablets and phones
 - Stack: native Java, single Activity, custom-drawn charts — no Kotlin / AndroidX / WebView
 
+## Platforms
+
+- **Android**: Kotlin UI + Rust core (available now)
+- **Web / Desktop**: share the `core/` Rust library via WASM (web) and Tauri (desktop); planned
+- Business logic (data, backup, brand matching, cloud sync) lives in Rust; each platform only provides UI and system integration
+
 ## Features
 
 - **Assets & wishes**: total price, daily cost, days in service; retired / sold / excluded-from-total states

@@ -8,3 +8,5 @@ build/
 replica.keystore
 app/src/main/assets/brands/brands.json
 reference/
+core/target/
+app/src/main/jniLibs/**/*.so

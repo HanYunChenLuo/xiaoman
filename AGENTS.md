@@ -1,6 +1,6 @@
 # AGENTS.md
 
-本仓库是「小满」Android 应用（功能完整，无会员页与付费锁）。原生 Java 实现，单 Activity，自绘图表与对话框，**不使用 Kotlin / AndroidX / WebView**。
+本仓库是「小满」Android 应用（功能完整，无会员页与付费锁）。Kotlin 单 Activity UI（AGP 内置 Kotlin，无 Kotlin 插件），自绘图表与对话框；业务核心逐步迁移到 Rust（`core/`），Android 通过 JNI 调用，后续 Web/桌面共用同一核心。**不使用 AndroidX / WebView**。
 
 ## 目录结构
 
@@ -12,14 +12,16 @@ gradle.properties
 gradlew / gradle/           # Gradle 9.9.1 wrapper（distributionUrl 使用腾讯镜像）
 app/build.gradle            # namespace/applicationId com.xiaoman.app，versionCode 1 / 1.0.0
 app/src/main/AndroidManifest.xml   # 无 package/uses-sdk 属性，由 Gradle 注入
+core/                       # Rust 核心库（cdylib/staticlib/rlib），JNI + wasm 导出
+core/src/lib.rs
 app/src/main/java/com/xiaoman/app/
-  MainActivity.java         # 全部页面：首页/心愿/趋势/设置/新增编辑/详情/备份
-  DialogKit.java            # 底部弹层、对话框、图标/品牌/型号选择器
-  Ui.java                   # dp、字体、主题色、圆角、图标
-  Store.java                # SharedPreferences JSON 数据层
-  Backup.java               # 官方 .ias（WinZip AES-256）导入导出
-  NotificationHelper.java   # 到期提醒 / AlarmManager
-  Widgets.java              # 柱状图、折线图、书签等自绘 View
+  MainActivity.kt         # 全部页面：首页/心愿/趋势/设置/新增编辑/详情/备份
+  DialogKit.kt            # 底部弹层、对话框、图标/品牌/型号选择器
+  Ui.kt                   # dp、字体、主题色、圆角、图标
+  Store.kt                # SharedPreferences JSON 数据层
+  Backup.kt               # 官方 .ias（WinZip AES-256）导入导出
+  NotificationHelper.kt   # 到期提醒 / AlarmManager
+  Widgets.kt              # 柱状图、折线图、书签等自绘 View
 app/src/main/assets/        # 内置图片、图标、品牌 Logo；brands/brands.json 由 data/ 同步（已 gitignore）
 app/src/main/res/           # 应用图标等资源
 data/brands.json            # 品牌与型号数据唯一来源（远程更新入口）
@@ -34,9 +36,10 @@ adb install -r app/build/outputs/apk/release/app-release.apk
 adb shell am start -n com.xiaoman.app/.MainActivity
 ```
 
-- 需要 JDK 17+（本机为 JDK 27）与 Android SDK platform 34 / build-tools 34；`local.properties` 写 `sdk.dir`（不入库，默认 `/opt/homebrew/share/android-commandlinetools`）。
+- 需要 JDK 17+（本机为 JDK 27）、Android SDK platform 34 / build-tools 34、**NDK 30** 与 Rust（`aarch64-linux-android` 目标）；`local.properties` 写 `sdk.dir`（不入库，默认 `/opt/homebrew/share/android-commandlinetools`）。
 - `replica.keystore` 与签名口令均不入库；`local.properties` 提供 `signing.storePassword` / `signing.keyPassword` / `signing.keyAlias` 时 debug/release 共用签名，便于 `adb install -r` 覆盖升级。
-- Gradle 发行包走腾讯镜像（GitHub 的 gradle-distributions 下载在本机不通）；AGP 依赖来自 `dl.google.com`。
+- Gradle 任务 `buildRustAndroid`/`copyRustAndroid` 在 `preBuild` 前用 cargo 构建 `core` 并复制 `libxiaoman_core.so` 到 `app/src/main/jniLibs/arm64-v8a`。
+- Gradle 发行包走腾讯镜像（GitHub 的 gradle-distributions 下载在本机不通）；AGP 依赖来自 `dl.google.com`，cargo 依赖走 rsproxy 镜像。
 - `./gradlew assembleDebug` 亦可；Release 未开启 minify。
 
 ## 品牌/型号数据更新（无需发版）
@@ -63,10 +66,10 @@ adb shell am start -n com.xiaoman.app/.MainActivity
 
 ## 修改约定
 
-- 改 UI/功能主要改 `MainActivity.java`，弹层与选择器在 `DialogKit.java`；保持与原 App 的圆角、字号、灰阶风格一致。
+- 改 UI/功能主要改 `MainActivity.java`，弹层与选择器在 `DialogKit.kt`；保持与原 App 的圆角、字号、灰阶风格一致。
 - 暗色模式：表单图标用 `themedIcon()`；分段控件选中底 `#3F3F3F`；品牌 Logo 在暗色下需要白色圆角底板。
 - 品牌数据只改 `data/brands.json`。
-- `.ias` 备份格式与密钥在 `Backup.java`；改动备份字段时同步导入与导出两侧，并与原 App 双向验证。
-- 不要随意修改包名 `com.xiaoman.app`（会影响数据与远程更新）；升级版本时同步修改 `app/build.gradle` 的 `versionCode` 与 `MainActivity.APP_VERSION_CODE`。
+- `.ias` 备份格式与密钥在 `Backup.kt`；改动备份字段时同步导入与导出两侧，并与原 App 双向验证。
+- 不要随意修改包名 `com.xiaoman.app`（会影响数据与远程更新）；升级版本时修改 `app/build.gradle` 的 `versionCode/versionName`，`APP_VERSION_CODE` 取自 `BuildConfig`。
 - 测试设备时避免破坏用户数据：验证前导出备份，验证后恢复；不要在未获允许时写入原 App `com.zhumeng.assets`。
 - 本机 github.com HTTPS 不通，`origin` 使用 SSH：`git@github.com:HanYunChenLuo/xiaoman.git`。

@@ -68,6 +68,7 @@ class CloudSync(private val ctx: Context) {
     }
 
     fun logoutGoogle() {
+        clearPending()
         prefs.edit().remove("g_token").remove("g_refresh").remove("g_expiry").remove("g_email").remove("g_file").apply()
     }
 
@@ -239,6 +240,44 @@ class CloudSync(private val ctx: Context) {
     )
 
     // ---------- Google 登录（PKCE + loopback） ----------
+    private var pendingVerifier: String? = null
+    private var pendingRedirect: String? = null
+    private var pendingClientId: String? = null
+    private var pendingDone: ((String) -> Unit)? = null
+    private var pendingError: ((String) -> Unit)? = null
+
+    fun handleGoogleUri(activity: Activity, uri: Uri): Boolean {
+        if (uri.scheme != BuildConfig.GOOGLE_REDIRECT_SCHEME) return false
+        val verifier = pendingVerifier ?: return false
+        val redirect = pendingRedirect ?: return false
+        val clientId = pendingClientId ?: return false
+        val code = uri.getQueryParameter("code") ?: ""
+        val error = uri.getQueryParameter("error") ?: ""
+        val done = pendingDone
+        val fail = pendingError
+        clearPending()
+        Thread {
+            try {
+                if (code.isEmpty()) {
+                    throw Exception(if (error.isNotEmpty()) "授权失败：$error" else "未收到授权码")
+                }
+                val email = exchangeGoogleCode(clientId, code, verifier, redirect)
+                activity.runOnUiThread { done?.invoke(email) }
+            } catch (e: Exception) {
+                activity.runOnUiThread { fail?.invoke(e.message ?: "Google 登录失败") }
+            }
+        }.start()
+        return true
+    }
+
+    private fun clearPending() {
+        pendingVerifier = null
+        pendingRedirect = null
+        pendingClientId = null
+        pendingDone = null
+        pendingError = null
+    }
+
     fun startGoogleLogin(activity: Activity, onStatus: (String) -> Unit, onDone: (String) -> Unit, onError: (String) -> Unit) {
         val clientId = googleClientId()
         if (clientId.isEmpty()) {
@@ -249,19 +288,28 @@ class CloudSync(private val ctx: Context) {
             try {
                 val verifier = randomPkce()
                 val challenge = base64Url(sha256(verifier.toByteArray(Charsets.US_ASCII)))
+
+                // 构建时配置了 Google Client ID 时使用自定义 Scheme 直接跳回 App。
+                if (BuildConfig.GOOGLE_CLIENT_ID.isNotEmpty() && clientId == BuildConfig.GOOGLE_CLIENT_ID) {
+                    val redirect = BuildConfig.GOOGLE_REDIRECT_SCHEME + ":/oauth2redirect"
+                    pendingVerifier = verifier
+                    pendingRedirect = redirect
+                    pendingClientId = clientId
+                    pendingDone = onDone
+                    pendingError = onError
+                    val url = authUrl(clientId, redirect, challenge)
+                    activity.runOnUiThread {
+                        onStatus("请在浏览器中完成 Google 授权…")
+                        activity.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)))
+                    }
+                    return@Thread
+                }
+
+                // 运行时填写的 Client ID：回退到 127.0.0.1 loopback（桌面应用类型客户端）。
                 val server = ServerSocket(0, 1, InetAddress.getByName("127.0.0.1"))
                 server.soTimeout = 180_000
                 val redirect = "$REDIRECT:${server.localPort}/"
-                val url = "https://accounts.google.com/o/oauth2/v2/auth?" + form(mapOf(
-                    "client_id" to clientId,
-                    "redirect_uri" to redirect,
-                    "response_type" to "code",
-                    "scope" to "openid email https://www.googleapis.com/auth/drive.appdata",
-                    "code_challenge" to challenge,
-                    "code_challenge_method" to "S256",
-                    "access_type" to "offline",
-                    "prompt" to "consent"
-                ))
+                val url = authUrl(clientId, redirect, challenge)
                 activity.runOnUiThread {
                     onStatus("请在浏览器中完成 Google 授权…")
                     activity.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)))
@@ -287,40 +335,57 @@ class CloudSync(private val ctx: Context) {
                     }
                 }
                 server.close()
-                val tokenRes = postFormJson(
-                    "https://oauth2.googleapis.com/token",
-                    mapOf(
-                        "client_id" to clientId,
-                        "code" to authCode,
-                        "code_verifier" to verifier,
-                        "redirect_uri" to redirect,
-                        "grant_type" to "authorization_code"
-                    )
-                )
-                val access = tokenRes.optString("access_token")
-                val refresh = tokenRes.optString("refresh_token")
-                val expires = System.currentTimeMillis() + tokenRes.optLong("expires_in", 3600) * 1000
-                if (access.isEmpty()) throw Exception(tokenRes.optString("error_description", "获取令牌失败"))
-                val email = try {
-                    val ui = httpJson(
-                        "https://openidconnect.googleapis.com/v1/userinfo", "GET", null,
-                        mapOf("Authorization" to "Bearer $access")
-                    )
-                    ui.optString("email")
-                } catch (_: Exception) {
-                    ""
-                }
-                prefs.edit()
-                    .putString("g_token", access)
-                    .putString("g_refresh", refresh)
-                    .putLong("g_expiry", expires)
-                    .putString("g_email", email)
-                    .apply()
-                activity.runOnUiThread { onDone(email.ifEmpty { "Google" }) }
+                val email = exchangeGoogleCode(clientId, authCode, verifier, redirect)
+                activity.runOnUiThread { onDone(email) }
             } catch (e: Exception) {
                 activity.runOnUiThread { onError(e.message ?: "Google 登录失败") }
             }
         }.start()
+    }
+
+    private fun authUrl(clientId: String, redirect: String, challenge: String): String =
+        "https://accounts.google.com/o/oauth2/v2/auth?" + form(mapOf(
+            "client_id" to clientId,
+            "redirect_uri" to redirect,
+            "response_type" to "code",
+            "scope" to "openid email https://www.googleapis.com/auth/drive.appdata",
+            "code_challenge" to challenge,
+            "code_challenge_method" to "S256",
+            "access_type" to "offline",
+            "prompt" to "consent"
+        ))
+
+    private fun exchangeGoogleCode(clientId: String, code: String, verifier: String, redirect: String): String {
+        val tokenRes = postFormJson(
+            "https://oauth2.googleapis.com/token",
+            mapOf(
+                "client_id" to clientId,
+                "code" to code,
+                "code_verifier" to verifier,
+                "redirect_uri" to redirect,
+                "grant_type" to "authorization_code"
+            )
+        )
+        val access = tokenRes.optString("access_token")
+        val refresh = tokenRes.optString("refresh_token")
+        val expires = System.currentTimeMillis() + tokenRes.optLong("expires_in", 3600) * 1000
+        if (access.isEmpty()) throw Exception(tokenRes.optString("error_description", "获取令牌失败"))
+        val email = try {
+            val ui = httpJson(
+                "https://openidconnect.googleapis.com/v1/userinfo", "GET", null,
+                mapOf("Authorization" to "Bearer $access")
+            )
+            ui.optString("email")
+        } catch (_: Exception) {
+            ""
+        }
+        prefs.edit()
+            .putString("g_token", access)
+            .putString("g_refresh", refresh)
+            .putLong("g_expiry", expires)
+            .putString("g_email", email)
+            .apply()
+        return email.ifEmpty { "Google" }
     }
 
     // ---------- Google Drive ----------

@@ -81,7 +81,7 @@ Cloud sync uses your own OAuth clients (none are shipped):
 - **GitHub**: create an OAuth App with Device Flow enabled and paste its Client ID in Settings → Data sync → GitHub Client ID.
 - **Google**: create a Google Cloud project, enable the Drive API, configure the OAuth consent screen, then create a Desktop-app OAuth client and paste its Client ID in the app (Google sign-in uses a 127.0.0.1 loopback redirect).
 
-You can also set `oauth.github.clientId` / `oauth.google.clientId` in `apps/android/local.properties` as defaults. Cloud storage holds encrypted `.ias` backups; web/desktop cloud sync is not wired yet.
+You can also set `oauth.github.clientId` / `oauth.google.clientId` in `apps/android/local.properties` as defaults. **Google redirect sign-in**: when a Google client ID is present at build time, the app registers `com.googleusercontent.apps.<client-id>:/oauth2redirect` and the browser returns directly to the app; IDs entered only in-app fall back to a 127.0.0.1 loopback redirect. GitHub keeps device flow because its OAuth App token exchange requires a client secret that must not ship in the client. Cloud storage holds encrypted `.ias` backups; web/desktop cloud sync is not wired yet.
 
 ## Project layout
 

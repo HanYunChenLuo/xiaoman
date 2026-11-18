@@ -2899,6 +2899,12 @@ class MainActivity : Activity() {
         if (store.bool("onboarded", false)) showHome() else showOnboarding()
         if (store.str("privacyPassword", "").isNotEmpty()) showLock()
         checkBrandDataUpdate(false)
+        intent?.data?.let { cloud.handleGoogleUri(this, it) }
+    }
+
+    override fun onNewIntent(intent: Intent?) {
+        super.onNewIntent(intent)
+        intent?.data?.let { cloud.handleGoogleUri(this, it) }
     }
 
     private fun loadBrandData() {

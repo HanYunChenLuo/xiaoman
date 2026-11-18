@@ -23,7 +23,13 @@ android {
         versionName '1.0.0'
 
         buildConfigField 'String', 'GITHUB_CLIENT_ID', "\"${localProps.getProperty('oauth.github.clientId', '')}\""
-        buildConfigField 'String', 'GOOGLE_CLIENT_ID', "\"${localProps.getProperty('oauth.google.clientId', '')}\""
+        def googleId = localProps.getProperty('oauth.google.clientId', '')
+        buildConfigField 'String', 'GOOGLE_CLIENT_ID', "\"${googleId}\""
+        def googleScheme = googleId.isEmpty()
+                ? 'com.xiaoman.app'
+                : 'com.googleusercontent.apps.' + googleId.replace('.apps.googleusercontent.com', '')
+        buildConfigField 'String', 'GOOGLE_REDIRECT_SCHEME', "\"${googleScheme}\""
+        manifestPlaceholders = [googleRedirectScheme: googleScheme]
     }
 
     if (signingReady) {

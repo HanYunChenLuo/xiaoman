@@ -143,6 +143,7 @@ class CloudSync(private val ctx: Context) {
                     }
                 }
             } catch (e: Exception) {
+                android.util.Log.w("XiaomanCloud", "github login failed", e)
                 if (!ghCancel) activity.runOnUiThread { onError(e.message ?: "GitHub 登录失败") }
             }
         }.start()
@@ -181,6 +182,7 @@ class CloudSync(private val ctx: Context) {
                 markSync("github")
                 onDone()
             } catch (e: Exception) {
+                android.util.Log.w("XiaomanCloud", "upload failed", e)
                 onError(e.message ?: "上传失败")
             }
         }.start()
@@ -208,6 +210,7 @@ class CloudSync(private val ctx: Context) {
                 val bytes = android.util.Base64.decode(b64, android.util.Base64.DEFAULT)
                 onDone(bytes)
             } catch (e: Exception) {
+                android.util.Log.w("XiaomanCloud", "download failed", e)
                 onError(e.message ?: "下载失败")
             }
         }.start()
@@ -264,6 +267,7 @@ class CloudSync(private val ctx: Context) {
                 val email = exchangeGoogleCode(clientId, code, verifier, redirect)
                 activity.runOnUiThread { done?.invoke(email) }
             } catch (e: Exception) {
+                android.util.Log.w("XiaomanCloud", "google redirect failed", e)
                 activity.runOnUiThread { fail?.invoke(e.message ?: "Google 登录失败") }
             }
         }.start()
@@ -338,6 +342,7 @@ class CloudSync(private val ctx: Context) {
                 val email = exchangeGoogleCode(clientId, authCode, verifier, redirect)
                 activity.runOnUiThread { onDone(email) }
             } catch (e: Exception) {
+                android.util.Log.w("XiaomanCloud", "google login failed", e)
                 activity.runOnUiThread { onError(e.message ?: "Google 登录失败") }
             }
         }.start()
@@ -352,6 +357,7 @@ class CloudSync(private val ctx: Context) {
             "code_challenge" to challenge,
             "code_challenge_method" to "S256",
             "access_type" to "offline",
+            "include_granted_scopes" to "true",
             "prompt" to "consent"
         ))
 
@@ -366,6 +372,7 @@ class CloudSync(private val ctx: Context) {
                 "grant_type" to "authorization_code"
             )
         )
+        android.util.Log.i("XiaomanCloud", "google token scopes=" + tokenRes.optString("scope"))
         val access = tokenRes.optString("access_token")
         val refresh = tokenRes.optString("refresh_token")
         val expires = System.currentTimeMillis() + tokenRes.optLong("expires_in", 3600) * 1000
@@ -421,6 +428,7 @@ class CloudSync(private val ctx: Context) {
                 markSync("google")
                 onDone()
             } catch (e: Exception) {
+                android.util.Log.w("XiaomanCloud", "upload failed", e)
                 onError(e.message ?: "上传失败")
             }
         }.start()
@@ -439,6 +447,7 @@ class CloudSync(private val ctx: Context) {
                 )
                 onDone(bytes)
             } catch (e: Exception) {
+                android.util.Log.w("XiaomanCloud", "download failed", e)
                 onError(e.message ?: "下载失败")
             }
         }.start()

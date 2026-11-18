@@ -1,0 +1,9 @@
+.DS_Store
+android/build/
+android/*.apk
+android/*.apk.idsig
+android/replica.keystore
+android/assets/brands/brands.json
+reference/
+xiaoman.cany/
+/assets/

@@ -1,0 +1,4434 @@
+{
+ "schema": 1,
+ "dataVersion": 20261118,
+ "dataVersionName": "2026.11.18",
+ "updatedAt": "2026-11-18",
+ "supportedApp": {
+  "minVersionCode": 40,
+  "maxVersionCode": 0
+ },
+ "brands": {
+  "digital": [
+   [
+    "Apple",
+    "apple",
+    [
+     "Apple",
+     "苹果",
+     "iPhone",
+     "iPad",
+     "MacBook",
+     "Mac",
+     "AirPods"
+    ],
+    [
+     [
+      "iPhone",
+      [
+       "iPhone 18 Pro Max",
+       "iPhone 18 Pro",
+       "iPhone Duo",
+       "iPhone Air",
+       "iPhone 17 Pro Max",
+       "iPhone 17 Pro",
+       "iPhone 17",
+       "iPhone 17e",
+       "iPhone 16 Pro Max",
+       "iPhone 16 Pro",
+       "iPhone 16 Plus",
+       "iPhone 16",
+       "iPhone 16e",
+       "iPhone 15 Pro Max",
+       "iPhone 15 Pro",
+       "iPhone 15 Plus",
+       "iPhone 15",
+       "iPhone 14 Pro Max",
+       "iPhone 14 Pro",
+       "iPhone 14 Plus",
+       "iPhone 14",
+       "iPhone 13 Pro Max",
+       "iPhone 13 Pro",
+       "iPhone 13 mini",
+       "iPhone 13",
+       "iPhone 12 Pro Max",
+       "iPhone 12 Pro",
+       "iPhone 12 mini",
+       "iPhone 12",
+       "iPhone SE (第3代)",
+       "iPhone 11 Pro Max",
+       "iPhone 11 Pro",
+       "iPhone 11",
+       "iPhone XR",
+       "iPhone XS Max",
+       "iPhone XS",
+       "iPhone X",
+       "iPhone 8 Plus",
+       "iPhone 8",
+       "iPhone SE (第2代)",
+       "iPhone 7 Plus",
+       "iPhone 7"
+      ]
+     ],
+     [
+      "iPad",
+      [
+       "iPad Pro 13 (M4)",
+       "iPad Pro 11 (M4)",
+       "iPad Air 13 (M2)",
+       "iPad Air 11 (M2)",
+       "iPad 10",
+       "iPad 9",
+       "iPad mini 7",
+       "iPad mini 6",
+       "iPad Pro 12.9 (M2)",
+       "iPad Pro 11 (M2)",
+       "iPad Air 5",
+       "iPad Air 4",
+       "iPad Pro 12.9 (第4代)",
+       "iPad Pro 11 (第2代)"
+      ]
+     ],
+     [
+      "Mac",
+      [
+       "MacBook Pro 16 (M4 Pro/Max)",
+       "MacBook Pro 14 (M4 Pro/Max)",
+       "MacBook Pro 14 (M4)",
+       "MacBook Pro 16 (M3 Pro/Max)",
+       "MacBook Pro 14 (M3)",
+       "MacBook Pro 13 (M2)",
+       "MacBook Air 15 (M3)",
+       "MacBook Air 13 (M3)",
+       "MacBook Air 15 (M2)",
+       "MacBook Air 13 (M2)",
+       "MacBook Air 13 (M1)",
+       "iMac 24 (M4)",
+       "iMac 24 (M1)",
+       "Mac mini (M4)",
+       "Mac mini (M2)",
+       "Mac Studio (M2 Max/Ultra)",
+       "Mac Pro (M2 Ultra)"
+      ]
+     ],
+     [
+      "Apple Watch",
+      [
+       "Apple Watch Ultra 2",
+       "Apple Watch Ultra",
+       "Apple Watch Series 10",
+       "Apple Watch Series 9",
+       "Apple Watch Series 8",
+       "Apple Watch Series 7",
+       "Apple Watch Series 6",
+       "Apple Watch SE (第2代)",
+       "Apple Watch SE"
+      ]
+     ],
+     [
+      "AirPods",
+      [
+       "AirPods Pro 2 (USB-C)",
+       "AirPods Pro 2",
+       "AirPods Pro",
+       "AirPods 4",
+       "AirPods 3",
+       "AirPods 2",
+       "AirPods Max (USB-C)",
+       "AirPods Max"
+      ]
+     ],
+     [
+      "显示器",
+      [
+       "Studio Display",
+       "Pro Display XDR"
+      ]
+     ]
+    ]
+   ],
+   [
+    "小米",
+    "xiaomi",
+    [
+     "Xiaomi",
+     "小米",
+     "红米",
+     "Redmi",
+     "米家"
+    ],
+    [
+     [
+      "汽车",
+      [
+       "小米SU7",
+       "小米SU7 Pro",
+       "小米SU7 Max",
+       "小米SU7 Ultra",
+       "小米YU7",
+       "小米YU7 Pro",
+       "小米YU7 Max"
+      ]
+     ],
+     [
+      "小米手机",
+      [
+       "小米18 Pro Max",
+       "小米18 Pro",
+       "小米18",
+       "小米17 Ultra",
+       "小米17 Pro Max",
+       "小米17 Pro",
+       "小米17",
+       "小米17T Pro",
+       "小米17T",
+       "小米15 Ultra",
+       "小米15 Pro",
+       "小米15",
+       "小米15S Pro",
+       "小米14 Ultra",
+       "小米14 Pro",
+       "小米14",
+       "小米13 Ultra",
+       "小米13 Pro",
+       "小米13",
+       "小米12S Ultra",
+       "小米12S Pro",
+       "小米12S",
+       "小米12 Pro",
+       "小米12",
+       "小米11 Ultra",
+       "小米11 Pro",
+       "小米11",
+       "小米10 Ultra",
+       "小米10 Pro",
+       "小米10",
+       "小米MIX Fold 4",
+       "小米MIX Fold 3",
+       "小米MIX Fold 2",
+       "小米MIX Flip 2",
+       "小米MIX Flip",
+       "小米MIX 4",
+       "小米Civi 4 Pro",
+       "小米Civi 3",
+       "小米Civi 2"
+      ]
+     ],
+     [
+      "Redmi",
+      [
+       "Redmi K80 Pro",
+       "Redmi K80",
+       "Redmi K70 Pro",
+       "Redmi K70 Ultra",
+       "Redmi K70",
+       "Redmi K60 Pro",
+       "Redmi K60 Ultra",
+       "Redmi K60",
+       "Redmi K50 Pro",
+       "Redmi K50",
+       "Redmi K40 Pro",
+       "Redmi K40",
+       "Redmi Turbo 4 Pro",
+       "Redmi Turbo 4",
+       "Redmi Turbo 3",
+       "Redmi Note 14 Pro+",
+       "Redmi Note 14 Pro",
+       "Redmi Note 14",
+       "Redmi Note 13 Pro+",
+       "Redmi Note 13 Pro",
+       "Redmi Note 13",
+       "Redmi Note 12 Turbo",
+       "Redmi Note 12 Pro",
+       "Redmi Note 11T Pro",
+       "Redmi Note 11 Pro",
+       "Redmi 14C",
+       "Redmi 13C",
+       "Redmi 12C"
+      ]
+     ],
+     [
+      "平板",
+      [
+       "小米平板 7 Pro",
+       "小米平板 7",
+       "小米平板 6S Pro",
+       "小米平板 6 Pro",
+       "小米平板 6",
+       "小米平板 5 Pro",
+       "Redmi Pad Pro",
+       "Redmi Pad SE"
+      ]
+     ],
+     [
+      "穿戴",
+      [
+       "小米手环 9 Pro",
+       "小米手环 9",
+       "小米手环 8 Pro",
+       "小米手表 S4",
+       "小米手表 S3",
+       "小米手表 S2",
+       "小米手表 Color 2"
+      ]
+     ],
+     [
+      "笔记本",
+      [
+       "Redmi Book Pro 16",
+       "Redmi Book Pro 14",
+       "Redmi Book 14",
+       "Redmi Book 16",
+       "小米笔记本 Pro 14",
+       "小米笔记本 Pro 16",
+       "小米笔记本 Air 13"
+      ]
+     ],
+     [
+      "电视",
+      [
+       "小米电视 S Pro Mini LED",
+       "小米电视 6 至尊版",
+       "小米电视 ES Pro",
+       "Redmi 智能电视 X 系列"
+      ]
+     ]
+    ]
+   ],
+   [
+    "华为",
+    "huawei",
+    [
+     "Huawei",
+     "华为",
+     "MateBook",
+     "Mate"
+    ],
+    [
+     [
+      "Mate 手机",
+      [
+       "Mate 90 RS 非凡大师",
+       "Mate 90 Pro Max",
+       "Mate 90 Pro",
+       "Mate 90",
+       "Mate 80 RS 非凡大师",
+       "Mate 80 Pro Max",
+       "Mate 80 Pro",
+       "Mate 80",
+       "Mate 70 Pro+",
+       "Mate 70 Pro",
+       "Mate 70",
+       "Mate 70 RS 非凡大师",
+       "Mate 60 Pro+",
+       "Mate 60 Pro",
+       "Mate 60",
+       "Mate 60 RS 非凡大师",
+       "Mate 50 Pro",
+       "Mate 50",
+       "Mate 40 Pro+",
+       "Mate 40 Pro",
+       "Mate 40",
+       "Mate 30 Pro",
+       "Mate 30"
+      ]
+     ],
+     [
+      "Pura 手机",
+      [
+       "Pura 90 Pro Max",
+       "Pura 90 Pro",
+       "Pura 90 Plus",
+       "Pura 90",
+       "Pura 80 Ultra",
+       "Pura 80 Pro+",
+       "Pura 80 Pro",
+       "Pura 80",
+       "Pura 70 Ultra",
+       "Pura 70 Pro+",
+       "Pura 70 Pro",
+       "Pura 70",
+       "P60 Pro",
+       "P60",
+       "P50 Pro",
+       "P50",
+       "P40 Pro+",
+       "P40 Pro",
+       "P40"
+      ]
+     ],
+     [
+      "折叠屏",
+      [
+       "Mate X7",
+       "Mate XT 非凡大师",
+       "Mate X6",
+       "Mate X5",
+       "Mate X3",
+       "Mate X2",
+       "Mate Xs 2",
+       "Pocket 2",
+       "nova Flip"
+      ]
+     ],
+     [
+      "nova",
+      [
+       "nova 16 Ultra",
+       "nova 16 Pro",
+       "nova 16",
+       "nova 16 SE",
+       "nova 16z",
+       "nova 15 Ultra",
+       "nova 15 Pro",
+       "nova 15",
+       "nova 14 Ultra",
+       "nova 14 Pro",
+       "nova 14",
+       "nova 13 Pro",
+       "nova 13",
+       "nova 12 Ultra",
+       "nova 12 Pro",
+       "nova 12",
+       "nova 11",
+       "nova 10 Pro",
+       "nova 9",
+       "nova 8",
+       "nova 7"
+      ]
+     ],
+     [
+      "笔记本",
+      [
+       "MateBook X Pro",
+       "MateBook X",
+       "MateBook 14",
+       "MateBook 16s",
+       "MateBook GT 14",
+       "MateBook D 14",
+       "MateBook D 16",
+       "MateBook E"
+      ]
+     ],
+     [
+      "平板",
+      [
+       "MatePad Pro 13.2",
+       "MatePad Pro 12.2",
+       "MatePad Pro 11",
+       "MatePad 11.5S",
+       "MatePad 11.5",
+       "MatePad 11",
+       "MatePad Air",
+       "MatePad SE"
+      ]
+     ],
+     [
+      "穿戴",
+      [
+       "WATCH 5",
+       "WATCH 4 Pro",
+       "WATCH 4",
+       "WATCH GT 5 Pro",
+       "WATCH GT 5",
+       "WATCH GT 4",
+       "WATCH GT 3 Pro",
+       "WATCH GT 3",
+       "WATCH Fit 3",
+       "WATCH Fit 2",
+       "WATCH D2",
+       "WATCH Ultimate"
+      ]
+     ],
+     [
+      "音频",
+      [
+       "FreeBuds Pro 4",
+       "FreeBuds Pro 3",
+       "FreeBuds 6i",
+       "FreeClip",
+       "FreeBuds SE 2"
+      ]
+     ],
+     [
+      "智慧屏",
+      [
+       "智慧屏 V5 Pro",
+       "智慧屏 V5",
+       "智慧屏 S5 Pro",
+       "智慧屏 SE3"
+      ]
+     ]
+    ]
+   ],
+   [
+    "三星",
+    "samsung",
+    [
+     "Samsung",
+     "三星",
+     "Galaxy"
+    ],
+    [
+     [
+      "Galaxy S",
+      [
+       "Galaxy S26 Ultra",
+       "Galaxy S26+",
+       "Galaxy S26",
+       "Galaxy S25 Ultra",
+       "Galaxy S25+",
+       "Galaxy S25",
+       "Galaxy S25 Edge",
+       "Galaxy S24 Ultra",
+       "Galaxy S24+",
+       "Galaxy S24",
+       "Galaxy S24 FE",
+       "Galaxy S23 Ultra",
+       "Galaxy S23+",
+       "Galaxy S23",
+       "Galaxy S23 FE",
+       "Galaxy S22 Ultra",
+       "Galaxy S22+",
+       "Galaxy S22",
+       "Galaxy S21 Ultra",
+       "Galaxy S21+",
+       "Galaxy S21",
+       "Galaxy S21 FE",
+       "Galaxy S20 Ultra",
+       "Galaxy S20+",
+       "Galaxy S20",
+       "Galaxy S20 FE",
+       "Galaxy S10+",
+       "Galaxy S10"
+      ]
+     ],
+     [
+      "Galaxy Z",
+      [
+       "Galaxy Z Fold8 Ultra",
+       "Galaxy Z Fold8",
+       "Galaxy Z Flip8",
+       "Galaxy Z Flip7",
+       "Galaxy Z Flip7 FE",
+       "Galaxy Z Fold7",
+       "Galaxy Z Fold6",
+       "Galaxy Z Fold5",
+       "Galaxy Z Fold4",
+       "Galaxy Z Fold3",
+       "Galaxy Z Fold2",
+       "Galaxy Z Flip6",
+       "Galaxy Z Flip5",
+       "Galaxy Z Flip4",
+       "Galaxy Z Flip3",
+       "Galaxy Z Flip 5G"
+      ]
+     ],
+     [
+      "Galaxy A",
+      [
+       "Galaxy A56",
+       "Galaxy A55",
+       "Galaxy A54",
+       "Galaxy A36",
+       "Galaxy A35",
+       "Galaxy A34",
+       "Galaxy A26",
+       "Galaxy A25",
+       "Galaxy A16",
+       "Galaxy A15",
+       "Galaxy A14",
+       "Galaxy A73",
+       "Galaxy A53",
+       "Galaxy A52"
+      ]
+     ],
+     [
+      "平板",
+      [
+       "Galaxy Tab S12 Ultra",
+       "Galaxy Tab S10 Ultra",
+       "Galaxy Tab S10+",
+       "Galaxy Tab S9 Ultra",
+       "Galaxy Tab S9+",
+       "Galaxy Tab S9",
+       "Galaxy Tab S9 FE",
+       "Galaxy Tab S8 Ultra",
+       "Galaxy Tab S8+",
+       "Galaxy Tab S8",
+       "Galaxy Tab A9+",
+       "Galaxy Tab A9"
+      ]
+     ],
+     [
+      "穿戴",
+      [
+       "Galaxy Watch7",
+       "Galaxy Watch6 Classic",
+       "Galaxy Watch6",
+       "Galaxy Watch5 Pro",
+       "Galaxy Watch5",
+       "Galaxy Watch Ultra",
+       "Galaxy Watch FE"
+      ]
+     ],
+     [
+      "音频",
+      [
+       "Galaxy Buds3 Pro",
+       "Galaxy Buds3",
+       "Galaxy Buds2 Pro",
+       "Galaxy Buds2",
+       "Galaxy Buds FE",
+       "Galaxy Buds Live"
+      ]
+     ],
+     [
+      "笔记本",
+      [
+       "Galaxy Book5 Pro 16",
+       "Galaxy Book5 Pro 360",
+       "Galaxy Book4 Ultra",
+       "Galaxy Book4 Pro",
+       "Galaxy Book4 Pro 360",
+       "Galaxy Book3 Ultra",
+       "Galaxy Book3 Pro"
+      ]
+     ]
+    ]
+   ],
+   [
+    "索尼",
+    "sony",
+    [
+     "Sony",
+     "索尼",
+     "PlayStation",
+     "PS5"
+    ],
+    [
+     [
+      "Xperia",
+      [
+       "Xperia 1 VI",
+       "Xperia 1 V",
+       "Xperia 1 IV",
+       "Xperia 1 III",
+       "Xperia 1 II",
+       "Xperia 5 V",
+       "Xperia 5 IV",
+       "Xperia 5 III",
+       "Xperia 10 VI",
+       "Xperia 10 V",
+       "Xperia 10 IV",
+       "Xperia Pro-I"
+      ]
+     ],
+     [
+      "耳机",
+      [
+       "WH-1000XM6",
+       "WH-1000XM5",
+       "WH-1000XM4",
+       "WH-1000XM3",
+       "WF-1000XM5",
+       "WF-1000XM4",
+       "LinkBuds S",
+       "LinkBuds",
+       "WF-C700N",
+       "WH-CH720N",
+       "WH-CH520"
+      ]
+     ],
+     [
+      "游戏机",
+      [
+       "PlayStation 5 Pro",
+       "PlayStation 5 Slim",
+       "PlayStation 5",
+       "PlayStation 4 Pro",
+       "PlayStation 4",
+       "PlayStation Portal",
+       "PlayStation VR2"
+      ]
+     ],
+     [
+      "相机",
+      [
+       "Alpha 1 II",
+       "Alpha 1",
+       "Alpha 9 III",
+       "Alpha 7R V",
+       "Alpha 7 IV",
+       "Alpha 7C II",
+       "Alpha 7C R",
+       "Alpha 7S III",
+       "Alpha 7 III",
+       "ZV-E1",
+       "ZV-E10 II",
+       "ZV-1 II",
+       "Alpha 6700",
+       "Alpha 6600",
+       "Alpha 6400"
+      ]
+     ],
+     [
+      "镜头",
+      [
+       "FE 24-70mm F2.8 GM II",
+       "FE 70-200mm F2.8 GM II",
+       "FE 50mm F1.2 GM",
+       "FE 85mm F1.4 GM II",
+       "FE 16-35mm F2.8 GM II",
+       "FE 100-400mm GM",
+       "FE 24-105mm F4 G"
+      ]
+     ],
+     [
+      "电视/音频",
+      [
+       "BRAVIA 9",
+       "BRAVIA 8",
+       "BRAVIA 7",
+       "X90L",
+       "HT-A7000",
+       "HT-A5000",
+       "SRS-XB100"
+      ]
+     ],
+     [
+      "Walkman",
+      [
+       "NW-WM1ZM2",
+       "NW-WM1AM2",
+       "NW-ZX707",
+       "NW-A306"
+      ]
+     ]
+    ]
+   ],
+   [
+    "联想",
+    "lenovo",
+    [
+     "Lenovo",
+     "联想",
+     "ThinkPad",
+     "小新"
+    ],
+    [
+     [
+      "ThinkPad",
+      [
+       "ThinkPad X1 Carbon Gen 13",
+       "ThinkPad X1 Carbon Gen 12",
+       "ThinkPad X1 Yoga Gen 9",
+       "ThinkPad X1 Nano",
+       "ThinkPad T14s Gen 5",
+       "ThinkPad T14 Gen 5",
+       "ThinkPad X13 Gen 5",
+       "ThinkPad P1 Gen 7",
+       "ThinkPad P16",
+       "ThinkPad E14",
+       "ThinkPad L14"
+      ]
+     ],
+     [
+      "小新",
+      [
+       "小新 Pro 14 2025",
+       "小新 Pro 16 2025",
+       "小新 Air 14",
+       "小新 Air 15",
+       "小新 16",
+       "小新 14",
+       "小新 Duet"
+      ]
+     ],
+     [
+      "YOGA",
+      [
+       "YOGA Pro 14s",
+       "YOGA Air 14",
+       "YOGA Slim 7 Pro X",
+       "YOGA 9i",
+       "YOGA Book 9i"
+      ]
+     ],
+     [
+      "拯救者",
+      [
+       "拯救者 Y9000P 2025",
+       "拯救者 Y7000P 2025",
+       "拯救者 R9000P 2025",
+       "拯救者 Y9000X",
+       "拯救者 R7000P",
+       "拯救者 刃 9000K",
+       "GeekPro"
+      ]
+     ],
+     [
+      "ThinkBook",
+      [
+       "ThinkBook 14+",
+       "ThinkBook 16+",
+       "ThinkBook 14",
+       "ThinkBook X"
+      ]
+     ],
+     [
+      "平板",
+      [
+       "小新 Pad Pro 12.7",
+       "小新 Pad Pro 12.6",
+       "小新 Pad 11",
+       "拯救者 Y700 三代"
+      ]
+     ],
+     [
+      "掌机",
+      [
+       "Legion Go",
+       "Legion Go S"
+      ]
+     ]
+    ]
+   ],
+   [
+    "戴尔",
+    "dell",
+    [
+     "Dell",
+     "戴尔",
+     "XPS"
+    ],
+    [
+     [
+      "XPS",
+      [
+       "XPS 13 (9350)",
+       "XPS 13 Plus",
+       "XPS 14 (9440)",
+       "XPS 16 (9640)",
+       "XPS 15 (9530)",
+       "XPS 17 (9730)",
+       "XPS 13 (9345)"
+      ]
+     ],
+     [
+      "Alienware",
+      [
+       "Alienware m16 R2",
+       "Alienware m18 R2",
+       "Alienware x16 R2",
+       "Alienware x14 R2",
+       "Alienware m15 R7",
+       "Alienware m17 R5",
+       "Alienware Aurora R16"
+      ]
+     ],
+     [
+      "Latitude",
+      [
+       "Latitude 7450",
+       "Latitude 7440",
+       "Latitude 7350",
+       "Latitude 5450",
+       "Latitude 3440"
+      ]
+     ],
+     [
+      "Precision",
+      [
+       "Precision 5680",
+       "Precision 7780",
+       "Precision 3591"
+      ]
+     ],
+     [
+      "灵越",
+      [
+       "灵越 14 Plus",
+       "灵越 16 Plus",
+       "灵越 14 Pro",
+       "灵越 16 Pro",
+       "灵越 15"
+      ]
+     ],
+     [
+      "显示器",
+      [
+       "UltraSharp U2723QE",
+       "UltraSharp U2724DE",
+       "Alienware AW3423DWF",
+       "UltraSharp U3223QE"
+      ]
+     ]
+    ]
+   ],
+   [
+    "惠普",
+    "hp",
+    [
+     "HP",
+     "惠普",
+     "Spectre"
+    ],
+    [
+     [
+      "Spectre",
+      [
+       "Spectre x360 14",
+       "Spectre x360 16",
+       "Spectre Fold"
+      ]
+     ],
+     [
+      "Envy",
+      [
+       "Envy x360 14",
+       "Envy x360 15",
+       "Envy 16",
+       "Envy 14"
+      ]
+     ],
+     [
+      "Pavilion",
+      [
+       "Pavilion Plus 14",
+       "Pavilion 15",
+       "Pavilion Aero 13"
+      ]
+     ],
+     [
+      "OMEN",
+      [
+       "OMEN 暗影精灵10",
+       "OMEN 暗影精灵9",
+       "OMEN 16",
+       "OMEN Transcend 14",
+       "OMEN 40L 台式机"
+      ]
+     ],
+     [
+      "Victus",
+      [
+       "Victus 16",
+       "Victus 15"
+      ]
+     ],
+     [
+      "轻薄本",
+      [
+       "星Book Pro 14",
+       "星Book Pro 16",
+       "星Book 14",
+       "EliteBook 840 G11",
+       "战66 七代"
+      ]
+     ],
+     [
+      "显示器",
+      [
+       "OMEN 27K",
+       "OMEN 27i",
+       "Z27k G3"
+      ]
+     ]
+    ]
+   ],
+   [
+    "华硕",
+    "asus",
+    [
+     "ASUS",
+     "华硕",
+     "ROG",
+     "天选"
+    ],
+    [
+     [
+      "ROG 游戏本",
+      [
+       "ROG Zephyrus G14 2025",
+       "ROG Zephyrus G16 2025",
+       "ROG Zephyrus G14 2024",
+       "ROG Flow X13",
+       "ROG Flow Z13",
+       "ROG Strix Scar 18",
+       "ROG Strix G16",
+       "ROG Strix G18",
+       "ROG 幻14",
+       "ROG 幻16"
+      ]
+     ],
+     [
+      "TUF/天选",
+      [
+       "TUF Gaming A15",
+       "TUF Gaming A16",
+       "TUF Gaming F16",
+       "天选 5 Pro",
+       "天选 5",
+       "天选 Air"
+      ]
+     ],
+     [
+      "轻薄本",
+      [
+       "Zenbook 14 OLED",
+       "Zenbook S 14",
+       "Zenbook Duo",
+       "Vivobook S 15",
+       "Vivobook S 14",
+       "Vivobook Pro 16X",
+       "灵耀 14",
+       "无畏 Pro 15"
+      ]
+     ],
+     [
+      "掌机",
+      [
+       "ROG Ally X",
+       "ROG Ally"
+      ]
+     ],
+     [
+      "手机",
+      [
+       "ROG Phone 9 Pro",
+       "ROG Phone 8 Pro",
+       "Zenfone 11 Ultra",
+       "Zenfone 10"
+      ]
+     ],
+     [
+      "显示器/主板",
+      [
+       "ROG Swift PG27AQDP",
+       "ROG Swift OLED PG32UCDM",
+       "ProArt PA32UCXR",
+       "ROG 主板 X870E Hero",
+       "ROG 主板 Z890 Hero"
+      ]
+     ]
+    ]
+   ],
+   [
+    "OPPO",
+    "oppo",
+    [
+     "OPPO",
+     "Find X",
+     "Reno"
+    ],
+    [
+     [
+      "Find X",
+      [
+       "Find X10 Pro Max",
+       "Find X10",
+       "Find X10 E",
+       "Find X9 Ultra",
+       "Find X9 Pro",
+       "Find X9",
+       "Find X9s Pro",
+       "Find X8 Ultra",
+       "Find X8 Pro",
+       "Find X8",
+       "Find X8s",
+       "Find X8s+",
+       "Find X7 Ultra",
+       "Find X7",
+       "Find X6 Pro",
+       "Find X6",
+       "Find X5 Pro",
+       "Find X5",
+       "Find X2 Pro",
+       "Find X2"
+      ]
+     ],
+     [
+      "折叠屏",
+      [
+       "Find N6",
+       "Find N5",
+       "Find N3 Flip",
+       "Find N3",
+       "Find N2 Flip",
+       "Find N2"
+      ]
+     ],
+     [
+      "Reno",
+      [
+       "Reno17 Pro",
+       "Reno17",
+       "Reno14 Pro",
+       "Reno14",
+       "Reno13 Pro",
+       "Reno13",
+       "Reno12 Pro",
+       "Reno12",
+       "Reno11 Pro",
+       "Reno11",
+       "Reno10 Pro+",
+       "Reno10 Pro",
+       "Reno10",
+       "Reno9 Pro+",
+       "Reno9",
+       "Reno8 Pro+",
+       "Reno8",
+       "Reno7",
+       "Reno6 Pro+"
+      ]
+     ],
+     [
+      "K/A 系列",
+      [
+       "K12",
+       "K12 Plus",
+       "K11",
+       "K10",
+       "A3 Pro",
+       "A2 Pro",
+       "A2",
+       "A1 Pro",
+       "A97"
+      ]
+     ],
+     [
+      "平板",
+      [
+       "OPPO Pad 6",
+       "OPPO Pad 3 Pro",
+       "OPPO Pad 3",
+       "OPPO Pad 2",
+       "OPPO Pad Air 2",
+       "OPPO Pad SE"
+      ]
+     ],
+     [
+      "穿戴/音频",
+      [
+       "Watch X2",
+       "Watch X",
+       "Watch 4 Pro",
+       "Watch SE",
+       "Enco X3",
+       "Enco Air4 Pro",
+       "Enco Free4"
+      ]
+     ]
+    ]
+   ],
+   [
+    "vivo",
+    "vivo",
+    [
+     "vivo",
+     "iQOO"
+    ],
+    [
+     [
+      "X 系列",
+      [
+       "X500",
+       "X200 Ultra",
+       "X200 Pro",
+       "X200 Pro mini",
+       "X200",
+       "X200s",
+       "X100 Ultra",
+       "X100 Pro",
+       "X100",
+       "X100s",
+       "X90 Pro+",
+       "X90 Pro",
+       "X90",
+       "X80 Pro",
+       "X80",
+       "X70 Pro+",
+       "X60 Pro+"
+      ]
+     ],
+     [
+      "折叠屏",
+      [
+       "X Fold5",
+       "X Fold3 Pro",
+       "X Fold3",
+       "X Fold2",
+       "X Flip"
+      ]
+     ],
+     [
+      "S 系列",
+      [
+       "S60",
+       "S30 Pro mini",
+       "S30",
+       "S20 Pro",
+       "S20",
+       "S19 Pro",
+       "S19",
+       "S18 Pro",
+       "S18",
+       "S17 Pro",
+       "S17",
+       "S16 Pro",
+       "S16",
+       "S15 Pro",
+       "S15"
+      ]
+     ],
+     [
+      "iQOO",
+      [
+       "iQOO 13",
+       "iQOO 12 Pro",
+       "iQOO 12",
+       "iQOO 11 Pro",
+       "iQOO 11",
+       "iQOO Neo10 Pro",
+       "iQOO Neo10",
+       "iQOO Neo9 Pro",
+       "iQOO Neo9",
+       "iQOO Neo8 Pro",
+       "iQOO Neo8",
+       "iQOO Z9 Turbo",
+       "iQOO Z9",
+       "iQOO Z8",
+       "iQOO Pad2 Pro",
+       "iQOO Pad2"
+      ]
+     ],
+     [
+      "Y 系列",
+      [
+       "Y300 Pro",
+       "Y300",
+       "Y200 GT",
+       "Y200",
+       "Y100",
+       "Y78+"
+      ]
+     ],
+     [
+      "平板",
+      [
+       "vivo Pad5 Pro",
+       "vivo Pad5",
+       "vivo Pad3 Pro",
+       "vivo Pad2 Pro"
+      ]
+     ],
+     [
+      "穿戴/音频",
+      [
+       "vivo WATCH 5",
+       "vivo WATCH GT",
+       "TWS 4 Hi-Fi",
+       "TWS 4"
+      ]
+     ]
+    ]
+   ],
+   [
+    "一加",
+    "oneplus",
+    [
+     "OnePlus",
+     "一加"
+    ],
+    [
+     [
+      "数字旗舰",
+      [
+       "一加 16",
+       "一加 15",
+       "一加 15T",
+       "一加 13",
+       "一加 13T",
+       "一加 12",
+       "一加 12R",
+       "一加 11",
+       "一加 11R",
+       "一加 10 Pro",
+       "一加 10T",
+       "一加 10R",
+       "一加 9 Pro",
+       "一加 9",
+       "一加 9R",
+       "一加 8 Pro",
+       "一加 8T"
+      ]
+     ],
+     [
+      "Ace",
+      [
+       "一加 Ace 5 Pro",
+       "一加 Ace 5",
+       "一加 Ace 3 Pro",
+       "一加 Ace 3",
+       "一加 Ace 2 Pro",
+       "一加 Ace 2",
+       "一加 Ace Pro"
+      ]
+     ],
+     [
+      "Nord",
+      [
+       "OnePlus Nord 4",
+       "OnePlus Nord 3",
+       "OnePlus Nord 2T"
+      ]
+     ],
+     [
+      "音频",
+      [
+       "OnePlus Buds Pro 3",
+       "OnePlus Buds Pro 2",
+       "OnePlus Buds 3",
+       "OnePlus Nord Buds 3 Pro"
+      ]
+     ],
+     [
+      "平板",
+      [
+       "OnePlus Pad 2",
+       "OnePlus Pad",
+       "OnePlus Pad Go"
+      ]
+     ],
+     [
+      "手表",
+      [
+       "OnePlus Watch 3",
+       "OnePlus Watch 2",
+       "OnePlus Watch 2R"
+      ]
+     ]
+    ]
+   ],
+   [
+    "荣耀",
+    "honor",
+    [
+     "HONOR",
+     "荣耀",
+     "MagicBook",
+     "Magic"
+    ],
+    [
+     [
+      "WIN/Play",
+      [
+       "荣耀WIN2",
+       "荣耀Play11"
+      ]
+     ],
+     [
+      "Magic 系列",
+      [
+       "Magic9 Pro Max",
+       "Magic9",
+       "Magic8 RSR 保时捷设计",
+       "Magic8 Pro Air",
+       "Magic8 Pro",
+       "Magic8",
+       "Magic7 RSR 保时捷设计",
+       "Magic7 Pro",
+       "Magic7",
+       "Magic7 Lite",
+       "Magic6 RSR 保时捷设计",
+       "Magic6 Pro",
+       "Magic6",
+       "Magic6 Lite",
+       "Magic5 Pro",
+       "Magic5"
+      ]
+     ],
+     [
+      "折叠屏",
+      [
+       "Magic V3",
+       "Magic Vs3",
+       "Magic V2",
+       "Magic Vs2",
+       "Magic V Flip",
+       "Magic V Purse"
+      ]
+     ],
+     [
+      "数字系列",
+      [
+       "荣耀600 Pro",
+       "荣耀600",
+       "荣耀400 Pro",
+       "荣耀400",
+       "荣耀300 Ultra",
+       "荣耀300 Pro",
+       "荣耀300",
+       "荣耀200 Pro",
+       "荣耀200",
+       "荣耀200 Lite",
+       "荣耀100 Pro",
+       "荣耀100",
+       "荣耀90 Pro",
+       "荣耀90",
+       "荣耀80 Pro",
+       "荣耀80",
+       "荣耀70 Pro+",
+       "荣耀70",
+       "荣耀60 Pro",
+       "荣耀50 Pro",
+       "荣耀50"
+      ]
+     ],
+     [
+      "X 系列",
+      [
+       "荣耀X80 Pro Max",
+       "荣耀X70 Pro Max",
+       "荣耀X60 Pro",
+       "荣耀X60",
+       "荣耀X50 Pro",
+       "荣耀X50",
+       "荣耀X40 GT",
+       "荣耀X40",
+       "荣耀X30"
+      ]
+     ],
+     [
+      "笔记本",
+      [
+       "MagicBook Art 14",
+       "MagicBook Pro 16",
+       "MagicBook Pro 14",
+       "MagicBook 14",
+       "MagicBook X 16 Pro"
+      ]
+     ],
+     [
+      "平板",
+      [
+       "MagicPad 2",
+       "MagicPad 13",
+       "荣耀平板 V9",
+       "荣耀平板 9",
+       "荣耀平板 8"
+      ]
+     ],
+     [
+      "穿戴",
+      [
+       "荣耀手表 5 Ultra",
+       "荣耀手表 5",
+       "荣耀手表 4 Pro",
+       "荣耀手表 4",
+       "荣耀手表 GS 3",
+       "荣耀手环 9"
+      ]
+     ]
+    ]
+   ],
+   [
+    "大疆",
+    "dji",
+    [
+     "DJI",
+     "大疆",
+     "Mavic",
+     "Pocket",
+     "Osmo"
+    ],
+    [
+     [
+      "云台相机",
+      [
+       "Osmo Pocket 3",
+       "Osmo Pocket 2",
+       "Osmo Action 5 Pro",
+       "Osmo Action 4",
+       "Osmo Action 3",
+       "Osmo Mobile 7P",
+       "Osmo Mobile 6",
+       "Osmo Mobile SE"
+      ]
+     ],
+     [
+      "无人机",
+      [
+       "Mavic 3 Pro",
+       "Mavic 3 Classic",
+       "Mavic 3",
+       "Air 3S",
+       "Air 3",
+       "Air 2S",
+       "Mini 4 Pro",
+       "Mini 4K",
+       "Mini 3 Pro",
+       "Mini 3",
+       "Neo",
+       "Avata 2",
+       "Avata",
+       "Inspire 3"
+      ]
+     ],
+     [
+      "音频",
+      [
+       "DJI Mic 2",
+       "DJI Mic Mini",
+       "DJI Mic"
+      ]
+     ],
+     [
+      "手持/专业",
+      [
+       "Ronin 4D",
+       "RS 4 Pro",
+       "RS 4",
+       "RS 3 Mini",
+       "Ronin 2"
+      ]
+     ],
+     [
+      "运动相机",
+      [
+       "Osmo Nano",
+       "Action 2",
+       "Action 1"
+      ]
+     ]
+    ]
+   ],
+   [
+    "谷歌",
+    "google",
+    [
+     "Google",
+     "谷歌",
+     "Pixel"
+    ],
+    [
+     [
+      "Pixel",
+      [
+       "Pixel 9 Pro Fold",
+       "Pixel 9 Pro XL",
+       "Pixel 9 Pro",
+       "Pixel 9",
+       "Pixel 8 Pro",
+       "Pixel 8",
+       "Pixel 8a",
+       "Pixel 7 Pro",
+       "Pixel 7",
+       "Pixel 7a",
+       "Pixel 6 Pro",
+       "Pixel 6",
+       "Pixel 6a",
+       "Pixel 5",
+       "Pixel 4 XL",
+       "Pixel 4a"
+      ]
+     ],
+     [
+      "平板",
+      [
+       "Pixel Tablet"
+      ]
+     ],
+     [
+      "穿戴",
+      [
+       "Pixel Watch 3",
+       "Pixel Watch 2",
+       "Pixel Watch",
+       "Fitbit Charge 6",
+       "Fitbit Versa 4",
+       "Fitbit Sense 2"
+      ]
+     ],
+     [
+      "音频",
+      [
+       "Pixel Buds Pro 2",
+       "Pixel Buds Pro",
+       "Pixel Buds A-Series"
+      ]
+     ],
+     [
+      "笔记本",
+      [
+       "Pixelbook Go",
+       "Pixelbook"
+      ]
+     ],
+     [
+      "智能家居",
+      [
+       "Nest Hub (第2代)",
+       "Nest Audio",
+       "Nest Cam"
+      ]
+     ]
+    ]
+   ],
+   [
+    "雷蛇",
+    "razer",
+    [
+     "Razer",
+     "雷蛇",
+     "Blade"
+    ],
+    [
+     [
+      "游戏本",
+      [
+       "Blade 16 (2025)",
+       "Blade 14 (2025)",
+       "Blade 18 (2024)",
+       "Blade 15 (2022)",
+       "Blade 17 (2023)",
+       "Blade 13 Stealth"
+      ]
+     ],
+     [
+      "键盘",
+      [
+       "BlackWidow V4 Pro",
+       "BlackWidow V4 75%",
+       "Huntsman V3 Pro",
+       "Huntsman Mini",
+       "DeathStalker V2 Pro"
+      ]
+     ],
+     [
+      "鼠标",
+      [
+       "DeathAdder V3 Pro",
+       "Viper V3 Pro",
+       "Basilisk V3 Pro",
+       "Naga V2 Pro",
+       "Cobra Pro"
+      ]
+     ],
+     [
+      "耳机",
+      [
+       "Kraken V4 Pro",
+       "BlackShark V2 Pro",
+       "Barracuda Pro"
+      ]
+     ],
+     [
+      "手柄/掌机",
+      [
+       "Razer Edge",
+       "Kishi Ultra",
+       "Wolverine V3 Pro",
+       "Wolverine V3 Tournament"
+      ]
+     ]
+    ]
+   ],
+   [
+    "英特尔",
+    "intel",
+    [
+     "Intel",
+     "英特尔",
+     "酷睿",
+     "Core"
+    ],
+    [
+     [
+      "酷睿 Ultra 200S",
+      [
+       "Core Ultra 9 285K",
+       "Core Ultra 7 265K",
+       "Core Ultra 5 245K",
+       "Core Ultra 9 285H",
+       "Core Ultra 7 265H",
+       "Core Ultra 5 245H"
+      ]
+     ],
+     [
+      "酷睿 Ultra 100/200H",
+      [
+       "Core Ultra 9 185H",
+       "Core Ultra 7 155H",
+       "Core Ultra 5 125H",
+       "Core Ultra 7 258V",
+       "Core Ultra 5 228V"
+      ]
+     ],
+     [
+      "酷睿 14 代",
+      [
+       "i9-14900K",
+       "i9-14900KF",
+       "i7-14700K",
+       "i7-14700KF",
+       "i5-14600K",
+       "i5-14600KF",
+       "i5-14490F",
+       "i3-14100"
+      ]
+     ],
+     [
+      "酷睿 13 代",
+      [
+       "i9-13900K",
+       "i7-13700K",
+       "i5-13600K",
+       "i5-13490F",
+       "i3-13100"
+      ]
+     ],
+     [
+      "酷睿 12 代",
+      [
+       "i9-12900K",
+       "i7-12700K",
+       "i5-12600K",
+       "i5-12490F",
+       "i3-12100"
+      ]
+     ],
+     [
+      "酷睿 11/10 代",
+      [
+       "i9-11900K",
+       "i7-11700K",
+       "i5-11400F",
+       "i9-10900K",
+       "i7-10700K",
+       "i5-10400F"
+      ]
+     ],
+     [
+      "显卡",
+      [
+       "Arc B580",
+       "Arc B570",
+       "Arc A770",
+       "Arc A750",
+       "Arc A380"
+      ]
+     ]
+    ]
+   ],
+   [
+    "AMD",
+    "amd",
+    [
+     "AMD",
+     "锐龙",
+     "Ryzen",
+     "Radeon"
+    ],
+    [
+     [
+      "锐龙 9000",
+      [
+       "Ryzen 9 9950X3D",
+       "Ryzen 9 9950X",
+       "Ryzen 9 9900X3D",
+       "Ryzen 9 9900X",
+       "Ryzen 7 9800X3D",
+       "Ryzen 7 9700X",
+       "Ryzen 5 9600X"
+      ]
+     ],
+     [
+      "锐龙 7000",
+      [
+       "Ryzen 9 7950X3D",
+       "Ryzen 9 7950X",
+       "Ryzen 9 7900X",
+       "Ryzen 7 7800X3D",
+       "Ryzen 7 7700X",
+       "Ryzen 5 7600X"
+      ]
+     ],
+     [
+      "锐龙 5000/9000H",
+      [
+       "Ryzen 9 5950X",
+       "Ryzen 9 5900X",
+       "Ryzen 7 5800X3D",
+       "Ryzen 7 5700X",
+       "Ryzen 5 5600X",
+       "Ryzen 7 8845H",
+       "Ryzen 9 8945H"
+      ]
+     ],
+     [
+      "线程撕裂者",
+      [
+       "Threadripper 7980X",
+       "Threadripper 7970X",
+       "Threadripper 7960X",
+       "Threadripper PRO 7995WX"
+      ]
+     ],
+     [
+      "显卡",
+      [
+       "Radeon RX 9070 XT",
+       "Radeon RX 9070",
+       "Radeon RX 7900 XTX",
+       "Radeon RX 7900 XT",
+       "Radeon RX 7900 GRE",
+       "Radeon RX 7800 XT",
+       "Radeon RX 7700 XT",
+       "Radeon RX 7600",
+       "Radeon RX 6950 XT",
+       "Radeon RX 6800 XT",
+       "Radeon RX 6700 XT"
+      ]
+     ]
+    ]
+   ],
+   [
+    "英伟达",
+    "nvidia",
+    [
+     "NVIDIA",
+     "英伟达",
+     "GeForce",
+     "RTX",
+     "GTX"
+    ],
+    [
+     [
+      "RTX 50 系",
+      [
+       "GeForce RTX 5090",
+       "GeForce RTX 5080",
+       "GeForce RTX 5070 Ti",
+       "GeForce RTX 5070",
+       "GeForce RTX 5060 Ti",
+       "GeForce RTX 5060"
+      ]
+     ],
+     [
+      "RTX 40 系",
+      [
+       "GeForce RTX 4090",
+       "GeForce RTX 4080 SUPER",
+       "GeForce RTX 4080",
+       "GeForce RTX 4070 Ti SUPER",
+       "GeForce RTX 4070 SUPER",
+       "GeForce RTX 4070",
+       "GeForce RTX 4060 Ti",
+       "GeForce RTX 4060"
+      ]
+     ],
+     [
+      "RTX 30 系",
+      [
+       "GeForce RTX 3090 Ti",
+       "GeForce RTX 3090",
+       "GeForce RTX 3080 Ti",
+       "GeForce RTX 3080",
+       "GeForce RTX 3070 Ti",
+       "GeForce RTX 3070",
+       "GeForce RTX 3060 Ti",
+       "GeForce RTX 3060"
+      ]
+     ],
+     [
+      "笔记本 GPU",
+      [
+       "RTX 5090 笔记本",
+       "RTX 5080 笔记本",
+       "RTX 5070 Ti 笔记本",
+       "RTX 4090 笔记本",
+       "RTX 4080 笔记本",
+       "RTX 4070 笔记本",
+       "RTX 4060 笔记本"
+      ]
+     ],
+     [
+      "专业/嵌入式",
+      [
+       "RTX 6000 Ada",
+       "RTX 5000 Ada",
+       "Jetson Orin Nano",
+       "Jetson Orin NX"
+      ]
+     ]
+    ]
+   ],
+   [
+    "尼康",
+    "nikon",
+    [
+     "Nikon",
+     "尼康",
+     "Z6",
+     "Z7"
+    ],
+    [
+     [
+      "Z 微单",
+      [
+       "Nikon Z9",
+       "Nikon Z8",
+       "Nikon Z7 II",
+       "Nikon Z7",
+       "Nikon Z6 III",
+       "Nikon Z6 II",
+       "Nikon Z6",
+       "Nikon Z5",
+       "Nikon Zf",
+       "Nikon Z50 II",
+       "Nikon Z50",
+       "Nikon Z30",
+       "Nikon Zfc"
+      ]
+     ],
+     [
+      "单反",
+      [
+       "Nikon D6",
+       "Nikon D850",
+       "Nikon D780",
+       "Nikon D500",
+       "Nikon D7500",
+       "Nikon D5600"
+      ]
+     ],
+     [
+      "Z 镜头",
+      [
+       "NIKKOR Z 24-70mm f/2.8 S",
+       "NIKKOR Z 70-200mm f/2.8 S",
+       "NIKKOR Z 50mm f/1.2 S",
+       "NIKKOR Z 85mm f/1.2 S",
+       "NIKKOR Z 24-120mm f/4 S",
+       "NIKKOR Z 14-24mm f/2.8 S",
+       "NIKKOR Z 100-400mm f/4.5-5.6 VR S",
+       "NIKKOR Z 400mm f/4.5 VR S"
+      ]
+     ]
+    ]
+   ],
+   [
+    "富士",
+    "fujifilm",
+    [
+     "Fujifilm",
+     "富士",
+     "X100",
+     "GFX"
+    ],
+    [
+     [
+      "X 微单",
+      [
+       "X-T5",
+       "X-T50",
+       "X-T30 II",
+       "X-T4",
+       "X-H2S",
+       "X-H2",
+       "X-S20",
+       "X-S10",
+       "X-Pro3",
+       "X-E4",
+       "X100VI",
+       "X100V",
+       "X100F"
+      ]
+     ],
+     [
+      "GFX 中画幅",
+      [
+       "GFX100 II",
+       "GFX100S II",
+       "GFX100S",
+       "GFX 50S II",
+       "GFX 50R"
+      ]
+     ],
+     [
+      "镜头",
+      [
+       "XF 16-55mm F2.8 R LM WR II",
+       "XF 33mm F1.4 R LM WR",
+       "XF 56mm F1.2 R WR",
+       "XF 90mm F2 R LM WR",
+       "XF 8-16mm F2.8 R LM WR",
+       "GF 32-64mm F4 R LM WR",
+       "GF 45-100mm F4 R LM OIS WR"
+      ]
+     ],
+     [
+      "Instax",
+      [
+       "Instax mini 12",
+       "Instax mini 99",
+       "Instax Square SQ6",
+       "Instax Wide 400",
+       "Instax mini Evo"
+      ]
+     ]
+    ]
+   ],
+   [
+    "微软",
+    "microsoft",
+    [
+     "Microsoft",
+     "微软",
+     "Surface",
+     "Xbox"
+    ],
+    [
+     [
+      "Surface",
+      [
+       "Surface Pro 11",
+       "Surface Pro 10",
+       "Surface Pro 9",
+       "Surface Pro 8",
+       "Surface Laptop 7",
+       "Surface Laptop 6",
+       "Surface Laptop 5",
+       "Surface Laptop Studio 2",
+       "Surface Laptop Go 3",
+       "Surface Go 3",
+       "Surface Duo 2",
+       "Surface Studio 2+"
+      ]
+     ],
+     [
+      "Xbox",
+      [
+       "Xbox Series X",
+       "Xbox Series S",
+       "Xbox Series X 2TB",
+       "Xbox One X",
+       "Xbox One S",
+       "Xbox Elite 无线控制器 2代",
+       "Xbox 无线控制器"
+      ]
+     ],
+     [
+      "配件",
+      [
+       "Surface Arc Mouse",
+       "Surface Pen 2",
+       "Surface 触控笔"
+      ]
+     ]
+    ]
+   ],
+   [
+    "佳能",
+    "canon",
+    [
+     "Canon",
+     "佳能",
+     "EOS",
+     "R5",
+     "R6"
+    ],
+    [
+     [
+      "EOS R 微单",
+      [
+       "Canon EOS R1",
+       "Canon EOS R5 Mark II",
+       "Canon EOS R5",
+       "Canon EOS R5 C",
+       "Canon EOS R6 Mark II",
+       "Canon EOS R6",
+       "Canon EOS R7",
+       "Canon EOS R8",
+       "Canon EOS R10",
+       "Canon EOS R50",
+       "Canon EOS R100",
+       "Canon EOS RP",
+       "Canon EOS R3"
+      ]
+     ],
+     [
+      "单反",
+      [
+       "Canon EOS 5D Mark IV",
+       "Canon EOS 6D Mark II",
+       "Canon EOS 90D",
+       "Canon EOS 850D",
+       "Canon EOS 200D II",
+       "Canon EOS-1D X Mark III"
+      ]
+     ],
+     [
+      "RF 镜头",
+      [
+       "RF 24-70mm F2.8 L IS USM",
+       "RF 70-200mm F2.8 L IS USM",
+       "RF 15-35mm F2.8 L IS USM",
+       "RF 50mm F1.2 L USM",
+       "RF 85mm F1.2 L USM",
+       "RF 24-105mm F4 L IS USM",
+       "RF 100-500mm F4.5-7.1 L IS USM",
+       "RF-S 18-45mm F4.5-6.3 IS STM"
+      ]
+     ],
+     [
+      "卡片机",
+      [
+       "PowerShot G7 X Mark III",
+       "PowerShot G5 X Mark II",
+       "PowerShot V1"
+      ]
+     ]
+    ]
+   ],
+   [
+    "任天堂",
+    "nintendo",
+    [
+     "Nintendo",
+     "任天堂",
+     "Switch",
+     "NS",
+     "NS2",
+     "NS OLED",
+     "OLED"
+    ],
+    [
+     [
+      "游戏机",
+      [
+       "Nintendo Switch 2",
+       "Nintendo Switch OLED",
+       "Nintendo Switch 续航版",
+       "Nintendo Switch Lite",
+       "Nintendo Switch"
+      ]
+     ],
+     [
+      "手柄/配件",
+      [
+       "Switch 2 Pro 手柄",
+       "Switch Pro 手柄",
+       "Joy-Con 2",
+       "Joy-Con",
+       "GameCube 手柄",
+       "Switch 健身环"
+      ]
+     ]
+    ]
+   ]
+  ],
+  "car": [
+   [
+    "特斯拉",
+    "tesla",
+    [
+     "Tesla",
+     "特斯拉",
+     "Model 3",
+     "Model Y",
+     "Model S",
+     "Model X"
+    ],
+    [
+     [
+      "轿车",
+      [
+       "Model S",
+       "Model S Plaid",
+       "Model 3",
+       "Model 3 焕新版",
+       "Model 3 高性能版"
+      ]
+     ],
+     [
+      "SUV",
+      [
+       "Model X",
+       "Model X Plaid",
+       "Model Y",
+       "Model Y 焕新版",
+       "Model Y L"
+      ]
+     ],
+     [
+      "皮卡/跑车",
+      [
+       "Cybertruck",
+       "Roadster",
+       "Semi"
+      ]
+     ]
+    ]
+   ],
+   [
+    "宝马",
+    "bmw",
+    [
+     "BMW",
+     "宝马"
+    ],
+    [
+     [
+      "轿车",
+      [
+       "1系",
+       "2系",
+       "3系",
+       "3系Li",
+       "4系 Gran Coupe",
+       "5系",
+       "5系Li",
+       "7系",
+       "8系 Gran Coupe",
+       "i3",
+       "i4",
+       "i5",
+       "i7"
+      ]
+     ],
+     [
+      "SUV",
+      [
+       "X1",
+       "X2",
+       "X3",
+       "X4",
+       "X5",
+       "X6",
+       "X7",
+       "XM",
+       "iX1",
+       "iX3",
+       "iX",
+       "iX5"
+      ]
+     ],
+     [
+      "跑车/性能",
+      [
+       "M2",
+       "M3",
+       "M4",
+       "M5",
+       "M8",
+       "Z4",
+       "M4 CSL"
+      ]
+     ],
+     [
+      "其它",
+      [
+       "2系 Active Tourer",
+       "X1 xDrive25Li",
+       "XM Label Red"
+      ]
+     ]
+    ]
+   ],
+   [
+    "奥迪",
+    "audi",
+    [
+     "Audi",
+     "奥迪"
+    ],
+    [
+     [
+      "轿车",
+      [
+       "A3",
+       "A4L",
+       "A5",
+       "A6L",
+       "A7",
+       "A8L",
+       "e-tron GT",
+       "A6 e-tron",
+       "A6L e-tron"
+      ]
+     ],
+     [
+      "SUV",
+      [
+       "Q2L",
+       "Q3",
+       "Q5L",
+       "Q6L e-tron",
+       "Q7",
+       "Q8",
+       "Q4 e-tron",
+       "Q5 e-tron",
+       "Q6 e-tron",
+       "Q8 e-tron"
+      ]
+     ],
+     [
+      "性能",
+      [
+       "S3",
+       "S4",
+       "S5",
+       "S6",
+       "S7",
+       "S8",
+       "RS3",
+       "RS4",
+       "RS5",
+       "RS6",
+       "RS7",
+       "R8",
+       "SQ5",
+       "SQ7"
+      ]
+     ]
+    ]
+   ],
+   [
+    "大众",
+    "volkswagen",
+    [
+     "Volkswagen",
+     "大众",
+     "VW",
+     "Golf",
+     "Passat"
+    ],
+    [
+     [
+      "轿车",
+      [
+       "Polo",
+       "高尔夫",
+       "速腾",
+       "迈腾",
+       "帕萨特",
+       "凌渡L",
+       "CC",
+       "辉昂",
+       "ID.3",
+       "ID.7 VIZZION"
+      ]
+     ],
+     [
+      "SUV",
+      [
+       "探歌",
+       "探岳",
+       "途观L",
+       "途观L Pro",
+       "途昂",
+       "途锐",
+       "揽境",
+       "揽巡",
+       "ID.4 CROZZ",
+       "ID.4 X",
+       "ID.6 CROZZ",
+       "ID.6 X",
+       "ID.UNYX 与众"
+      ]
+     ],
+     [
+      "MPV",
+      [
+       "威然",
+       "途安L"
+      ]
+     ],
+     [
+      "性能",
+      [
+       "高尔夫 GTI",
+       "高尔夫 R",
+       "ID.Buzz"
+      ]
+     ]
+    ]
+   ],
+   [
+    "丰田",
+    "toyota",
+    [
+     "Toyota",
+     "丰田",
+     "Camry",
+     "Corolla",
+     "RAV4"
+    ],
+    [
+     [
+      "轿车",
+      [
+       "卡罗拉",
+       "雷凌",
+       "凯美瑞",
+       "亚洲龙",
+       "皇冠",
+       "普锐斯",
+       "bZ3",
+       "铂智7"
+      ]
+     ],
+     [
+      "SUV",
+      [
+       "RAV4荣放",
+       "威兰达",
+       "汉兰达",
+       "皇冠陆放",
+       "普拉多",
+       "兰德酷路泽",
+       "锋兰达",
+       "C-HR",
+       "bZ4X",
+       "铂智3X",
+       "铂智4X"
+      ]
+     ],
+     [
+      "MPV",
+      [
+       "赛那",
+       "埃尔法",
+       "格瑞维亚"
+      ]
+     ],
+     [
+      "皮卡/性能",
+      [
+       "坦途",
+       "GR86",
+       "GR Supra",
+       "GR Yaris",
+       "GR Corolla"
+      ]
+     ]
+    ]
+   ],
+   [
+    "本田",
+    "honda",
+    [
+     "Honda",
+     "本田",
+     "Civic",
+     "Accord",
+     "CR-V"
+    ],
+    [
+     [
+      "轿车",
+      [
+       "思域",
+       "型格",
+       "雅阁",
+       "英仕派",
+       "飞度",
+       "凌派",
+       "享域"
+      ]
+     ],
+     [
+      "SUV",
+      [
+       "CR-V",
+       "皓影",
+       "HR-V",
+       "XR-V",
+       "冠道",
+       "UR-V",
+       "缤智",
+       "ZR-V 致在"
+      ]
+     ],
+     [
+      "MPV",
+      [
+       "奥德赛",
+       "艾力绅"
+      ]
+     ],
+     [
+      "性能/新能源",
+      [
+       "思域 Type R FL5",
+       "e:NS1",
+       "e:NP1 极湃1",
+       "极湃2",
+       "P7",
+       "S7"
+      ]
+     ],
+     [
+      "摩托",
+      [
+       "CBR650R",
+       "CB650R",
+       "PCX 160",
+       "NSS 350"
+      ]
+     ]
+    ]
+   ],
+   [
+    "日产",
+    "nissan",
+    [
+     "Nissan",
+     "日产",
+     "GT-R"
+    ],
+    [
+     [
+      "轿车",
+      [
+       "轩逸",
+       "天籁",
+       "骐达",
+       "蓝鸟",
+       "N7"
+      ]
+     ],
+     [
+      "SUV",
+      [
+       "逍客",
+       "奇骏",
+       "劲客",
+       "途达",
+       "探陆",
+       "Ariya 艾睿雅",
+       "N6"
+      ]
+     ],
+     [
+      "性能",
+      [
+       "GT-R",
+       "370Z",
+       "Z"
+      ]
+     ]
+    ]
+   ],
+   [
+    "福特",
+    "ford",
+    [
+     "Ford",
+     "福特",
+     "Mustang"
+    ],
+    [
+     [
+      "轿车",
+      [
+       "福克斯",
+       "蒙迪欧",
+       "金牛座"
+      ]
+     ],
+     [
+      "SUV",
+      [
+       "锐际",
+       "领裕",
+       "探险者",
+       "翼虎",
+       "领界",
+       "Equator"
+      ]
+     ],
+     [
+      "皮卡",
+      [
+       "F-150",
+       "F-150 Raptor",
+       "F-150 Lightning",
+       "Ranger",
+       "Ranger Raptor",
+       "Maverick"
+      ]
+     ],
+     [
+      "性能",
+      [
+       "Mustang",
+       "Mustang GT",
+       "Mustang Dark Horse",
+       "Mustang Mach 1"
+      ]
+     ],
+     [
+      "新能源",
+      [
+       "Mustang Mach-E 电马",
+       "Capri EV",
+       "Explorer EV"
+      ]
+     ]
+    ]
+   ],
+   [
+    "雪佛兰",
+    "chevrolet",
+    [
+     "Chevrolet",
+     "雪佛兰",
+     "Camaro"
+    ],
+    [
+     [
+      "轿车",
+      [
+       "科鲁泽",
+       "迈锐宝XL",
+       "科沃兹",
+       "畅巡"
+      ]
+     ],
+     [
+      "SUV",
+      [
+       "探界者",
+       "创酷",
+       "开拓者",
+       "星迈罗",
+       "Equinox EV",
+       "Blazer EV",
+       "Traverse"
+      ]
+     ],
+     [
+      "皮卡",
+      [
+       "Silverado",
+       "Colorado",
+       "Silverado EV"
+      ]
+     ],
+     [
+      "性能",
+      [
+       "Camaro",
+       "Corvette C8",
+       "Corvette Z06",
+       "Corvette E-Ray"
+      ]
+     ]
+    ]
+   ],
+   [
+    "保时捷",
+    "porsche",
+    [
+     "Porsche",
+     "保时捷",
+     "911",
+     "Taycan"
+    ],
+    [
+     [
+      "911",
+      [
+       "911 Carrera",
+       "911 Carrera S",
+       "911 Carrera GTS",
+       "911 Turbo S",
+       "911 GT3",
+       "911 GT3 RS",
+       "911 Dakar",
+       "911 Targa 4 GTS"
+      ]
+     ],
+     [
+      "718",
+      [
+       "718 Cayman",
+       "718 Cayman GTS",
+       "718 Boxster",
+       "718 Spyder RS"
+      ]
+     ],
+     [
+      "轿车",
+      [
+       "Panamera",
+       "Panamera Turbo S",
+       "Taycan",
+       "Taycan 4S",
+       "Taycan Turbo S",
+       "Taycan Cross Turismo"
+      ]
+     ],
+     [
+      "SUV",
+      [
+       "Macan",
+       "Macan EV",
+       "Macan 4S",
+       "Cayenne",
+       "Cayenne Coupe",
+       "Cayenne Turbo GT"
+      ]
+     ]
+    ]
+   ],
+   [
+    "沃尔沃",
+    "volvo",
+    [
+     "Volvo",
+     "沃尔沃"
+    ],
+    [
+     [
+      "轿车",
+      [
+       "S60",
+       "S90",
+       "ES90"
+      ]
+     ],
+     [
+      "SUV",
+      [
+       "XC40",
+       "XC60",
+       "XC90",
+       "EX30",
+       "EX90",
+       "EC40"
+      ]
+     ],
+     [
+      "旅行车/MPV",
+      [
+       "V60",
+       "V90 Cross Country",
+       "EM90"
+      ]
+     ]
+    ]
+   ],
+   [
+    "极星",
+    "polestar",
+    [
+     "Polestar",
+     "极星"
+    ],
+    [
+     [
+      "车型",
+      [
+       "Polestar 1",
+       "Polestar 2",
+       "Polestar 3",
+       "Polestar 4",
+       "Polestar 5",
+       "Polestar 6"
+      ]
+     ]
+    ]
+   ],
+   [
+    "马自达",
+    "mazda",
+    [
+     "Mazda",
+     "马自达"
+    ],
+    [
+     [
+      "轿车",
+      [
+       "MAZDA3 昂克赛拉",
+       "MAZDA6 阿特兹",
+       "EZ-6"
+      ]
+     ],
+     [
+      "SUV",
+      [
+       "CX-30",
+       "CX-5",
+       "CX-50 行也",
+       "CX-60",
+       "CX-90",
+       "CX-4",
+       "EZ-60"
+      ]
+     ],
+     [
+      "跑车",
+      [
+       "MX-5",
+       "MX-30"
+      ]
+     ]
+    ]
+   ],
+   [
+    "斯巴鲁",
+    "subaru",
+    [
+     "Subaru",
+     "斯巴鲁"
+    ],
+    [
+     [
+      "SUV",
+      [
+       "森林人",
+       "傲虎",
+       "XV 旭豹",
+       "Crosstrek",
+       "Solterra",
+       "Uncharted"
+      ]
+     ],
+     [
+      "轿车",
+      [
+       "力狮",
+       "WRX",
+       "LEVORG"
+      ]
+     ],
+     [
+      "跑车",
+      [
+       "BRZ",
+       "Impreza 翼豹"
+      ]
+     ]
+    ]
+   ],
+   [
+    "起亚",
+    "kia",
+    [
+     "Kia",
+     "起亚"
+    ],
+    [
+     [
+      "轿车",
+      [
+       "K3",
+       "K5",
+       "K8",
+       "斯汀格 Stinger"
+      ]
+     ],
+     [
+      "SUV",
+      [
+       "狮铂拓界 Sportage",
+       "赛图斯 Seltos",
+       "智跑 Ace",
+       "傲跑",
+       "EV5",
+       "EV6",
+       "EV9",
+       "索兰托 Sorento"
+      ]
+     ],
+     [
+      "MPV",
+      [
+       "嘉华 Carnival"
+      ]
+     ],
+     [
+      "性能",
+      [
+       "Stinger GT",
+       "EV6 GT"
+      ]
+     ]
+    ]
+   ],
+   [
+    "现代",
+    "hyundai",
+    [
+     "Hyundai",
+     "现代"
+    ],
+    [
+     [
+      "轿车",
+      [
+       "伊兰特",
+       "索纳塔",
+       "名图",
+       "IONIQ 6"
+      ]
+     ],
+     [
+      "SUV",
+      [
+       "途胜L",
+       "ix35",
+       "胜达",
+       "帕里斯帝",
+       "IONIQ 5",
+       "IONIQ 9"
+      ]
+     ],
+     [
+      "MPV",
+      [
+       "库斯途"
+      ]
+     ],
+     [
+      "性能",
+      [
+       "Elantra N",
+       "i30 N",
+       "IONIQ 5 N"
+      ]
+     ]
+    ]
+   ],
+   [
+    "法拉利",
+    "ferrari",
+    [
+     "Ferrari",
+     "法拉利"
+    ],
+    [
+     [
+      "跑车",
+      [
+       "F8 Tributo",
+       "F8 Spider",
+       "296 GTB",
+       "296 GTS",
+       "Roma",
+       "Roma Spider",
+       "12Cilindri",
+       "12Cilindri Spider",
+       "812 Superfast",
+       "812 Competizione"
+      ]
+     ],
+     [
+      "混动/旗舰",
+      [
+       "SF90 Stradale",
+       "SF90 XX Stradale",
+       "LaFerrari",
+       "Daytona SP3",
+       "P80/C"
+      ]
+     ],
+     [
+      "SUV",
+      [
+       "Purosangue"
+      ]
+     ]
+    ]
+   ],
+   [
+    "兰博基尼",
+    "lamborghini",
+    [
+     "Lamborghini",
+     "兰博基尼",
+     "Urus"
+    ],
+    [
+     [
+      "跑车",
+      [
+       "Revuelto",
+       "Temerario",
+       "Huracán EVO",
+       "Huracán STO",
+       "Huracán Sterrato",
+       "Aventador SVJ",
+       "Sián",
+       "Countach LPI 800-4"
+      ]
+     ],
+     [
+      "SUV",
+      [
+       "Urus",
+       "Urus SE",
+       "Urus Performante"
+      ]
+     ]
+    ]
+   ],
+   [
+    "玛莎拉蒂",
+    "maserati",
+    [
+     "Maserati",
+     "玛莎拉蒂"
+    ],
+    [
+     [
+      "轿车",
+      [
+       "Ghibli",
+       "Quattroporte"
+      ]
+     ],
+     [
+      "SUV",
+      [
+       "Grecale",
+       "Levante",
+       "Grecale Folgore"
+      ]
+     ],
+     [
+      "跑车",
+      [
+       "MC20",
+       "MC20 Cielo",
+       "GranTurismo",
+       "GranTurismo Folgore",
+       "GranCabrio"
+      ]
+     ]
+    ]
+   ],
+   [
+    "宾利",
+    "bentley",
+    [
+     "Bentley",
+     "宾利"
+    ],
+    [
+     [
+      "跑车",
+      [
+       "Continental GT",
+       "Continental GTC",
+       "Mulliner Batur",
+       "Bacalar"
+      ]
+     ],
+     [
+      "轿车",
+      [
+       "Flying Spur",
+       "Flying Spur Mulliner"
+      ]
+     ],
+     [
+      "SUV",
+      [
+       "Bentayga",
+       "Bentayga EWB",
+       "Bentayga S"
+      ]
+     ]
+    ]
+   ],
+   [
+    "劳斯莱斯",
+    "rollsroyce",
+    [
+     "Rolls-Royce",
+     "劳斯莱斯"
+    ],
+    [
+     [
+      "轿车",
+      [
+       "Phantom",
+       "Phantom Extended",
+       "Ghost",
+       "Ghost Black Badge",
+       "Ghost Extended"
+      ]
+     ],
+     [
+      "SUV",
+      [
+       "Cullinan",
+       "Cullinan Series II"
+      ]
+     ],
+     [
+      "跑车/纯电",
+      [
+       "Spectre",
+       "Spectre Black Badge",
+       "Dawn",
+       "Wraith",
+       "Boat Tail"
+      ]
+     ]
+    ]
+   ],
+   [
+    "迈凯伦",
+    "mclaren",
+    [
+     "McLaren",
+     "迈凯伦"
+    ],
+    [
+     [
+      "跑车",
+      [
+       "750S",
+       "750S Spider",
+       "720S",
+       "765LT",
+       "Artura",
+       "Artura Spider",
+       "GT",
+       "GTS"
+      ]
+     ],
+     [
+      "旗舰",
+      [
+       "Senna",
+       "P1",
+       "Speedtail",
+       "Sabre"
+      ]
+     ]
+    ]
+   ],
+   [
+    "阿斯顿马丁",
+    "astonmartin",
+    [
+     "Aston Martin",
+     "阿斯顿马丁"
+    ],
+    [
+     [
+      "跑车",
+      [
+       "DB12",
+       "DB12 Volante",
+       "Vantage",
+       "Vantage Roadster",
+       "Vanquish"
+      ]
+     ],
+     [
+      "SUV",
+      [
+       "DBX707",
+       "DBX"
+      ]
+     ],
+     [
+      "旗舰",
+      [
+       "Valhalla",
+       "Valkyrie",
+       "DBS Superleggera"
+      ]
+     ]
+    ]
+   ],
+   [
+    "比亚迪",
+    "byd",
+    [
+     "BYD",
+     "比亚迪",
+     "海豹"
+    ],
+    [
+     [
+      "王朝-轿车",
+      [
+       "秦PLUS DM-i",
+       "秦PLUS EV",
+       "秦L DM-i",
+       "秦L EV",
+       "汉EV",
+       "汉DM-i",
+       "汉L EV",
+       "汉L DM-i"
+      ]
+     ],
+     [
+      "王朝-SUV",
+      [
+       "唐DM-i",
+       "唐EV",
+       "唐L DM-i",
+       "唐L EV",
+       "宋PLUS DM-i",
+       "宋PLUS EV",
+       "宋L DM-i",
+       "宋Pro DM-i",
+       "元PLUS",
+       "元UP"
+      ]
+     ],
+     [
+      "海洋",
+      [
+       "海鸥",
+       "海豚",
+       "海豹",
+       "海豹06 DM-i",
+       "海豹07 DM-i",
+       "海狮05 DM-i",
+       "海狮06",
+       "海狮07 EV",
+       "驱逐舰05",
+       "护卫舰07"
+      ]
+     ],
+     [
+      "高端",
+      [
+       "仰望U8",
+       "仰望U9",
+       "方程豹 豹5",
+       "方程豹 豹8",
+       "腾势D9",
+       "腾势N7",
+       "腾势Z9",
+       "腾势Z9GT"
+      ]
+     ]
+    ]
+   ],
+   [
+    "蔚来",
+    "nio",
+    [
+     "NIO",
+     "蔚来",
+     "ES6",
+     "ES8",
+     "ET5",
+     "ET7"
+    ],
+    [
+     [
+      "轿车",
+      [
+       "ET5",
+       "ET5T",
+       "ET7",
+       "ET9"
+      ]
+     ],
+     [
+      "SUV",
+      [
+       "ES6",
+       "EC6",
+       "ES7",
+       "EC7",
+       "ES8"
+      ]
+     ],
+     [
+      "子品牌",
+      [
+       "乐道 L60",
+       "乐道 L90",
+       "firefly 萤火虫"
+      ]
+     ]
+    ]
+   ],
+   [
+    "小鹏",
+    "xpeng",
+    [
+     "XPeng",
+     "小鹏"
+    ],
+    [
+     [
+      "轿车",
+      [
+       "P7",
+       "P7i",
+       "新P7",
+       "P7+",
+       "MONA M03"
+      ]
+     ],
+     [
+      "SUV",
+      [
+       "G6",
+       "G7",
+       "G9"
+      ]
+     ],
+     [
+      "MPV",
+      [
+       "X9",
+       "X9 超级增程"
+      ]
+     ]
+    ]
+   ],
+   [
+    "理想",
+    "li-auto",
+    [
+     "Li Auto",
+     "理想"
+    ],
+    [
+     [
+      "SUV",
+      [
+       "理想L6",
+       "理想L7",
+       "理想L8",
+       "理想L9",
+       "理想L9 2025"
+      ]
+     ],
+     [
+      "纯电",
+      [
+       "理想i8",
+       "理想i6"
+      ]
+     ],
+     [
+      "MPV",
+      [
+       "理想MEGA"
+      ]
+     ]
+    ]
+   ],
+   [
+    "奔驰",
+    "mercedes-benz",
+    [
+     "Mercedes",
+     "Benz",
+     "奔驰"
+    ],
+    [
+     [
+      "轿车",
+      [
+       "A级",
+       "C级",
+       "C级L",
+       "E级",
+       "E级L",
+       "S级",
+       "迈巴赫 S 级",
+       "CLE"
+      ]
+     ],
+     [
+      "SUV",
+      [
+       "GLA",
+       "GLB",
+       "GLC",
+       "GLC Coupe",
+       "GLE",
+       "GLS",
+       "迈巴赫 GLS",
+       "G级",
+       "纯电G级"
+      ]
+     ],
+     [
+      "新能源",
+      [
+       "EQE",
+       "EQE SUV",
+       "EQS",
+       "EQS SUV",
+       "EQB",
+       "EQA",
+       "全新纯电 CLA"
+      ]
+     ],
+     [
+      "性能",
+      [
+       "AMG A35",
+       "AMG A45",
+       "AMG C43",
+       "AMG C63",
+       "AMG E53",
+       "AMG GT",
+       "AMG SL",
+       "AMG G63"
+      ]
+     ]
+    ]
+   ],
+   [
+    "路虎",
+    "land-rover",
+    [
+     "Land Rover",
+     "路虎",
+     "揽胜",
+     "卫士"
+    ],
+    [
+     [
+      "卫士",
+      [
+       "卫士 90",
+       "卫士 110",
+       "卫士 130",
+       "卫士 Octa"
+      ]
+     ],
+     [
+      "揽胜",
+      [
+       "揽胜",
+       "揽胜运动版",
+       "揽胜星脉",
+       "揽胜极光L",
+       "揽胜纯电"
+      ]
+     ],
+     [
+      "发现",
+      [
+       "发现",
+       "发现运动版"
+      ]
+     ]
+    ]
+   ],
+   [
+    "捷豹",
+    "jaguar",
+    [
+     "Jaguar",
+     "捷豹"
+    ],
+    [
+     [
+      "轿车",
+      [
+       "XE",
+       "XF",
+       "XJ"
+      ]
+     ],
+     [
+      "SUV",
+      [
+       "E-Pace",
+       "F-Pace",
+       "I-Pace"
+      ]
+     ],
+     [
+      "跑车/新能源",
+      [
+       "F-Type",
+       "I-Pace EV400",
+       "Type 00"
+      ]
+     ]
+    ]
+   ]
+  ],
+  "bike": [
+   [
+    "捷安特",
+    "giant",
+    [
+     "Giant",
+     "捷安特",
+     "ATX",
+     "TCR",
+     "Defy"
+    ],
+    [
+     [
+      "公路车",
+      [
+       "TCR Advanced SL",
+       "TCR Advanced Pro",
+       "TCR Advanced",
+       "Propel Advanced SL",
+       "Propel Advanced",
+       "Defy Advanced Pro",
+       "Defy Advanced",
+       "Contend SL",
+       "Contend AR",
+       "Contend"
+      ]
+     ],
+     [
+      "山地车",
+      [
+       "Trance X Advanced Pro",
+       "Trance X",
+       "Trance",
+       "Anthem Advanced Pro",
+       "Anthem",
+       "Reign Advanced",
+       "Reign",
+       "Stance",
+       "Fathom",
+       "Talon",
+       "ATX 810",
+       "ATX 720"
+      ]
+     ],
+     [
+      "砾石/城市",
+      [
+       "Revolt Advanced",
+       "Revolt",
+       "FastRoad Advanced",
+       "FastRoad",
+       "Escape 1",
+       "Escape 2",
+       "Roam",
+       "Rove"
+      ]
+     ],
+     [
+      "电助力",
+      [
+       "Trance X E+",
+       "Reign E+",
+       "Explore E+",
+       "FastRoad E+",
+       "Vall E+"
+      ]
+     ],
+     [
+      "儿童",
+      [
+       "XTC Jr 26",
+       "XTC Jr 24",
+       "XTC Jr 20",
+       "Animator"
+      ]
+     ]
+    ]
+   ],
+   [
+    "美利达",
+    "merida",
+    [
+     "Merida",
+     "美利达",
+     "斯特拉",
+     "挑战者"
+    ],
+    [
+     [
+      "公路车",
+      [
+       "Scultura Team",
+       "Scultura 9000",
+       "Scultura 6000",
+       "Scultura 4000",
+       "Reacto Team",
+       "Reacto 8000",
+       "Reacto 5000",
+       "Scultura Endurance 4000",
+       "Mission CX"
+      ]
+     ],
+     [
+      "山地车",
+      [
+       "Big Nine 9000",
+       "Big Nine 6000",
+       "Big Nine 300",
+       "Big Trail 500",
+       "One-Twenty",
+       "One-Forty",
+       "One-Sixty",
+       "One-Sixty 8000"
+      ]
+     ],
+     [
+      "砾石/城市",
+      [
+       "Silex 7000",
+       "Silex 400",
+       "Crossway 100",
+       "Crossway 500",
+       "Explorer 300",
+       "City 100"
+      ]
+     ],
+     [
+      "电助力",
+      [
+       "eSpresso CC",
+       "eSpresso City",
+       "eBig Nine",
+       "eOne-Sixty"
+      ]
+     ],
+     [
+      "儿童",
+      [
+       "Matts J20",
+       "Matts J24",
+       "Matts J26"
+      ]
+     ]
+    ]
+   ],
+   [
+    "崔克",
+    "trek",
+    [
+     "Trek",
+     "崔克",
+     "Madone",
+     "Domane"
+    ],
+    [
+     [
+      "公路车",
+      [
+       "Madone SLR 9",
+       "Madone SLR 7",
+       "Madone SL 7",
+       "Emonda SLR 9",
+       "Emonda SL 7",
+       "Domane SLR 9",
+       "Domane SL 7",
+       "Domane AL 5"
+      ]
+     ],
+     [
+      "砾石",
+      [
+       "Checkpoint SLR 9",
+       "Checkpoint SL 7",
+       "Checkpoint ALR 5",
+       "Boone 7"
+      ]
+     ],
+     [
+      "山地车",
+      [
+       "Supercaliber SLR 9.9",
+       "Fuel EX 9.9",
+       "Fuel EX 8",
+       "Remedy 9.8",
+       "Slash 9.9",
+       "Top Fuel 9.8",
+       "Marlin 8",
+       "Marlin 7",
+       "Marlin 5",
+       "X-Caliber 9",
+       "Roscoe 9"
+      ]
+     ],
+     [
+      "城市/通勤",
+      [
+       "FX 3",
+       "FX 2",
+       "FX 1",
+       "Dual Sport 3",
+       "Dual Sport 2",
+       "Verve+ 3",
+       "Verve 3"
+      ]
+     ],
+     [
+      "电助力",
+      [
+       "Rail 9.9",
+       "Rail 7",
+       "Powerfly 5",
+       "Domane+ SLR 9",
+       "Allant+ 9"
+      ]
+     ],
+     [
+      "儿童",
+      [
+       "Precaliber 24",
+       "Precaliber 20",
+       "Precaliber 16"
+      ]
+     ]
+    ]
+   ],
+   [
+    "闪电",
+    "specialized",
+    [
+     "Specialized",
+     "闪电",
+     "Tarmac",
+     "Roubaix"
+    ],
+    [
+     [
+      "公路车",
+      [
+       "Tarmac SL8 S-Works",
+       "Tarmac SL8 Pro",
+       "Tarmac SL7 Comp",
+       "Roubaix S-Works",
+       "Roubaix SL8 Expert",
+       "Aethos S-Works",
+       "Allez Sprint",
+       "Allez"
+      ]
+     ],
+     [
+      "砾石",
+      [
+       "Diverge STR Pro",
+       "Diverge Comp",
+       "Crux S-Works",
+       "Crux Expert"
+      ]
+     ],
+     [
+      "山地车",
+      [
+       "Epic 8 S-Works",
+       "Epic EVO Pro",
+       "Stumpjumper Pro",
+       "Stumpjumper EVO",
+       "Rockhopper Expert",
+       "Rockhopper Comp",
+       "Fuse 27.5",
+       "Status 160"
+      ]
+     ],
+     [
+      "电助力",
+      [
+       "Turbo Levo Pro",
+       "Turbo Levo Comp",
+       "Turbo Kenevo SL",
+       "Turbo Vado SL",
+       "Turbo Como"
+      ]
+     ],
+     [
+      "城市/通勤",
+      [
+       "Sirrus X 5.0",
+       "Sirrus 3.0",
+       "Roll 3.0"
+      ]
+     ],
+     [
+      "儿童",
+      [
+       "Riprock 24",
+       "Riprock 20"
+      ]
+     ]
+    ]
+   ],
+   [
+    "喜德盛",
+    "xds",
+    [
+     "XDS",
+     "喜德盛"
+    ],
+    [
+     [
+      "公路车",
+      [
+       "RC300",
+       "RC500",
+       "RC700",
+       "RS300",
+       "RS700",
+       "RS800",
+       "AD300",
+       "AD350",
+       "RT800",
+       "RT900"
+      ]
+     ],
+     [
+      "山地车",
+      [
+       "传奇 500",
+       "传奇 700",
+       "英雄 300",
+       "英雄 600",
+       "MT1",
+       "MT2",
+       "MT3",
+       "MT5",
+       "猎人 700"
+      ]
+     ],
+     [
+      "砾石/旅行",
+      [
+       "GT300",
+       "GT500",
+       "旅行者 300"
+      ]
+     ],
+     [
+      "通勤/城市",
+      [
+       "逐日 300",
+       "逐日 500",
+       "极速 380",
+       "极速 500"
+      ]
+     ],
+     [
+      "儿童/折叠",
+      [
+       "小骑士 20",
+       "小骑士 24",
+       "折叠车 F1"
+      ]
+     ]
+    ]
+   ],
+   [
+    "永久",
+    "forever",
+    [
+     "Forever",
+     "永久"
+    ],
+    [
+     [
+      "通勤车",
+      [
+       "永久 C 型",
+       "永久 N 型",
+       "永久 F 型",
+       "永久 28 大杠",
+       "永久 26 寸城市车"
+      ]
+     ],
+     [
+      "山地车",
+      [
+       "永久山地车 M 系列",
+       "永久 MTB 27.5",
+       "永久 MTB 29"
+      ]
+     ],
+     [
+      "折叠车",
+      [
+       "永久折叠车 14 寸",
+       "永久折叠车 16 寸",
+       "永久折叠车 20 寸"
+      ]
+     ],
+     [
+      "电助力",
+      [
+       "永久电助力 T 系列",
+       "永久电助力城市车"
+      ]
+     ]
+    ]
+   ],
+   [
+    "凤凰",
+    "phoenix",
+    [
+     "Phoenix",
+     "凤凰"
+    ],
+    [
+     [
+      "通勤车",
+      [
+       "凤凰牌 28 寸",
+       "凤凰牌 26 寸",
+       "凤凰牌城市车",
+       "凤凰牌复古车"
+      ]
+     ],
+     [
+      "山地车",
+      [
+       "凤凰山地车 26 寸",
+       "凤凰山地车 27.5 寸"
+      ]
+     ],
+     [
+      "折叠车",
+      [
+       "凤凰折叠车 14 寸",
+       "凤凰折叠车 16 寸",
+       "凤凰折叠车 20 寸"
+      ]
+     ],
+     [
+      "电助力/儿童",
+      [
+       "凤凰电助力车",
+       "凤凰儿童车 16 寸",
+       "凤凰儿童车 20 寸"
+      ]
+     ]
+    ]
+   ],
+   [
+    "迪卡侬",
+    "decathlon",
+    [
+     "Decathlon",
+     "迪卡侬",
+     "Rockrider"
+    ],
+    [
+     [
+      "公路车",
+      [
+       "Triban RC100",
+       "Triban RC120",
+       "Triban RC500",
+       "Triban RC520",
+       "Van Rysel EDR CF",
+       "Van Rysel NCR CF",
+       "Van Rysel RCR"
+      ]
+     ],
+     [
+      "山地车",
+      [
+       "Rockrider ST100",
+       "Rockrider ST120",
+       "Rockrider ST500",
+       "Rockrider ST530",
+       "Rockrider ST900",
+       "Rockrider AM100"
+      ]
+     ],
+     [
+      "城市/折叠",
+      [
+       "Elops 100",
+       "Elops 120",
+       "Elops 500",
+       "Elops 900",
+       "Tilt 100",
+       "Tilt 120",
+       "Tilt 500"
+      ]
+     ],
+     [
+      "电助力",
+      [
+       "Elops 920 E",
+       "Elops 900 E",
+       "Rockrider E-ST 500"
+      ]
+     ],
+     [
+      "儿童",
+      [
+       "Btwin 14 寸",
+       "Btwin 16 寸",
+       "Btwin 20 寸",
+       "Btwin 24 寸"
+      ]
+     ]
+    ]
+   ],
+   [
+    "坎洋",
+    "canyon",
+    [
+     "Canyon",
+     "坎洋"
+    ],
+    [
+     [
+      "公路车",
+      [
+       "Ultimate CF SLX 9",
+       "Ultimate CF SL 8",
+       "Aeroad CFR",
+       "Aeroad CF SLX 8",
+       "Speedmax CF SLX",
+       "Endurace CF SLX 9",
+       "Endurace CF 8"
+      ]
+     ],
+     [
+      "砾石",
+      [
+       "Grail CF SLX 8",
+       "Grail CF SL 7",
+       "Grizl CF SLX 8",
+       "Grizl AL 6"
+      ]
+     ],
+     [
+      "山地车",
+      [
+       "Spectral CF 9",
+       "Spectral 125",
+       "Neuron CF 9",
+       "Stoic 4",
+       "Torque 5",
+       "Strive 6",
+       "Sender CFR"
+      ]
+     ],
+     [
+      "电助力",
+      [
+       "Spectral:ON CF 9",
+       "Torque:ON 8",
+       "Grail:ON CF 8",
+       "Pathlite:ON 7"
+      ]
+     ],
+     [
+      "城市",
+      [
+       "Commuter 7",
+       "Pathlite 6",
+       "Roadlite 7"
+      ]
+     ]
+    ]
+   ],
+   [
+    "斯科特",
+    "scott",
+    [
+     "Scott",
+     "斯科特"
+    ],
+    [
+     [
+      "公路车",
+      [
+       "Foil RC Ultimate",
+       "Foil RC 10",
+       "Addict RC Ultimate",
+       "Addict RC 15",
+       "Addict 20",
+       "Speedster 10"
+      ]
+     ],
+     [
+      "砾石",
+      [
+       "Addict Gravel 10",
+       "Addict Gravel 20",
+       "Speedster Gravel 20"
+      ]
+     ],
+     [
+      "山地车",
+      [
+       "Spark RC World Cup",
+       "Spark RC 900",
+       "Spark 910",
+       "Genius 910",
+       "Scale 910",
+       "Scale 940",
+       "Aspect 940",
+       "Patrol 920"
+      ]
+     ],
+     [
+      "电助力",
+      [
+       "Patron eRIDE 900",
+       "Strike eRIDE 910",
+       "Addict eRIDE 10"
+      ]
+     ],
+     [
+      "城市/儿童",
+      [
+       "Sub Cross 40",
+       "Silence eRIDE",
+       "Roxter 24"
+      ]
+     ]
+    ]
+   ],
+   [
+    "比安奇",
+    "bianchi",
+    [
+     "Bianchi",
+     "比安奇"
+    ],
+    [
+     [
+      "公路车",
+      [
+       "Oltre RC",
+       "Oltre XR4",
+       "Specialissima RC",
+       "Sprint",
+       "Infinito XE",
+       "Impulso 105",
+       "Via Nirone 7",
+       "Aria"
+      ]
+     ],
+     [
+      "砾石",
+      [
+       "Impulso Allroad",
+       "Arcadex",
+       "Ekar"
+      ]
+     ],
+     [
+      "电助力",
+      [
+       "e-Oltre",
+       "e-Impulso",
+       "E-Sprint",
+       "T-Tronik"
+      ]
+     ],
+     [
+      "城市",
+      [
+       "Roma",
+       "C-Sport",
+       "Via Nirone 7 城市版"
+      ]
+     ]
+    ]
+   ],
+   [
+    "皮纳瑞罗",
+    "pinarello",
+    [
+     "Pinarello",
+     "皮纳瑞罗"
+    ],
+    [
+     [
+      "公路车",
+      [
+       "Dogma F",
+       "Dogma F12",
+       "Dogma X",
+       "Prince",
+       "Bolide F",
+       "Paris",
+       "Xolar",
+       "Gan"
+      ]
+     ],
+     [
+      "砾石",
+      [
+       "Grevil F",
+       "Grevil"
+      ]
+     ],
+     [
+      "电助力",
+      [
+       "Nytro E",
+       "Dyodo"
+      ]
+     ],
+     [
+      "通勤",
+      [
+       "Treviso",
+       "Razha"
+      ]
+     ]
+    ]
+   ],
+   [
+    "奥贝亚",
+    "orbea",
+    [
+     "Orbea",
+     "奥贝亚"
+    ],
+    [
+     [
+      "公路车",
+      [
+       "Orca Aero",
+       "Orca",
+       "Orca M",
+       "Avant",
+       "Terra"
+      ]
+     ],
+     [
+      "砾石",
+      [
+       "Terra Hydro",
+       "Terra M"
+      ]
+     ],
+     [
+      "山地车",
+      [
+       "Oiz",
+       "Occam",
+       "Occam SL",
+       "Rallon",
+       "Wild"
+      ]
+     ],
+     [
+      "电助力",
+      [
+       "Rise",
+       "Rise LT",
+       "Wild FS",
+       "Urrun",
+       "Gain",
+       "Kemen E"
+      ]
+     ],
+     [
+      "城市",
+      [
+       "Kemen",
+       "Vector",
+       "Carpe"
+      ]
+     ]
+    ]
+   ],
+   [
+    "佳能戴尔",
+    "cannondale",
+    [
+     "Cannondale",
+     "佳能戴尔"
+    ],
+    [
+     [
+      "公路车",
+      [
+       "SuperSix EVO Lab71",
+       "SuperSix EVO",
+       "Synapse",
+       "CAAD13",
+       "CAAD Optimo",
+       "SystemSix"
+      ]
+     ],
+     [
+      "砾石",
+      [
+       "Topstone Carbon",
+       "Topstone Alloy",
+       "SuperX"
+      ]
+     ],
+     [
+      "山地车",
+      [
+       "Scalpel",
+       "Scalpel SE",
+       "Habit",
+       "Trail",
+       "Moterra"
+      ]
+     ],
+     [
+      "电助力",
+      [
+       "Moterra SL",
+       "Topstone Neo",
+       "Synapse Neo",
+       "Tesoro Neo"
+      ]
+     ],
+     [
+      "城市",
+      [
+       "Quick",
+       "Treadwell",
+       "Adventure"
+      ]
+     ]
+    ]
+   ],
+   [
+    "梅花",
+    "colnago",
+    [
+     "Colnago",
+     "梅花"
+    ],
+    [
+     [
+      "公路车",
+      [
+       "C68",
+       "V4Rs",
+       "V3Rs",
+       "C-RS",
+       "Concept",
+       "ACR",
+       "Master X-Light"
+      ]
+     ],
+     [
+      "砾石",
+      [
+       "G3-X",
+       "C68 Gravel"
+      ]
+     ],
+     [
+      "电助力",
+      [
+       "V3 Disc E",
+       "e-Master"
+      ]
+     ],
+     [
+      "经典/城市",
+      [
+       "Master",
+       "Super"
+      ]
+     ]
+    ]
+   ],
+   [
+    "布洛普顿",
+    "brompton",
+    [
+     "Brompton",
+     "布洛普顿"
+    ],
+    [
+     [
+      "折叠车",
+      [
+       "C Line",
+       "P Line",
+       "T Line",
+       "A Line",
+       "Explore"
+      ]
+     ],
+     [
+      "电助力",
+      [
+       "Electric C Line",
+       "Electric P Line",
+       "Electric T Line"
+      ]
+     ],
+     [
+      "特别版",
+      [
+       "Brompton x Barbour",
+       "Brompton x CHPT3",
+       "Brompton 12 速"
+      ]
+     ]
+    ]
+   ],
+   [
+    "禧玛诺",
+    "shimano",
+    [
+     "Shimano",
+     "禧玛诺",
+     "Dura-Ace",
+     "Ultegra"
+    ],
+    [
+     [
+      "公路套件",
+      [
+       "Dura-Ace Di2 R9200",
+       "Dura-Ace R9100",
+       "Ultegra Di2 R8100",
+       "Ultegra R8000",
+       "105 Di2 R7100",
+       "105 R7000",
+       "Tiagra 4700",
+       "Sora R3000",
+       "Claris R2000"
+      ]
+     ],
+     [
+      "砾石套件",
+      [
+       "GRX Di2 RX825",
+       "GRX RX820",
+       "GRX RX600"
+      ]
+     ],
+     [
+      "山地套件",
+      [
+       "XTR Di2 M9250",
+       "XTR M9100",
+       "Deore XT Di2 M8250",
+       "Deore XT M8100",
+       "SLX M7100",
+       "Deore M6100",
+       "Alivio M3100"
+      ]
+     ],
+     [
+      "电助力/城市",
+      [
+       "STEPS EP8",
+       "STEPS EP6",
+       "STEPS E6100",
+       "Nexus 8",
+       "Alfine 11"
+      ]
+     ]
+    ]
+   ]
+  ]
+ }
+}

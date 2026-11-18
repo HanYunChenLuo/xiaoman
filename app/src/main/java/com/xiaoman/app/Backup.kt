@@ -23,103 +23,23 @@ import javax.crypto.spec.SecretKeySpec
 
 /** 官方 .ias 备份：WinZip AES-256 加密的 zip，内含 data.json 与 images/。 */
 object Backup {
-    private val PASSWORD: ByteArray = "iAsset#Support@2025!".toByteArray(StandardCharsets.UTF_8)
-    private const val ITER = 1000
-
     class Parsed(@JvmField var root: JSONObject, @JvmField val images: MutableMap<String, ByteArray>)
-
-    private class Entry(val name: String, val data: ByteArray, val method: Int)
 
     // ---------------- 读取 ----------------
     @JvmStatic
     fun readIas(zip: ByteArray): Parsed {
-        val entries = readEntries(zip)
-        val json = entries["data.json"] ?: throw Exception("data.json not found")
-        val p = Parsed(JSONObject(String(json, StandardCharsets.UTF_8)), HashMap())
-        for ((k, v) in entries) if (k.startsWith("images/")) p.images[k] = v
+        val obj = JSONObject(NativeCore.decodeIas(zip))
+        val data = obj.opt("data") ?: throw Exception("data.json not found")
+        val p = Parsed(JSONObject(data.toString()), HashMap())
+        val images = obj.optJSONObject("images")
+        if (images != null) {
+            val keys = images.keys()
+            while (keys.hasNext()) {
+                val k = keys.next()
+                p.images[k] = android.util.Base64.decode(images.optString(k), android.util.Base64.DEFAULT)
+            }
+        }
         return p
-    }
-
-    private fun readEntries(zip: ByteArray): Map<String, ByteArray> {
-        val out = HashMap<String, ByteArray>()
-        var off = 0
-        while (off + 30 <= zip.size) {
-            if (u32(zip, off) != 0x04034b50L) break
-            val flags = u16(zip, off + 6)
-            val method = u16(zip, off + 8)
-            val csize = u32(zip, off + 18)
-            val nlen = u16(zip, off + 26)
-            val xlen = u16(zip, off + 28)
-            val name = String(zip, off + 30, nlen, StandardCharsets.UTF_8)
-            val extraStart = off + 30 + nlen
-            val dataStart = extraStart + xlen
-            if (method == 99 && csize > 28) {
-                val actual = aesMethod(zip, extraStart, xlen)
-                val payload = zip.copyOfRange(dataStart, dataStart + csize.toInt())
-                val comp = aesDecrypt(payload)
-                out[name] = if (actual == 8) inflateBytes(comp) else comp
-            } else if ((method == 0 || method == 8) && csize > 0) {
-                val payload = zip.copyOfRange(dataStart, dataStart + csize.toInt())
-                out[name] = if (method == 8) inflateBytes(payload) else payload
-            }
-            if ((flags and 8) != 0 && csize == 0L) break
-            off = dataStart + csize.toInt()
-        }
-        return out
-    }
-
-    private fun aesMethod(zip: ByteArray, extraStart: Int, xlen: Int): Int {
-        var p = extraStart
-        val end = extraStart + xlen
-        while (p + 4 <= end) {
-            val id = u16(zip, p)
-            val sz = u16(zip, p + 2)
-            if (id == 0x9901 && sz >= 7) return u16(zip, p + 4 + 5)
-            p += 4 + sz
-        }
-        return 8
-    }
-
-    private fun aesDecrypt(entry: ByteArray): ByteArray {
-        val salt = entry.copyOfRange(0, 16)
-        val pvv = entry.copyOfRange(16, 18)
-        val cipher = entry.copyOfRange(18, entry.size - 10)
-        val auth = entry.copyOfRange(entry.size - 10, entry.size)
-        val dk = pbkdf2(salt, 66)
-        if (dk[64] != pvv[0] || dk[65] != pvv[1]) throw Exception("bad password")
-        val mac = Mac.getInstance("HmacSHA1")
-        mac.init(SecretKeySpec(dk.copyOfRange(32, 64), "HmacSHA1"))
-        val digest = mac.doFinal(cipher)
-        for (i in 0 until 10) if (digest[i] != auth[i]) throw Exception("auth failed")
-        return ctr(dk.copyOfRange(0, 32), cipher)
-    }
-
-    private fun ctr(key: ByteArray, data: ByteArray): ByteArray {
-        val ecb = Cipher.getInstance("AES/ECB/NoPadding")
-        ecb.init(Cipher.ENCRYPT_MODE, SecretKeySpec(key, "AES"))
-        val out = ByteArray(data.size)
-        val counter = ByteArray(16)
-        counter[0] = 1
-        val ks = ByteArray(16)
-        var i = 0
-        while (i < data.size) {
-            ecb.doFinal(counter, 0, 16, ks, 0)
-            val n = Math.min(16, data.size - i)
-            for (j in 0 until n) out[i + j] = (data[i + j].toInt() xor ks[j].toInt()).toByte()
-            for (j in 0 until 16) {
-                counter[j] = (counter[j] + 1).toByte()
-                if (counter[j].toInt() != 0) break
-            }
-            i += 16
-        }
-        return out
-    }
-
-    private fun pbkdf2(salt: ByteArray, len: Int): ByteArray {
-        val f = SecretKeyFactory.getInstance("PBKDF2WithHmacSHA1")
-        return f.generateSecret(
-            PBEKeySpec(String(PASSWORD, StandardCharsets.UTF_8).toCharArray(), salt, ITER, len * 8)
-        ).encoded
     }
 
     // ---------------- 导入 ----------------
@@ -323,13 +243,13 @@ object Backup {
     // ---------------- 导出 ----------------
     @JvmStatic
     fun writeIas(store: Store): ByteArray {
-        val entryFiles = ArrayList<Entry>()
+        val images = LinkedHashMap<String, ByteArray>()
         val imageRecords = ArrayList<JSONObject>()
 
         val root = JSONObject()
         root.put("categories", categories(store))
         root.put("tags", tags(store))
-        root.put("assets", assets(store, entryFiles, imageRecords))
+        root.put("assets", assets(store, images, imageRecords))
         root.put("asset_images", JSONArray(imageRecords))
         root.put("usages", usages(store))
         root.put("income_categories", incomeCategories(store))
@@ -342,10 +262,15 @@ object Backup {
         root.put("version", "1.0.0")
         root.put("exported_at", System.currentTimeMillis() / 1000)
 
-        val entries = ArrayList<Entry>()
-        entries.add(Entry("data.json", root.toString().toByteArray(StandardCharsets.UTF_8), 8))
-        entries.addAll(entryFiles)
-        return zipEncrypted(entries)
+        val imageArr = JSONArray()
+        for ((name, bytes) in images) {
+            imageArr.put(
+                JSONObject().put("name", name)
+                    .put("data", android.util.Base64.encodeToString(bytes, android.util.Base64.NO_WRAP))
+            )
+        }
+        val payload = JSONObject().put("data", root).put("images", imageArr).toString()
+        return NativeCore.encodeIas(payload)
     }
 
     private fun categories(store: Store): JSONArray {
@@ -464,7 +389,7 @@ object Backup {
         return out
     }
 
-    private fun assets(store: Store, entryFiles: MutableList<Entry>, imageRecords: MutableList<JSONObject>): JSONArray {
+    private fun assets(store: Store, imagesOut: MutableMap<String, ByteArray>, imageRecords: MutableList<JSONObject>): JSONArray {
         val out = JSONArray()
         var sort = 0
         var imgId = 0
@@ -480,7 +405,7 @@ object Backup {
                 val f = File(coverPath)
                 if (f.exists()) {
                     coverName = "images/" + a.optString("id") + "_cover" + ext(coverPath)
-                    entryFiles.add(Entry(coverName, readFile(f), 0))
+                    imagesOut[coverName] = readFile(f)
                     imageRecords.add(
                         JSONObject().put("id", "img_" + imgId++)
                             .put("asset_id", a.optString("id")).put("image_name", coverName)
@@ -497,7 +422,7 @@ object Backup {
                 val f = File(p)
                 if (!f.exists()) continue
                 val nm = "images/" + a.optString("id") + "_note" + i + ext(p)
-                entryFiles.add(Entry(nm, readFile(f), 0))
+                imagesOut[nm] = readFile(f)
                 noteNames.put(nm)
                 imageRecords.add(
                     JSONObject().put("id", "img_" + imgId++)
@@ -566,114 +491,6 @@ object Backup {
         }
     }
 
-    // ---------------- zip 写入（多条目，AES-256） ----------------
-    private class ZipEntry {
-        var name: String = ""
-        var payload: ByteArray = ByteArray(0)
-        var crc: Long = 0
-        var usize: Long = 0
-        var offset: Long = 0
-        var time: Int = 0
-        var date: Int = 0
-        var extra: ByteArray = ByteArray(0)
-    }
-
-    private fun zipEncrypted(entries: List<Entry>): ByteArray {
-        val zip = ByteArrayOutputStream()
-        val meta = ArrayList<ZipEntry>()
-        val time = dosTime()
-        val date = dosDate()
-
-        for (e in entries) {
-            val name = e.name
-            val data = e.data
-            val method = e.method
-            val extra = byteArrayOf(
-                0x01, 0x99.toByte(), 0x07, 0x00, 0x01, 0x00,
-                0x41, 0x45, 0x03, method.toByte(), 0x00
-            )
-            val content = if (method == 8) deflate(data) else data
-
-            val salt = ByteArray(16)
-            SecureRandom().nextBytes(salt)
-            val dk = pbkdf2(salt, 66)
-            val enc = ctr(dk.copyOfRange(0, 32), content)
-            val mac = Mac.getInstance("HmacSHA1")
-            mac.init(SecretKeySpec(dk.copyOfRange(32, 64), "HmacSHA1"))
-            val auth = mac.doFinal(enc).copyOfRange(0, 10)
-            val payload = ByteArrayOutputStream()
-            payload.write(salt)
-            payload.write(dk[64].toInt())
-            payload.write(dk[65].toInt())
-            payload.write(enc)
-            payload.write(auth)
-            val bytes = payload.toByteArray()
-            val crc = CRC32()
-            crc.update(data)
-
-            val z = ZipEntry()
-            z.name = name
-            z.payload = bytes
-            z.crc = crc.value
-            z.usize = data.size.toLong()
-            z.time = time
-            z.date = date
-            z.offset = zip.size().toLong()
-            z.extra = extra.copyOf()
-            meta.add(z)
-
-            val nm = name.toByteArray(StandardCharsets.UTF_8)
-            writeU32(zip, 0x04034b50L)
-            writeU16(zip, 51)
-            writeU16(zip, 0x0801)
-            writeU16(zip, 99)
-            writeU16(zip, time)
-            writeU16(zip, date)
-            writeU32(zip, z.crc)
-            writeU32(zip, bytes.size.toLong())
-            writeU32(zip, data.size.toLong())
-            writeU16(zip, nm.size)
-            writeU16(zip, extra.size)
-            zip.write(nm)
-            zip.write(extra)
-            zip.write(bytes)
-        }
-
-        val cdStart = zip.size().toLong()
-        for (z in meta) {
-            val nm = z.name.toByteArray(StandardCharsets.UTF_8)
-            writeU32(zip, 0x02014b50L)
-            writeU16(zip, 51)
-            writeU16(zip, 51)
-            writeU16(zip, 0x0801)
-            writeU16(zip, 99)
-            writeU16(zip, z.time)
-            writeU16(zip, z.date)
-            writeU32(zip, z.crc)
-            writeU32(zip, z.payload.size.toLong())
-            writeU32(zip, z.usize)
-            writeU16(zip, nm.size)
-            writeU16(zip, z.extra.size)
-            writeU16(zip, 0)
-            writeU16(zip, 0)
-            writeU16(zip, 0)
-            writeU32(zip, 0)
-            writeU32(zip, z.offset)
-            zip.write(nm)
-            zip.write(z.extra)
-        }
-        val cdSize = zip.size() - cdStart
-        writeU32(zip, 0x06054b50L)
-        writeU16(zip, 0)
-        writeU16(zip, 0)
-        writeU16(zip, meta.size)
-        writeU16(zip, meta.size)
-        writeU32(zip, cdSize)
-        writeU32(zip, cdStart)
-        writeU16(zip, 0)
-        return zip.toByteArray()
-    }
-
     private fun epoch(date: String): Long {
         return try {
             SimpleDateFormat("yyyy-MM-dd", Locale.US).parse(date).time / 1000
@@ -682,55 +499,4 @@ object Backup {
         }
     }
 
-    private fun dosTime(): Int {
-        val c = Calendar.getInstance()
-        return (c.get(Calendar.HOUR_OF_DAY) shl 11) or (c.get(Calendar.MINUTE) shl 5) or (c.get(Calendar.SECOND) / 2)
-    }
-
-    private fun dosDate(): Int {
-        val c = Calendar.getInstance()
-        return ((c.get(Calendar.YEAR) - 1980) shl 9) or ((c.get(Calendar.MONTH) + 1) shl 5) or c.get(Calendar.DAY_OF_MONTH)
-    }
-
-    private fun deflate(data: ByteArray): ByteArray {
-        val d = Deflater(Deflater.DEFAULT_COMPRESSION, true)
-        d.setInput(data)
-        d.finish()
-        val out = ByteArrayOutputStream()
-        val buf = ByteArray(8192)
-        while (!d.finished()) out.write(buf, 0, d.deflate(buf))
-        d.end()
-        return out.toByteArray()
-    }
-
-    private fun inflateBytes(comp: ByteArray): ByteArray {
-        val inf = Inflater(true)
-        inf.setInput(comp)
-        val bos = ByteArrayOutputStream()
-        val buf = ByteArray(8192)
-        while (!inf.finished()) {
-            val n = inf.inflate(buf)
-            if (n == 0) {
-                if (inf.needsInput() || inf.needsDictionary()) break
-            }
-            bos.write(buf, 0, n)
-        }
-        inf.end()
-        return bos.toByteArray()
-    }
-
-    private fun u16(b: ByteArray, o: Int): Int = (b[o].toInt() and 0xff) or ((b[o + 1].toInt() and 0xff) shl 8)
-
-    private fun u32(b: ByteArray, o: Int): Long =
-        (u16(b, o).toLong() or (u16(b, o + 2).toLong() shl 16)) and 0xffffffffL
-
-    private fun writeU16(o: ByteArrayOutputStream, v: Int) {
-        o.write(v and 0xff)
-        o.write((v shr 8) and 0xff)
-    }
-
-    private fun writeU32(o: ByteArrayOutputStream, v: Long) {
-        writeU16(o, (v and 0xffff).toInt())
-        writeU16(o, ((v shr 16) and 0xffff).toInt())
-    }
 }

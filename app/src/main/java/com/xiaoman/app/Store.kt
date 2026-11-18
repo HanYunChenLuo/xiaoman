@@ -230,50 +230,15 @@ class Store(c: Context) {
         return df.format(v)
     }
 
-    fun ageDays(a: JSONObject): Int {
-        if ("sold" == a.optString("status") && a.optString("soldDate").isNotEmpty()) {
-            return Math.max(1, daysBetween(a.optString("buyDate"), a.optString("soldDate")))
-        }
-        return Math.max(1, daysBetween(a.optString("buyDate"), today()))
-    }
+    fun ageDays(a: JSONObject): Int = NativeCore.ageDays(a.toString(), today())
 
     fun currentPrice(a: JSONObject): Double = a.optDouble("price", 0.0)
 
-    fun usageCount(a: JSONObject): Int {
-        val list = a.optJSONArray("usages")
-        if (list != null && list.length() > 0) return list.length()
-        return Math.max(1.0, a.optDouble("uses", 1.0)).toInt()
-    }
+    fun usageCount(a: JSONObject): Int = NativeCore.usageCount(a.toString())
 
-    fun netCost(a: JSONObject): Double {
-        val price = currentPrice(a)
-        val residual: Double = if ("sold" == a.optString("status")) {
-            a.optDouble("soldPrice", 0.0)
-        } else {
-            if (a.optBoolean("secondhandInCost", true)) a.optDouble("secondhandValue", 0.0) else 0.0
-        }
-        return Math.max(0.0, price - Math.max(0.0, residual))
-    }
+    fun netCost(a: JSONObject): Double = NativeCore.netCost(a.toString())
 
-    fun dailyCost(a: JSONObject): Double {
-        val price = netCost(a)
-        val rule = a.optString("rule", "day")
-        if ("count" == rule) return price / usageCount(a)
-        if ("custom" == rule) return price / Math.max(1.0, a.optDouble("customDays", 1.0))
-        return try {
-            val f = SimpleDateFormat("yyyy-MM-dd", Locale.US)
-            val buy = f.parse(a.optString("buyDate"))
-            var end = System.currentTimeMillis()
-            if ("sold" == a.optString("status") && a.optString("soldDate").isNotEmpty()) {
-                val sold = f.parse(a.optString("soldDate"))
-                if (sold != null) end = sold.time
-            }
-            val days = (end - (buy?.time ?: end)) / 86400000.0
-            price / Math.max(1e-6, days)
-        } catch (_: Exception) {
-            price / ageDays(a)
-        }
-    }
+    fun dailyCost(a: JSONObject): Double = NativeCore.dailyCost(a.toString(), System.currentTimeMillis(), tzOffsetMs())
 
     fun ofKind(kind: String): List<JSONObject> {
         val out = ArrayList<JSONObject>()
@@ -281,41 +246,25 @@ class Store(c: Context) {
         return out
     }
 
-    fun total(kind: String): Double {
-        var t = 0.0
-        for (o in ofKind(kind)) {
-            if ("sold" != o.optString("status") && !o.optBoolean("excludeTotal")) t += currentPrice(o)
-        }
-        return t
-    }
+    fun total(kind: String): Double = NativeCore.totalOfKind(arr("assets").toString(), kind)
 
-    fun daily(kind: String): Double {
-        var t = 0.0
-        for (o in ofKind(kind)) if ("serving" == o.optString("status", "serving")) t += dailyCost(o)
-        return t
-    }
+    fun daily(kind: String): Double =
+        NativeCore.dailyOfKind(arr("assets").toString(), kind, System.currentTimeMillis(), tzOffsetMs())
 
-    fun count(kind: String, status: String): Int {
-        var n = 0
-        for (o in ofKind(kind)) if (status == o.optString("status", "serving")) n++
-        return n
-    }
+    fun count(kind: String, status: String): Int =
+        NativeCore.countOfKind(arr("assets").toString(), kind, status)
 
     companion object {
         private const val PREFS = "xiaoman_v1"
+
+        private fun tzOffsetMs(): Long =
+            java.util.TimeZone.getDefault().getOffset(System.currentTimeMillis()).toLong()
 
         @JvmStatic
         fun today(): String = SimpleDateFormat("yyyy-MM-dd", Locale.US).format(Date())
 
         @JvmStatic
-        fun daysBetween(from: String, to: String): Int = try {
-            val f = SimpleDateFormat("yyyy-MM-dd", Locale.US)
-            val a = f.parse(from)
-            val b = f.parse(to)
-            if (a == null || b == null) 1 else Math.floor((b.time - a.time) / 86400000.0).toInt() + 1
-        } catch (_: Exception) {
-            1
-        }
+        fun daysBetween(from: String, to: String): Int = NativeCore.daysBetween(from, to)
 
         @JvmStatic
         fun statusText(s: String): String {

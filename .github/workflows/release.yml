@@ -106,6 +106,7 @@ jobs:
             gh release delete-asset "$TAG" "$a" --yes >/dev/null 2>&1 || true
           done
           gh release upload "$TAG" dist/* --clobber
+          gh release edit "$TAG" --draft=false --title "小满 $TAG"
 
   android:
     runs-on: ubuntu-latest

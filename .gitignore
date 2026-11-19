@@ -1,4 +1,5 @@
 .DS_Store
+HANDOFF.md
 apps/android/app/build/
 .gradle/
 apps/android/local.properties

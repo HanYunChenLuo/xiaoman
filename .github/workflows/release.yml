@@ -2,6 +2,7 @@
 #
 # 需要配置的仓库 Secrets：
 #   TAURI_SIGNING_PRIVATE_KEY        ~/.tauri/xiaoman-updater.key 的内容
+#   XIAOMAN_OAUTH_ENC                base64(desktop/src-tauri/oauth.enc)
 #   ANDROID_KEYSTORE_BASE64          replica.keystore 的 base64
 #   ANDROID_KEYSTORE_PASSWORD        keystore 口令
 #   ANDROID_KEY_PASSWORD             key 口令
@@ -9,8 +10,8 @@
 #   XIAOMAN_ANDROID_GOOGLE_CLIENT_ID （可选，Android Google 登录）
 #   XIAOMAN_ANDROID_GITHUB_CLIENT_ID （可选）
 #
-# 发布前记得提升 apps/android/app/build.gradle 的 versionCode/versionName，
-# 并让 tag（v1.0.1）与 versionName 一致；桌面版本取 tauri.conf.json 的 version。
+# 发布前记得提升 apps/android/app/build.gradle 的 versionCode/versionName、
+# desktop/src-tauri/tauri.conf.json 的 version，并让 tag（v1.0.1）与 versionName 一致。
 name: release
 
 on:
@@ -57,20 +58,54 @@ jobs:
             echo "XIAOMAN_OAUTH_ENC not set; cloud sync disabled in this build"
           fi
 
-      - name: Build and release desktop
-        uses: tauri-apps/tauri-action@v0
+      - name: Build desktop bundle
+        working-directory: desktop
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
-        with:
-          projectPath: desktop/src-tauri
-          tagName: ${{ github.ref_name }}
-          releaseName: 小满 ${{ github.ref_name }}
-          releaseBody: 见仓库提交记录与更新说明。
-          releaseDraft: false
-          prerelease: false
-          includeUpdaterJson: true
-          args: --target aarch64-apple-darwin
+        run: npx --yes @tauri-apps/cli@2.12.6 build --target aarch64-apple-darwin
+
+      - name: Prepare release assets
+        env:
+          TAG: ${{ github.ref_name }}
+        run: |
+          python3 - <<'PY'
+          import datetime, glob, json, os, pathlib, shutil
+          bundle = "desktop/src-tauri/target/aarch64-apple-darwin/release/bundle"
+          out = pathlib.Path("dist"); out.mkdir(exist_ok=True)
+          tgz = glob.glob(f"{bundle}/macos/*.app.tar.gz")[0]
+          dmg = glob.glob(f"{bundle}/dmg/*.dmg")[0]
+          shutil.copy(tgz, out / "xiaoman-desktop-aarch64.app.tar.gz")
+          shutil.copy(tgz + ".sig", out / "xiaoman-desktop-aarch64.app.tar.gz.sig")
+          shutil.copy(dmg, out / "xiaoman-desktop-aarch64.dmg")
+          tag = os.environ["TAG"]
+          version = json.load(open("desktop/src-tauri/tauri.conf.json"))["version"]
+          signature = open(tgz + ".sig").read().strip()
+          manifest = {
+              "version": version,
+              "notes": f"见 GitHub Release {tag}",
+              "pub_date": datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+              "platforms": {
+                  "darwin-aarch64": {
+                      "signature": signature,
+                      "url": f"https://github.com/HanYunChenLuo/xiaoman/releases/download/{tag}/xiaoman-desktop-aarch64.app.tar.gz",
+                  }
+              },
+          }
+          json.dump(manifest, open(out / "latest.json", "w"), ensure_ascii=False, indent=2)
+          print(manifest)
+          PY
+
+      - name: Create or update release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          gh release view "$TAG" >/dev/null 2>&1 || \
+            gh release create "$TAG" --title "小满 $TAG" --notes "见仓库提交记录与更新说明。"
+          for a in app-release.apk _1.0.0_aarch64.dmg _aarch64.app.tar.gz _aarch64.app.tar.gz.sig; do
+            gh release delete-asset "$TAG" "$a" --yes >/dev/null 2>&1 || true
+          done
+          gh release upload "$TAG" dist/* --clobber
 
   android:
     runs-on: ubuntu-latest
@@ -124,7 +159,7 @@ jobs:
       - name: Upload APK to release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ github.ref_name }}
         run: |
-          gh release upload "${{ github.ref_name }}" \
-            apps/android/app/build/outputs/apk/release/app-release.apk#xiaoman-android.apk \
-            --clobber
+          cp apps/android/app/build/outputs/apk/release/app-release.apk xiaoman-android.apk
+          gh release upload "$TAG" xiaoman-android.apk --clobber

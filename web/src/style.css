@@ -475,8 +475,9 @@ body.dark .btn.danger {
   left: 50%;
   transform: translateX(-50%);
   background: var(--card);
+  border: 1px solid var(--line);
   border-radius: 32px;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.12);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.10);
   display: flex;
   align-items: center;
   gap: 6px;
@@ -506,8 +507,8 @@ body.dark .btn.danger {
 
 .nav-item.on .ico {
   background: var(--lime);
-  width: 30px;
-  height: 30px;
+  width: 36px;
+  height: 36px;
   display: grid;
   place-items: center;
   border-radius: 50%;

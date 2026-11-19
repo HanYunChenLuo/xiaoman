@@ -133,8 +133,8 @@ class MainActivity : Activity() {
     private fun buildNav(active: String): View {
         val host = FrameLayout(this)
         val bar = ui.hbox()
-        bar.background = ui.round(ui.card(), 32f)
-        bar.elevation = dp(8f).toFloat()
+        bar.background = ui.roundStroke(ui.card(), 32f, ui.line(), 1f)
+        bar.elevation = 0f
         bar.setPadding(dp(6f), 0, dp(6f), 0)
         val group = ui.hbox()
         group.gravity = Gravity.CENTER_VERTICAL
@@ -158,10 +158,10 @@ class MainActivity : Activity() {
             val iconWrap = FrameLayout(this)
             if (on) iconWrap.background = ui.circle(if (dark) 0xFF2C2C2C.toInt() else 0xFFF0F0F0.toInt())
             iconWrap.addView(tabIcon, FrameLayout.LayoutParams(dp(22f), dp(22f), Gravity.CENTER))
-            item.addView(iconWrap, LinearLayout.LayoutParams(dp(34f), dp(34f)))
+            item.addView(iconWrap, LinearLayout.LayoutParams(dp(40f), dp(40f)))
             val label = ui.text(t[1], 10f, if (on) ui.ink() else ui.gray(), if (on) ui.medium else ui.regular)
             label.gravity = Gravity.CENTER
-            label.setPadding(0, dp(2f), 0, 0)
+            label.setPadding(0, dp(4f), 0, 0)
             item.addView(label)
             item.setOnClickListener { switchTab(t[0]) }
             bar.addView(item, LinearLayout.LayoutParams(dp(84f), -1))

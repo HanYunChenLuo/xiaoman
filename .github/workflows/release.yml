@@ -23,7 +23,7 @@ permissions:
 
 jobs:
   desktop:
-    runs-on: macos-14
+    runs-on: macos-13
     steps:
       - uses: actions/checkout@v4
 
@@ -35,7 +35,7 @@ jobs:
 
       - uses: dtolnay/rust-toolchain@stable
         with:
-          targets: wasm32-unknown-unknown
+          targets: wasm32-unknown-unknown, aarch64-apple-darwin
 
       - name: Install wasm-bindgen-cli
         run: cargo install wasm-bindgen-cli --version 0.2.130 --locked
@@ -70,6 +70,7 @@ jobs:
           releaseDraft: false
           prerelease: false
           includeUpdaterJson: true
+          args: --target aarch64-apple-darwin
 
   android:
     runs-on: ubuntu-latest

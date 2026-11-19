@@ -18,7 +18,9 @@ use serde::Deserialize;
 use serde_json::{json, Value};
 use sha2::{Digest, Sha256};
 use tauri::ipc::Response;
-use tauri::Manager;
+use tauri::menu::{Menu, MenuItem};
+use tauri::tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent};
+use tauri::{Manager, WindowEvent};
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::net::TcpListener;
 use xiaoman_core::cloud;
@@ -497,8 +499,55 @@ async fn cloud_download(access_token: String, file_id: String) -> Result<Respons
     Ok(Response::new(bytes))
 }
 
+/// 从菜单栏/托盘恢复主窗口。
+fn show_window(app: &tauri::AppHandle) {
+    if let Some(window) = app.get_webview_window("main") {
+        let _ = window.show();
+        let _ = window.set_focus();
+    }
+}
+
+/// 关闭窗口时隐藏到菜单栏，而不是退出（Dock 图标保持不动）。
+fn hide_to_tray(window: &tauri::Window) {
+    let _ = window.hide();
+}
+
 fn main() {
     tauri::Builder::default()
+        .setup(|app| {
+            let show = MenuItem::with_id(app, "show", "打开小满", true, None::<&str>)?;
+            let quit = MenuItem::with_id(app, "quit", "退出", true, None::<&str>)?;
+            let menu = Menu::with_items(app, &[&show, &quit])?;
+            let icon = tauri::image::Image::from_bytes(include_bytes!("../icons/tray.png"))?;
+            TrayIconBuilder::new()
+                .icon(icon)
+                .icon_as_template(true)
+                .menu(&menu)
+                .show_menu_on_left_click(false)
+                .on_menu_event(|app, event| match event.id.as_ref() {
+                    "show" => show_window(app),
+                    "quit" => app.exit(0),
+                    _ => {}
+                })
+                .on_tray_icon_event(|tray, event| {
+                    if let TrayIconEvent::Click {
+                        button: MouseButton::Left,
+                        button_state: MouseButtonState::Up,
+                        ..
+                    } = event
+                    {
+                        show_window(tray.app_handle());
+                    }
+                })
+                .build(app)?;
+            Ok(())
+        })
+        .on_window_event(|window, event| {
+            if let WindowEvent::CloseRequested { api, .. } = event {
+                api.prevent_close();
+                hide_to_tray(window);
+            }
+        })
         .invoke_handler(tauri::generate_handler![
             oauth_defaults,
             google_login,
@@ -507,8 +556,22 @@ fn main() {
             cloud_upload,
             cloud_download
         ])
-        .run(tauri::generate_context!())
-        .expect("error while running 小满");
+        .build(tauri::generate_context!())
+        .expect("error while building 小满")
+        .run(|app, event| {
+            // 关闭窗口后点 Dock 图标：macOS 会触发 Reopen。
+            #[cfg(target_os = "macos")]
+            if let tauri::RunEvent::Reopen {
+                has_visible_windows, ..
+            } = event
+            {
+                if !has_visible_windows {
+                    show_window(app);
+                }
+            }
+            #[cfg(not(target_os = "macos"))]
+            let _ = (app, event);
+        });
 }
 
 #[cfg(test)]

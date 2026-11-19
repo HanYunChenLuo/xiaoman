@@ -5,6 +5,20 @@ export interface Category {
   name: string
 }
 
+export interface IncomeRecord {
+  id: string
+  amount: number
+  date: string
+  categoryId?: string
+  note?: string
+}
+
+export interface PriceRecord {
+  id: string
+  date: string
+  price: number
+}
+
 export interface Asset {
   id: string
   name: string
@@ -34,6 +48,8 @@ export interface Asset {
   coverData?: string
   noteImagesData?: string[]
   expireAt?: string
+  incomeRecords?: IncomeRecord[]
+  priceRecords?: PriceRecord[]
 }
 
 export interface Settings {
@@ -48,6 +64,7 @@ export interface State {
   assets: Asset[]
   categories: Category[]
   tags: Category[]
+  incomeCategories: Category[]
   settings: Settings
 }
 
@@ -67,8 +84,13 @@ export function loadState(): State {
     assets: [],
     categories: [{ id: 'cat_digital', name: '数码' }],
     tags: [],
+    incomeCategories: defaultIncomeCategories(),
     settings: { currency: 'CNY', decimals: 2, thousands: false, theme: 'system' }
   })
+}
+
+function defaultIncomeCategories(): Category[] {
+  return ['出租', '工资', '理财', '其他'].map((name, i) => ({ id: `inc_cat_${i}`, name }))
 }
 
 export function saveState(s: State): void {
@@ -79,6 +101,13 @@ export function normalize(s: State): State {
   s.assets ??= []
   s.categories ??= []
   s.tags ??= []
+  if (!Array.isArray(s.incomeCategories) || s.incomeCategories.length === 0) {
+    s.incomeCategories = defaultIncomeCategories()
+  }
+  for (const a of s.assets) {
+    if (!Array.isArray(a.incomeRecords)) a.incomeRecords = []
+    if (!Array.isArray(a.priceRecords)) a.priceRecords = []
+  }
   s.settings = {
     currency: s.settings?.currency ?? 'CNY',
     decimals: s.settings?.decimals ?? 2,
@@ -139,6 +168,18 @@ export function statusText(s: string): string {
 
 export function displayName(a: Asset): string {
   return a.name?.trim() ? a.name : a.model ?? ''
+}
+
+/** 某件资产的累计收入。 */
+export function incomeTotal(a: Asset): number {
+  return (a.incomeRecords ?? []).reduce((sum, r) => sum + (Number(r.amount) || 0), 0)
+}
+
+/** 最近一条价格记录（按日期倒序）。 */
+export function latestPrice(a: Asset): PriceRecord | null {
+  const list = a.priceRecords ?? []
+  if (!list.length) return null
+  return [...list].sort((x, y) => (x.date < y.date ? 1 : -1))[0]
 }
 
 // ---------------- 品牌与型号 ----------------
@@ -332,6 +373,14 @@ function dateFromEpoch(sec: number): string {
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`
 }
 
+/** 收入/价格记录的日期：兼容 epoch 秒与 `YYYY-MM-DD` 字符串。 */
+function recordDate(v: unknown): string {
+  const n = Number(v)
+  if (Number.isFinite(n) && n > 0) return dateFromEpoch(n)
+  const s = typeof v === 'string' ? v : ''
+  return s || todayStr()
+}
+
 function epoch(date: string): number {
   if (!date) return 0
   const d = new Date(date + 'T00:00:00')
@@ -453,9 +502,40 @@ function toBackupData(state: State): { data: unknown; images: BackupImage[] } {
       assets,
       asset_images: imageRecords,
       usages: [],
-      income_categories: [],
-      income_records: [],
-      asset_price_records: [],
+      income_categories: state.incomeCategories.map((c, i) => ({
+        id: c.id,
+        title: c.name,
+        icon_name: 'icon_income_1',
+        color_hex: '#A3E635',
+        sort: i,
+        is_deleted: false,
+        created_at: 0,
+        update_at: 0
+      })),
+      income_records: state.assets.flatMap((a) =>
+        (a.incomeRecords ?? []).map((r) => ({
+          id: r.id,
+          asset_id: a.id,
+          category_id: r.categoryId ?? '',
+          amount: r.amount ?? 0,
+          income_date: epoch(r.date),
+          note: r.note ?? '',
+          is_deleted: false,
+          created_at: 0,
+          update_at: 0
+        }))
+      ),
+      asset_price_records: state.assets.flatMap((a) =>
+        (a.priceRecords ?? []).map((r) => ({
+          id: r.id,
+          asset_id: a.id,
+          price: r.price ?? 0,
+          record_date: epoch(r.date),
+          is_deleted: false,
+          created_at: 0,
+          update_at: 0
+        }))
+      ),
       save_money: [],
       expire_reminders: reminders,
       platform: 'WEB',
@@ -476,6 +556,44 @@ function fromBackupData(data: any, imageMap: Record<string, string>): { state: P
   for (const t of data?.tags ?? []) {
     if (!t || t.is_deleted) continue
     tags.push({ id: String(t.id ?? uid('tag_')), name: String(t.title ?? '') })
+  }
+
+  const incomeCategories: Category[] = []
+  for (const c of data?.income_categories ?? []) {
+    if (!c || c.is_deleted) continue
+    const name = String(c.title ?? '')
+    if (!name) continue
+    incomeCategories.push({ id: String(c.id ?? uid('inc_cat_')), name })
+  }
+
+  const incomeByAsset = new Map<string, IncomeRecord[]>()
+  for (const r of data?.income_records ?? []) {
+    if (!r || r.is_deleted) continue
+    const key = String(r.asset_id ?? r.assetId ?? '')
+    if (!key) continue
+    const list = incomeByAsset.get(key) ?? []
+    list.push({
+      id: String(r.id ?? uid('inc_')),
+      amount: Number(r.amount ?? 0),
+      date: recordDate(r.income_date ?? r.date),
+      categoryId: String(r.category_id ?? r.categoryId ?? ''),
+      note: String(r.note ?? '')
+    })
+    incomeByAsset.set(key, list)
+  }
+
+  const priceByAsset = new Map<string, PriceRecord[]>()
+  for (const r of data?.asset_price_records ?? []) {
+    if (!r || r.is_deleted) continue
+    const key = String(r.asset_id ?? r.assetId ?? '')
+    if (!key) continue
+    const list = priceByAsset.get(key) ?? []
+    list.push({
+      id: String(r.id ?? uid('price_')),
+      date: recordDate(r.record_date ?? r.date),
+      price: Number(r.price ?? 0)
+    })
+    priceByAsset.set(key, list)
   }
 
   const imageRecords: any[] = Array.isArray(data?.asset_images) ? data.asset_images : []
@@ -545,7 +663,11 @@ function fromBackupData(data: any, imageMap: Record<string, string>): { state: P
     if (allNotes.length) item.noteImagesData = allNotes.slice(0, 9)
     const expire = expireByAsset.get(id)
     if (expire) item.expireAt = expire
+    const incomes = incomeByAsset.get(id)
+    if (incomes?.length) item.incomeRecords = incomes
+    const prices = priceByAsset.get(id)
+    if (prices?.length) item.priceRecords = prices
     assets.push(item)
   }
-  return { state: { assets, categories, tags }, count: assets.length }
+  return { state: { assets, categories, tags, incomeCategories }, count: assets.length }
 }

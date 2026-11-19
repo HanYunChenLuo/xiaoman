@@ -33,6 +33,7 @@ export interface CloudAccount {
   accessToken: string
   expiresAt: number
   lastSyncAt?: number
+  refreshToken?: string
 }
 
 type TokenResponse = {
@@ -54,13 +55,44 @@ let pending: PendingRequest | null = null
 
 // ---------------- 环境与存储 ----------------
 
+export function isTauri(): boolean {
+  return !!(window as any).__TAURI_INTERNALS__
+}
+
+/** 桌面端使用系统浏览器 + loopback 授权，凭据来自构建时嵌入的加密文件。 */
+let desktopCreds: { clientId: string; clientSecret: string } | null = null
+
+export async function initDesktopCloud(): Promise<void> {
+  if (!isTauri()) return
+  try {
+    const v = await invoke<{ clientId?: string; clientSecret?: string }>('oauth_defaults')
+    desktopCreds = v?.clientId ? { clientId: v.clientId, clientSecret: v.clientSecret ?? '' } : null
+  } catch {
+    desktopCreds = null
+  }
+}
+
+export function desktopClientId(): string {
+  return desktopCreds?.clientId ?? ''
+}
+
+export function desktopClientSecret(): string {
+  return desktopCreds?.clientSecret ?? ''
+}
+
+function invoke<T>(cmd: string, args?: Record<string, unknown>): Promise<T> {
+  const api = (window as any).__TAURI_INTERNALS__?.invoke
+  if (!api) return Promise.reject(new Error('仅桌面端可用'))
+  return api(cmd, args)
+}
+
 export function cloudSupported(): boolean {
-  if ((window as any).__TAURI_INTERNALS__) return false
+  if (isTauri()) return !!desktopCreds
   return location.protocol === 'https:' || location.hostname === 'localhost' || location.hostname === '127.0.0.1'
 }
 
 export function cloudUnsupportedReason(): string {
-  if ((window as any).__TAURI_INTERNALS__) return '桌面端暂不支持 Google 登录'
+  if (isTauri()) return '当前构建未内置云同步凭据'
   return '需要 HTTPS 或 localhost 环境'
 }
 
@@ -207,6 +239,7 @@ async function fetchEmail(token: string): Promise<string> {
 
 /** 取得可用 token；`interactive` 为 true 时允许弹出授权窗口。 */
 async function ensureToken(interactive: boolean): Promise<string> {
+  if (isTauri()) return ensureDesktopToken(interactive)
   const acc = getAccount()
   if (tokenValid(acc)) return acc!.accessToken
   if (!interactive && !acc) throw new Error('请先登录 Google')
@@ -224,7 +257,49 @@ async function ensureToken(interactive: boolean): Promise<string> {
   return token
 }
 
+/** 桌面端：refresh token 续期，必要时走系统浏览器重新授权。 */
+async function ensureDesktopToken(interactive: boolean): Promise<string> {
+  const acc = getAccount()
+  if (tokenValid(acc)) return acc!.accessToken
+  const clientId = desktopClientId()
+  if (acc?.refreshToken && clientId) {
+    try {
+      const r = await invoke<{ accessToken: string; expiresAt: number }>('google_refresh', {
+        clientId,
+        clientSecret: desktopClientSecret(),
+        refreshToken: acc.refreshToken
+      })
+      saveAccount({ ...acc, accessToken: r.accessToken, expiresAt: r.expiresAt })
+      return r.accessToken
+    } catch (e) {
+      if (!interactive) throw new Error((e as Error)?.message || '登录已过期，请重新登录')
+    }
+  }
+  if (!interactive) throw new Error('请先登录 Google')
+  const signed = await signIn()
+  return signed.accessToken
+}
+
 export async function signIn(): Promise<CloudAccount> {
+  if (isTauri()) {
+    if (!desktopCreds) throw new Error(cloudUnsupportedReason())
+    const clientId = desktopCreds.clientId
+    const clientSecret = desktopCreds.clientSecret
+    const r = await invoke<{ email: string; accessToken: string; refreshToken: string; expiresAt: number }>(
+      'google_login',
+      { clientId, clientSecret }
+    )
+    const prev = getAccount()
+    const account: CloudAccount = {
+      email: r.email || prev?.email || 'Google 账号',
+      accessToken: r.accessToken,
+      expiresAt: r.expiresAt,
+      refreshToken: r.refreshToken || prev?.refreshToken,
+      lastSyncAt: prev?.lastSyncAt
+    }
+    saveAccount(account)
+    return account
+  }
   if (!cloudSupported()) throw new Error(cloudUnsupportedReason())
   const prev = getAccount()
   const resp = await requestToken(true)
@@ -284,10 +359,28 @@ async function authed<T>(fn: (token: string) => Promise<T>): Promise<T> {
 }
 
 export async function remoteInfo(): Promise<CloudFile | null> {
+  if (isTauri()) {
+    return authed(async (token) => {
+      const raw = await invoke<string>('cloud_file_info', { accessToken: token })
+      const r = JSON.parse(raw) as CloudParseResult
+      if (!r.ok) throw asError(r)
+      return r.file ?? null
+    })
+  }
   return authed((token) => findBackup(token))
 }
 
 export async function uploadBackup(bytes: Uint8Array): Promise<CloudFile> {
+  if (isTauri()) {
+    return authed(async (token) => {
+      const raw = await invoke<string>('cloud_upload', { accessToken: token, bytes: Array.from(bytes) })
+      const r = JSON.parse(raw) as CloudParseResult
+      if (!r.ok) throw asError(r)
+      const acc = getAccount()
+      if (acc) saveAccount({ ...acc, lastSyncAt: Date.now() })
+      return r.file ?? { id: '' }
+    })
+  }
   return authed(async (token) => {
     let file = await findBackup(token)
     if (!file) {
@@ -316,6 +409,20 @@ async function findBackup(token: string): Promise<CloudFile | null> {
 }
 
 export async function downloadBackup(): Promise<{ bytes: Uint8Array; file: CloudFile } | null> {
+  if (isTauri()) {
+    return authed(async (token) => {
+      const raw = await invoke<string>('cloud_file_info', { accessToken: token })
+      const info = JSON.parse(raw) as CloudParseResult
+      if (!info.ok) throw asError(info)
+      const file = info.file
+      if (!file) return null
+      const data = await invoke<ArrayBuffer | Uint8Array>('cloud_download', {
+        accessToken: token,
+        fileId: file.id
+      })
+      return { bytes: data instanceof Uint8Array ? data : new Uint8Array(data), file }
+    })
+  }
   return authed(async (token) => {
     const file = await findBackup(token)
     if (!file) return null

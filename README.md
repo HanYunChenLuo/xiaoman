@@ -81,8 +81,9 @@ cd ../desktop/src-tauri && cargo build    # 桌面（需先构建 Web）
 - **GitHub**（暂时隐藏，TODO）：待提供启用 Device Flow 的 OAuth App Client ID 后恢复；`ENABLE_GITHUB_LOGIN=false` 时界面不显示。
 - **Google（Android）**：在 Google Cloud 创建项目、启用 Drive API、配置 OAuth 同意屏幕，创建「桌面应用」类型 OAuth 客户端；将 Client ID 粘贴到 App 内对应项（Google 登录使用 127.0.0.1 loopback 回调）。
 - **Google（Web）**：在同一项目创建「Web 应用」类型 OAuth 客户端，把站点来源（如 `http://localhost:5173` 与线上域名）加入「已获授权的 JavaScript 来源」。SPA 走 GIS Token 模型，无需 client_secret；Client ID 写在 `web/src/cloud.ts` 的 `CLIENT_ID`。
+- **Google（桌面）**：创建「桌面应用」类型 OAuth 客户端（loopback 回调 `http://127.0.0.1:41888`），用 `node desktop/scripts/seed-oauth.mjs` 生成加密凭据文件 `desktop/src-tauri/oauth.enc`（环境变量 `XIAOMAN_GOOGLE_CLIENT_ID` / `XIAOMAN_GOOGLE_CLIENT_SECRET`）。该文件已被 gitignore；没有它时桌面端不显示云同步入口。CI 中通过 Actions Secret `XIAOMAN_OAUTH_ENC`（base64）在构建前写入，见 `.github/workflows/build.yml`。
 
-也可在 `apps/android/local.properties` 写入 `oauth.github.clientId=...` 与 `oauth.google.clientId=...` 作为默认值。**Google 跳转登录**：构建时写入 `oauth.google.clientId` 会注册 `com.googleusercontent.apps.<client-id>:/oauth2redirect` 回调，授权后浏览器直接跳回 App；应用内临时填写的 Client ID 因无法动态注册 Scheme，会自动使用 127.0.0.1 loopback 方式。GitHub 仍使用设备码（网页授权 + 输入代码），因为其 OAuth App 交换令牌需要 client_secret，不适合内置。云端保存的是加密 `.ias` 备份，Android 与 Web 共用 `core/src/cloud.rs` 的请求构造与解析；桌面端尚未接入。
+也可在 `apps/android/local.properties` 写入 `oauth.github.clientId=...` 与 `oauth.google.clientId=...` 作为默认值。**Google 跳转登录**：构建时写入 `oauth.google.clientId` 会注册 `com.googleusercontent.apps.<client-id>:/oauth2redirect` 回调，授权后浏览器直接跳回 App；应用内临时填写的 Client ID 因无法动态注册 Scheme，会自动使用 127.0.0.1 loopback 方式。GitHub 仍使用设备码（网页授权 + 输入代码），因为其 OAuth App 交换令牌需要 client_secret，不适合内置。云端保存的是加密 `.ias` 备份，三端共用 `core/src/cloud.rs` 的请求构造与解析；桌面端凭据缺失时自动隐藏云同步。
 
 ## 目录结构
 

@@ -1,5 +1,6 @@
 .DS_Store
 HANDOFF.md
+desktop/src-tauri/oauth.enc
 apps/android/app/build/
 .gradle/
 apps/android/local.properties

@@ -4,7 +4,7 @@ import { dirname, resolve } from 'node:path'
 
 const here = dirname(fileURLToPath(import.meta.url))
 const root = resolve(here, '../..')
-const assets = resolve(root, 'app/src/main/assets')
+const assets = resolve(root, 'apps/android/app/src/main/assets')
 
 mkdirSync(resolve(here, '../public/icons'), { recursive: true })
 copyFileSync(resolve(root, 'data/brands.json'), resolve(here, '../public/brands.json'))
@@ -16,7 +16,7 @@ for (const name of ['logo_light', 'logo_dark']) {
   }
 }
 try {
-  copyFileSync(resolve(root, 'app/src/main/res/drawable/appicon.png'), resolve(here, '../public/favicon.png'))
+  copyFileSync(resolve(root, 'apps/android/app/src/main/res/drawable/appicon.png'), resolve(here, '../public/favicon.png'))
 } catch {
   /* optional */
 }

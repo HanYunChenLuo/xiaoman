@@ -12,6 +12,7 @@ import {
 import {
   Asset,
   BrandBook,
+  IncomeRecord,
   State,
   autoIcon,
   displayName,
@@ -19,6 +20,8 @@ import {
   fetchRemoteBrands,
   fmt,
   importIas,
+  incomeTotal,
+  latestPrice,
   loadBrands,
   loadState,
   matchBrand,
@@ -37,6 +40,8 @@ import {
   cloudTokenFresh,
   cloudUnsupportedReason,
   downloadBackup,
+  initDesktopCloud,
+  isTauri,
   lastSyncText,
   remoteInfo,
   signIn,
@@ -93,7 +98,7 @@ async function fileToDataUrl(file: File, maxSize = 1280): Promise<string> {
   return canvas.toDataURL('image/jpeg', 0.82)
 }
 
-function toast(msg: string): void {
+function toast(msg: string, duration = 2200): void {
   const el = E('div', {
     text: msg,
     style: {
@@ -110,7 +115,7 @@ function toast(msg: string): void {
     }
   })
   document.body.append(el)
-  setTimeout(() => el.remove(), 2200)
+  setTimeout(() => el.remove(), duration)
 }
 
 class App {
@@ -124,6 +129,7 @@ class App {
 
   async boot(): Promise<void> {
     await initCore()
+    await initDesktopCloud()
     this.brands = await loadBrands()
     this.applyTheme()
     this.render()
@@ -621,6 +627,7 @@ class App {
       E('div', { class: 'section' }, E('h2', { text: '数据管理' }), this.group([
         this.linkRow('分类管理', `${this.state.categories.length} 个`, () => this.manageList('categories')),
         this.linkRow('标签管理', `${this.state.tags.length} 个`, () => this.manageList('tags')),
+        this.linkRow('收入分类', `${this.state.incomeCategories.length} 个`, () => this.manageList('incomeCategories')),
         this.linkRow('品牌与型号数据', `v${this.brands.versionName || '内置'}`, () => this.checkBrands()),
         this.linkRow('导出 .ias 备份', '下载', () => this.exportBackup()),
         this.linkRow('导入 .ias 备份', '选择文件', () => this.importBackup())
@@ -660,8 +667,8 @@ class App {
       text: '抹掉所有内容',
       style: { margin: '18px 18px 0', width: 'calc(100% - 36px)' },
       on: {
-        click: () => {
-          if (confirm('确定抹掉全部本地数据？此操作无法恢复。')) {
+        click: async () => {
+          if (await this.askConfirm('确定抹掉全部本地数据？此操作无法恢复。')) {
             localStorage.removeItem('xiaoman_web_v1')
             this.state = loadState()
             this.render()
@@ -729,35 +736,35 @@ class App {
     if (!cloudSupported()) {
       return [this.linkRow('Google 云备份', cloudUnsupportedReason(), null)]
     }
+    const rows: HTMLElement[] = []
     if (!cloudConnected()) {
-      return [
-        this.linkRow('Google 账号', '点击登录', () => this.cloudSignIn()),
-        this.linkRow('云端备份', '登录后可上传 / 恢复', null)
-      ]
+      rows.push(this.linkRow('Google 账号', '点击登录', () => this.cloudSignIn()))
+      rows.push(this.linkRow('云端备份', '登录后可上传 / 恢复', null))
+      return rows
     }
     if (!cloudTokenFresh()) {
-      return [
-        this.linkRow('Google 账号', '登录已过期，点击重新授权', () => this.cloudSignIn()),
-        this.linkRow('云端备份', '重新授权后可用', null)
-      ]
+      rows.push(this.linkRow('Google 账号', '登录已过期，点击重新授权', () => this.cloudSignIn()))
+      rows.push(this.linkRow('云端备份', '重新授权后可用', null))
+      return rows
     }
-    return [
+    rows.push(
       this.linkRow('Google 账号', accountEmail(), () => this.cloudAccountModal()),
       this.linkRow('上传备份到云端', lastSyncText(), () => this.cloudUpload()),
       this.linkRow('从云端恢复', '下载', () => this.cloudRestore())
-    ]
+    )
+    return rows
   }
 
   async cloudSignIn(): Promise<void> {
     if (this.cloudBusy) return
     this.cloudBusy = true
-    toast('正在打开 Google 登录…')
+    toast(isTauri() ? '已打开系统浏览器，请在网页中完成 Google 授权…' : '正在打开 Google 登录…', 6000)
     try {
       const acc = await signIn()
       toast('已登录 ' + (acc.email || 'Google 账号'))
       this.render()
     } catch (e) {
-      toast((e as Error).message)
+      toast((e as Error).message, 6000)
     } finally {
       this.cloudBusy = false
     }
@@ -790,7 +797,7 @@ class App {
         return
       }
       const when = got.file.modifiedTime ? new Date(got.file.modifiedTime).toLocaleString('zh-CN') : ''
-      this.applyBackup(got.bytes, when ? `云端备份（${when}）` : '云端备份')
+      await this.applyBackup(got.bytes, when ? `云端备份（${when}）` : '云端备份')
     } catch (e) {
       toast('恢复失败：' + (e as Error).message)
     } finally {
@@ -805,6 +812,7 @@ class App {
     const addRow = (k: string, v: string) =>
       rows.append(E('div', { class: 'row' }, E('span', { class: 'grow', text: k }), E('span', { class: 'val', text: v })))
     addRow('账号', accountEmail())
+    if (isTauri()) addRow('登录方式', '系统浏览器 · loopback')
     addRow('上次上传', lastSyncText())
     const remote = E('span', { class: 'val', text: '查询中…' })
     rows.append(E('div', { class: 'row' }, E('span', { class: 'grow', text: '云端文件' }), remote))
@@ -868,10 +876,11 @@ class App {
     }
   }
 
-  manageList(kind: 'categories' | 'tags'): void {
+  manageList(kind: 'categories' | 'tags' | 'incomeCategories'): void {
     const list = this.state[kind]
+    const title = kind === 'categories' ? '分类管理' : kind === 'tags' ? '标签管理' : '收入分类管理'
     const content = E('div', {})
-    content.append(E('h2', { text: kind === 'categories' ? '分类管理' : '标签管理' }))
+    content.append(E('h2', { text: title }))
     const rows = E('div', { class: 'group' })
     const move = (index: number, delta: number) => {
       const target = index + delta
@@ -905,8 +914,8 @@ class App {
             class: 'tag-chip',
             text: '重命名',
             on: {
-              click: () => {
-                const name = prompt('新名称', item.name)
+              click: async () => {
+                const name = await this.askText('重命名', item.name)
                 if (!name?.trim()) return
                 item.name = name.trim()
                 this.save()
@@ -920,13 +929,17 @@ class App {
             class: 'btn danger',
             text: '删除',
             on: {
-              click: () => {
-                if (!confirm(`删除「${item.name}」？`)) return
+              click: async () => {
+                if (!(await this.askConfirm(`删除「${item.name}」？`))) return
                 this.state[kind] = list.filter((x) => x.id !== item.id)
                 if (kind === 'categories') {
                   for (const a of this.state.assets) if (a.categoryId === item.id) a.categoryId = ''
-                } else {
+                } else if (kind === 'tags') {
                   for (const a of this.state.assets) a.tagIds = (a.tagIds ?? []).filter((t) => t !== item.id)
+                } else {
+                  for (const a of this.state.assets) {
+                    for (const r of a.incomeRecords ?? []) if (r.categoryId === item.id) r.categoryId = ''
+                  }
                 }
                 this.save()
                 this.closeModal()
@@ -948,10 +961,13 @@ class App {
           class: 'btn lime',
           text: '新建',
           on: {
-            click: () => {
-              const name = prompt(kind === 'categories' ? '分类名称' : '标签名称')
+            click: async () => {
+              const name = await this.askText(
+                kind === 'categories' ? '分类名称' : kind === 'tags' ? '标签名称' : '收入分类名称'
+              )
               if (!name?.trim()) return
-              this.state[kind].push({ id: uid(kind === 'categories' ? 'cat_' : 'tag_'), name: name.trim() })
+              const prefix = kind === 'categories' ? 'cat_' : kind === 'tags' ? 'tag_' : 'inc_cat_'
+              this.state[kind].push({ id: uid(prefix), name: name.trim() })
               this.save()
               this.closeModal()
               this.manageList(kind)
@@ -989,6 +1005,10 @@ class App {
       if (a.targetDate) rows.push(['目标日期', a.targetDate])
     }
     if (a.expireAt) rows.push(['到期时间', a.expireAt])
+    const income = incomeTotal(a)
+    if (income > 0) rows.push(['累计收入', this.money(income)])
+    const lastPrice = latestPrice(a)
+    if (lastPrice && lastPrice.price > 0) rows.push(['最近价格', `${lastPrice.date} ｜ ${this.money(lastPrice.price)}`])
     if (a.note) rows.push(['备注', a.note])
     if (a.excludeTotal) rows.push(['计入总资产', '否'])
 
@@ -1019,6 +1039,8 @@ class App {
             )
           ]
         : []),
+      this.priceBlock(a),
+      this.incomeBlock(a),
       E(
         'div',
         { class: 'form-actions' },
@@ -1026,8 +1048,8 @@ class App {
           class: 'btn danger',
           text: '删除',
           on: {
-            click: () => {
-              if (!confirm(`删除「${displayName(a)}」？`)) return
+            click: async () => {
+              if (!(await this.askConfirm(`删除「${displayName(a)}」？`))) return
               this.state.assets = this.state.assets.filter((x) => x.id !== a.id)
               this.save()
               this.closeModal()
@@ -1048,6 +1070,126 @@ class App {
       )
     )
     this.openModal(content)
+  }
+
+  // ---------------- 收入 / 价格记录 ----------------
+  refreshDetail(a: Asset): void {
+    this.closeModal()
+    this.openDetail(a)
+  }
+
+  priceBlock(a: Asset): HTMLElement {
+    const block = E('div', { class: 'record-block' }, E('div', { class: 'record-title', text: '价格记录' }))
+    const list = E('div', { class: 'group' })
+    const items = [...(a.priceRecords ?? [])].sort((x, y) => (x.date < y.date ? 1 : x.date > y.date ? -1 : 0))
+    if (!items.length) list.append(E('div', { class: 'empty', text: '暂无价格记录' }))
+    for (const r of items) {
+      list.append(
+        E(
+          'div',
+          { class: 'row' },
+          E('span', { class: 'grow', text: r.date }),
+          E('span', { class: 'val', text: this.money(r.price) }),
+          E('button', {
+            class: 'tag-chip',
+            text: '删除',
+            on: {
+              click: () => {
+                a.priceRecords = (a.priceRecords ?? []).filter((x) => x.id !== r.id)
+                this.save()
+                this.refreshDetail(a)
+              }
+            }
+          })
+        )
+      )
+    }
+    const date = E('input', { attrs: { type: 'date' } }) as HTMLInputElement
+    date.value = todayStr()
+    const price = E('input', { attrs: { type: 'number', step: '0.01', min: '0', placeholder: '价格' } }) as HTMLInputElement
+    const add = E('button', {
+      class: 'btn lime',
+      text: '添加',
+      on: {
+        click: () => {
+          const v = Number(price.value)
+          if (!(v > 0)) {
+            toast('请输入有效价格')
+            return
+          }
+          a.priceRecords = [...(a.priceRecords ?? []), { id: uid('price_'), date: date.value || todayStr(), price: v }]
+          this.save()
+          this.refreshDetail(a)
+        }
+      }
+    })
+    block.append(list, E('div', { class: 'record-form' }, date, price, add))
+    return block
+  }
+
+  incomeBlock(a: Asset): HTMLElement {
+    const block = E('div', { class: 'record-block' }, E('div', { class: 'record-title', text: '收入记录' }))
+    const list = E('div', { class: 'group' })
+    const items = [...(a.incomeRecords ?? [])].sort((x, y) => (x.date < y.date ? 1 : x.date > y.date ? -1 : 0))
+    if (!items.length) list.append(E('div', { class: 'empty', text: '暂无收入记录' }))
+    for (const r of items) {
+      const cat = this.state.incomeCategories.find((c) => c.id === r.categoryId)?.name ?? '未分类'
+      list.append(
+        E(
+          'div',
+          { class: 'row' },
+          E('span', { class: 'grow', text: `${r.date} ｜ ${cat}${r.note ? ' ｜ ' + r.note : ''}` }),
+          E('span', { class: 'val', text: this.money(r.amount) }),
+          E('button', {
+            class: 'tag-chip',
+            text: '删除',
+            on: {
+              click: () => {
+                a.incomeRecords = (a.incomeRecords ?? []).filter((x) => x.id !== r.id)
+                this.save()
+                this.refreshDetail(a)
+              }
+            }
+          })
+        )
+      )
+    }
+    const date = E('input', { attrs: { type: 'date' } }) as HTMLInputElement
+    date.value = todayStr()
+    const amount = E('input', { attrs: { type: 'number', step: '0.01', min: '0', placeholder: '金额' } }) as HTMLInputElement
+    const catSelect = E('select') as HTMLSelectElement
+    catSelect.append(E('option', { text: '未分类' }) as HTMLOptionElement)
+    for (const c of this.state.incomeCategories) {
+      const o = E('option', { text: c.name }) as HTMLOptionElement
+      o.value = c.id
+      catSelect.append(o)
+    }
+    const note = E('input', { attrs: { type: 'text', placeholder: '备注（可选）', maxlength: '30' } }) as HTMLInputElement
+    const add = E('button', {
+      class: 'btn lime',
+      text: '添加',
+      on: {
+        click: () => {
+          const v = Number(amount.value)
+          if (!(v > 0)) {
+            toast('请输入有效金额')
+            return
+          }
+          const rec: IncomeRecord = {
+            id: uid('inc_'),
+            amount: v,
+            date: date.value || todayStr(),
+            categoryId: catSelect.value,
+            note: note.value.trim()
+          }
+          a.incomeRecords = [...(a.incomeRecords ?? []), rec]
+          this.save()
+          this.refreshDetail(a)
+        }
+      }
+    })
+    block.append(list, E('div', { class: 'record-form' }, date, amount, catSelect, note, add))
+    return block
   }
 
   // ---------------- 表单 ----------------
@@ -1253,8 +1395,8 @@ class App {
           class: 'tag-chip',
           text: '＋ 新建',
           on: {
-            click: () => {
-              const name = prompt('标签名称')
+            click: async () => {
+              const name = await this.askText('标签名称')
               if (!name?.trim()) return
               const tag = { id: uid('tag_'), name: name.trim() }
               this.state.tags.push(tag)
@@ -1470,8 +1612,62 @@ class App {
     document.body.append(backdrop)
   }
 
+  private modalDismiss?: () => void
+
   closeModal(): void {
     document.getElementById('modal-host')?.remove()
+    const dismiss = this.modalDismiss
+    this.modalDismiss = undefined
+    dismiss?.()
+  }
+
+  /**
+   * 应用内文本/确认对话框。桌面端（WKWebView）不支持原生 prompt/confirm，
+   * 所有交互统一走这里。
+   */
+  askDialog(title: string, message: string, initial: string | null, password = false): Promise<string | null> {
+    return new Promise((resolve) => {
+      let settled = false
+      const finish = (v: string | null) => {
+        if (settled) return
+        settled = true
+        this.modalDismiss = undefined
+        this.closeModal()
+        resolve(v)
+      }
+      const input = initial === null ? null : (E('input', { attrs: { type: password ? 'password' : 'text' } }) as HTMLInputElement)
+      if (input) input.value = initial ?? ''
+      const content = E(
+        'div',
+        {},
+        E('button', { class: 'close', text: '✕', on: { click: () => finish(null) } }),
+        E('h2', { text: title }),
+        message ? E('p', { class: 'muted', text: message, style: { margin: '0 0 12px', whiteSpace: 'pre-line' } }) : null,
+        input ? E('label', { class: 'field full' }, input) : null,
+        E(
+          'div',
+          { class: 'form-actions' },
+          E('button', { class: 'btn', text: '取消', on: { click: () => finish(null) } }),
+          E('button', { class: 'btn primary', text: '确定', on: { click: () => finish(input ? input.value : '') } })
+        )
+      )
+      this.openModal(content, true)
+      this.modalDismiss = () => finish(null)
+      if (input) {
+        input.focus()
+        input.addEventListener('keydown', (e) => {
+          if (e.key === 'Enter') finish(input.value)
+        })
+      }
+    })
+  }
+
+  askText(title: string, initial = '', password = false): Promise<string | null> {
+    return this.askDialog(title, '', initial, password)
+  }
+
+  askConfirm(message: string, title = '请确认'): Promise<boolean> {
+    return this.askDialog(title, message, null).then((v) => v !== null)
   }
 
   // ---------------- 备份 ----------------
@@ -1499,7 +1695,7 @@ class App {
       if (!file) return
       try {
         const bytes = new Uint8Array(await file.arrayBuffer())
-        this.applyBackup(bytes, '本地备份')
+        await this.applyBackup(bytes, '本地备份')
       } catch (e) {
         toast('导入失败：' + (e as Error).message)
       }
@@ -1508,9 +1704,12 @@ class App {
   }
 
   /** 解析 .ias 字节并按用户选择覆盖或合并；文件导入与云端恢复共用。 */
-  applyBackup(bytes: Uint8Array, source: string): void {
+  async applyBackup(bytes: Uint8Array, source: string): Promise<void> {
     const { state, count } = importIas(bytes)
-    const replace = confirm(`已读取${source}，共 ${count} 条记录。\n\n确定 = 覆盖本地数据；取消 = 合并到本地。`)
+    const replace = await this.askConfirm(
+      `已读取${source}，共 ${count} 条记录。\n\n确定 = 覆盖本地数据；取消 = 合并到本地。`,
+      '导入设置'
+    )
     if (replace) {
       this.state.assets = state.assets ?? []
     } else {
@@ -1524,11 +1723,16 @@ class App {
     for (const t of state.tags ?? []) {
       if (!this.state.tags.some((x) => x.id === t.id)) this.state.tags.push(t)
     }
+    for (const c of state.incomeCategories ?? []) {
+      if (!this.state.incomeCategories.some((x) => x.id === c.id)) this.state.incomeCategories.push(c)
+    }
     // 兼容从其他端导入时没有图标的情况
     for (const a of this.state.assets) {
       if (!a.icon || a.icon.includes('default')) a.icon = autoIcon(a.model || a.name)
       if (!a.status) a.status = 'serving'
       if (!a.kind) a.kind = 'asset'
+      a.incomeRecords ??= []
+      a.priceRecords ??= []
     }
     this.save()
     this.render()

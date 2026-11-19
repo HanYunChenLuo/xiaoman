@@ -13,7 +13,7 @@ apps/android/            # Android 工程（Gradle 单模块 :app）
   app/build.gradle                     # 版本号、Rust 构建任务、签名配置
 core/                    # Rust 核心：calc.rs（计算）、backup.rs（.ias 编解码）、cloud.rs（Drive 云备份协议）、lib.rs（JNI/wasm 导出）
 web/                     # Vite + TypeScript Web 端（wasm-bindgen）
-desktop/src-tauri/       # Tauri 桌面外壳，加载 web/dist
+desktop/src-tauri/       # Tauri 桌面外壳：加载 web/dist（编译期嵌入）+ 原生云同步命令
 data/brands.json         # 品牌与型号数据唯一来源（远程更新入口）
 README.md / README.en.md
 ```
@@ -43,15 +43,15 @@ cd web && npm run build
 cd ../desktop/src-tauri && cargo build
 ./target/debug/xiaoman-desktop
 ```
-Tauri 通过 `frontendDist: ../../web/dist` 加载 Web 端；正式打包需安装 Tauri CLI。
+Tauri 通过 `frontendDist: ../../web/dist` 加载 Web 端（编译期嵌入）；正式打包需安装 Tauri CLI。桌面云同步需要 `desktop/src-tauri/oauth.enc`（见上），无文件时应用仍可运行、仅隐藏云同步。
 
-## 云同步（Android / Web）
+## 云同步（Android / Web / 桌面）
 
 云端协议（文件名 `xiaoman_backup.ias`、Drive appDataFolder 的 URL/方法/头部、响应解析、中文错误映射）统一在 `core/src/cloud.rs`，通过 JNI 与 wasm 导出；各端只负责 OAuth 授权、token 存储和 HTTP 执行：
 
 - Android：`apps/android/.../CloudSync.kt` 负责 GitHub 设备码 OAuth + Gist、Google PKCE + Drive；Drive 部分调用 `NativeCore.cloud*`。**当前 GitHub 通过 `ENABLE_GITHUB_LOGIN=false` 隐藏（TODO: 提供真实 OAuth App Client ID 后恢复，并去掉界面条件）**；云端内容为 `.ias` 字节（Gist 用 Base64 文本），手动上传/恢复。Client ID 可写在 `apps/android/local.properties` 的 `oauth.github.clientId` / `oauth.google.clientId`，或在 App 内「设置 → 数据同步」填写。Google 构建时 Client ID（local.properties）会生成自定义 Scheme 回调并注册 intent-filter（授权后直接跳回 App）；应用内填写的 ID 因 Scheme 不可动态注册，自动回退 loopback（需「桌面应用」类型客户端）。MainActivity 为 singleTask 并在 onNewIntent 处理回调。GitHub 仍用设备码（OAuth App 需启用 Device Flow），不使用重定向（交换令牌需 client_secret）。
 - Web：`web/src/cloud.ts` 用 Google Identity Services Token 模型（`web/src/cloud.ts` 内 `CLIENT_ID`，SPA 无 client_secret）+ `core/src/cloud.rs` 的请求描述，`fetch` 执行；设置页「数据同步」提供登录、上传、恢复、退出。token 存 localStorage `xiaoman_google_v1`。OAuth 客户端需配置「已获授权的 JavaScript 来源」（localhost:5173、线上域名）。
-- 桌面（Tauri）：`cloudSupported()` 返回 false，暂未接入（自定义 scheme 不在 Google 授权来源内，后续可做 loopback 或 Rust 原生 OAuth）。
+- 桌面（Tauri）：系统浏览器 + `http://127.0.0.1:41888` loopback（PKCE）；Rust 命令 `google_login` / `google_refresh` / `cloud_file_info` / `cloud_upload` / `cloud_download` 用 reqwest 执行 `core/src/cloud.rs` 的请求。凭据来自**构建时嵌入的加密文件** `desktop/src-tauri/oauth.enc`（AES-256-GCM，密钥随程序分发，仅防明文入库），已 gitignore；用 `desktop/scripts/seed-oauth.mjs` 生成（环境变量或 `--id/--secret`）。**没有该文件时桌面端不显示云同步入口**（`cloudSupported()` 为 false）。CI 用 Actions Secret 在构建前写入该文件。Google Desktop 客户端换取令牌仍需 `client_secret`；授权 URL 用 `prompt=select_account`（首次仍需用户勾选 Drive 权限，应用无法预勾选）。
 
 ## 品牌/型号数据
 
@@ -73,6 +73,7 @@ Tauri 通过 `frontendDist: ../../web/dist` 加载 Web 端；正式打包需安�
 ## 修改约定
 
 - UI：Android 改 `apps/android/app/src/main/java/com/xiaoman/app/`；Web 改 `web/src/`；桌面仅外壳。
+- 桌面：`frontendDist` 在**编译期**嵌入二进制，改完 Web 后必须 `touch desktop/src-tauri/src/main.rs && cargo build` 再启动，否则运行的是旧前端。凭据文件：`node desktop/scripts/seed-oauth.mjs`（需环境变量 `XIAOMAN_GOOGLE_CLIENT_ID` / `XIAOMAN_GOOGLE_CLIENT_SECRET`），生成 `desktop/src-tauri/oauth.enc`（gitignore）。
 - Web 端已支持主图/备注图片（Canvas 压缩为 JPEG data URL，存 localStorage；随 `.ias` 的 images/ 条目互通，已在 Android 导入验证）与到期时间字段；图片数量/体积受 localStorage 限制。
 - Web 品牌数据会缓存到 localStorage（`xiaoman_brands_v1`），设置页「品牌与型号数据」可通过 GitHub（Contents API，失败回退 raw）拉取最新版本；分类/标签支持重命名与上下移动；到期提醒使用浏览器 Notification（页面打开时检查，需手动授权）；提供 `public/manifest.webmanifest` 支持安装为 PWA。
 - 计算、`.ias` 编解码与云备份协议以 Rust `core/` 为准，跨端保持一致；改动后在 Android + Web 两端验证导入导出与云同步。

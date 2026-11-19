@@ -1,0 +1,55 @@
+# 示例工作流：在 CI 中注入桌面端加密凭据并构建。
+# 需要在仓库 Settings → Secrets and variables → Actions 中添加：
+#   XIAOMAN_OAUTH_ENC = base64(desktop/src-tauri/oauth.enc)
+# 没有该 secret 时（如 fork 的 PR）仍可构建，只是不启用桌面云同步。
+name: build
+
+on:
+  workflow_dispatch:
+  push:
+    tags: ['v*']
+
+jobs:
+  desktop:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
+
+      - name: Install wasm-bindgen-cli
+        run: cargo install wasm-bindgen-cli --version 0.2.130 --locked
+
+      - name: Inject OAuth credentials
+        env:
+          OAUTH_ENC: ${{ secrets.XIAOMAN_OAUTH_ENC }}
+        run: |
+          if [ -n "$OAUTH_ENC" ]; then
+            python3 -c 'import base64,os,sys; open("desktop/src-tauri/oauth.enc","wb").write(base64.b64decode(os.environ["OAUTH_ENC"]))'
+            echo "oauth.enc injected"
+          else
+            echo "XIAOMAN_OAUTH_ENC not set; desktop cloud sync disabled"
+          fi
+
+      - name: Build web
+        working-directory: web
+        run: |
+          npm ci
+          npm run build
+
+      - name: Build desktop
+        working-directory: desktop/src-tauri
+        run: cargo build --release
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: xiaoman-desktop-macos
+          path: desktop/src-tauri/target/release/xiaoman-desktop

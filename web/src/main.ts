@@ -169,13 +169,6 @@ class App {
     else if (this.view === 'wishes') this.renderWishes(wrap)
     else if (this.view === 'trends') this.renderTrends(wrap)
     else this.renderSettings(wrap)
-    wrap.append(
-      E(
-        'div',
-        { class: 'footer-ver' },
-        `版本 1.0.0 · 核心 ${coreVersion()}\n数据默认保存在本机（浏览器），可选择备份到云端`
-      )
-    )
     appEl.append(wrap, this.nav(), this.fab())
   }
 
@@ -659,8 +652,13 @@ class App {
     root.append(
       E('div', { class: 'section' }, E('h2', { text: '关于' }), this.group([
         this.linkRow('项目主页', 'GitHub', () => window.open('https://github.com/HanYunChenLuo/xiaoman', '_blank')),
+        this.linkRow('版本', '1.0.0', null),
         this.linkRow('核心版本', coreVersion(), null)
-      ]))
+      ]), E('p', {
+        class: 'muted',
+        text: '数据默认保存在本机（浏览器），可选择备份到云端',
+        style: { margin: '10px 4px 0', fontSize: '12px' }
+      }))
     )
     const wipe = E('button', {
       class: 'btn danger',

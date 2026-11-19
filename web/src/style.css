@@ -790,14 +790,6 @@ body.dark .btn.danger {
   line-height: 1.6;
 }
 
-.footer-ver {
-  text-align: center;
-  color: var(--gray);
-  font-size: 11px;
-  padding: 26px 20px 10px;
-  white-space: pre-line;
-}
-
 @media (max-width: 640px) {
   .hero {
     margin: 8px 12px 0;

@@ -42,4 +42,15 @@ object NativeCore {
     @JvmStatic external fun cloudParseFileList(status: Int, body: String): String
 
     @JvmStatic external fun cloudParseFile(status: Int, body: String): String
+
+    // 更新检查协议（core/src/update.rs）
+    @JvmStatic external fun updateApiUrl(): String
+
+    @JvmStatic external fun updateReleasePage(): String
+
+    @JvmStatic external fun updateParseRelease(status: Int, body: String): String
+
+    @JvmStatic external fun updateIsNewer(current: String, latest: String): Boolean
+
+    @JvmStatic external fun updatePickAsset(assetsJson: String, suffix: String): String
 }

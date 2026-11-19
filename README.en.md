@@ -23,7 +23,8 @@
 - **Insights**: daily-cost chart with category and status filters
 - **Brands & models**: 70+ brands and 2000+ models across digital, cars and bicycles, grouped by product line; automatic brand and icon detection
 - **Backup & restore**: import and export encrypted `.ias` backups (WinZip AES-256)
-- **Cloud sync** (Android / Web): Google sign-in with the Drive app data folder; manual encrypted backup upload/restore. The cloud protocol lives in the shared Rust core (GitHub device flow + Gist is implemented but hidden for now — see TODO)
+- **Cloud sync** (Android / Web / desktop): Google sign-in with the Drive app data folder; manual encrypted backup upload/restore. The cloud protocol lives in the shared Rust core (GitHub device flow + Gist is implemented but hidden for now — see TODO)
+- **In-app updates**: checks GitHub Releases; Android downloads the APK and opens the system installer, the desktop app uses signed Tauri auto-updates
 
 ## Download & install
 

@@ -512,8 +512,15 @@ fn hide_to_tray(window: &tauri::Window) {
     let _ = window.hide();
 }
 
+/// 下载安装完成后重启应用（由 updater 前端流程调用）。
+#[tauri::command]
+fn restart_app(app: tauri::AppHandle) {
+    app.restart();
+}
+
 fn main() {
     tauri::Builder::default()
+        .plugin(tauri_plugin_updater::Builder::new().build())
         .setup(|app| {
             let show = MenuItem::with_id(app, "show", "打开小满", true, None::<&str>)?;
             let quit = MenuItem::with_id(app, "quit", "退出", true, None::<&str>)?;
@@ -549,6 +556,7 @@ fn main() {
             }
         })
         .invoke_handler(tauri::generate_handler![
+            restart_app,
             oauth_defaults,
             google_login,
             google_refresh,

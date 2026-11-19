@@ -1,8 +1,10 @@
 package com.xiaoman.app
 
 import android.app.Activity
+import android.app.AlertDialog
 import android.app.DatePickerDialog
 import android.app.Dialog
+import android.app.ProgressDialog
 import android.content.Intent
 import android.content.res.ColorStateList
 import android.graphics.Bitmap
@@ -950,6 +952,7 @@ class MainActivity : Activity() {
 
         section(body, "关于")
         val g6 = group()
+        g6.addView(row("ic_restore", "检查更新", "v${BuildConfig.VERSION_NAME}", true) { checkUpdate() })
         g6.addView(row("ic_terms", "用户协议", null, true) {
             doc("用户协议", "这里是《用户协议》的示例内容。\n\n小满仅将资产数据保存在本机，不会上传任何内容。")
         })
@@ -972,6 +975,44 @@ class MainActivity : Activity() {
         body.addView(ver)
 
         setScreen(scrollPage(body), true, "settings")
+    }
+
+    // ---------- 应用更新 ----------
+    private fun checkUpdate() {
+        toast("正在检查更新…")
+        Updater(this).check({ info ->
+            if (info == null) {
+                toast("已是最新版本 v${BuildConfig.VERSION_NAME}")
+                return@check
+            }
+            val notes = info.notes.trim()
+            val message = (if (notes.isEmpty()) "" else notes.take(600) + "\n\n") + "是否下载并安装？"
+            AlertDialog.Builder(this)
+                .setTitle("发现新版本 ${info.version}")
+                .setMessage(message)
+                .setPositiveButton("下载并安装") { _, _ -> downloadUpdate(info) }
+                .setNegativeButton("取消", null)
+                .show()
+        }, { msg ->
+            toast("检查更新失败：$msg")
+        })
+    }
+
+    private fun downloadUpdate(info: Updater.Info) {
+        val progress = ProgressDialog(this).apply {
+            setMessage("正在下载… 0%")
+            setCancelable(false)
+            show()
+        }
+        Updater(this).download(info, { pct ->
+            progress.setMessage("正在下载… $pct%")
+        }, { apk ->
+            progress.dismiss()
+            Updater(this).install(apk)
+        }, { msg ->
+            progress.dismiss()
+            toast("更新失败：$msg")
+        })
     }
 
     private fun section(body: LinearLayout, label: String) {

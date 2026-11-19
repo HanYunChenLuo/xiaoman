@@ -64,6 +64,10 @@ android {
 
 }
 
+dependencies {
+    implementation 'androidx.core:core:1.13.1'
+}
+
 def sdkDirProp = localProps.getProperty('sdk.dir') ?: System.getenv('ANDROID_HOME')
 def ndkBase = sdkDirProp ? new File(sdkDirProp, 'ndk') : null
 def ndkDir = null
@@ -72,7 +76,9 @@ if (ndkBase != null && ndkBase.exists()) {
     if (dirs != null && dirs.length > 0) ndkDir = dirs.sort { it.name }.last()
 }
 def rustTarget = 'aarch64-linux-android'
-def ndkToolDir = ndkDir != null ? new File(ndkDir, 'toolchains/llvm/prebuilt/darwin-x86_64/bin') : null
+def hostIsMac = System.getProperty('os.name').toLowerCase().contains('mac')
+def ndkHostTag = hostIsMac ? 'darwin-x86_64' : 'linux-x86_64'
+def ndkToolDir = ndkDir != null ? new File(ndkDir, "toolchains/llvm/prebuilt/${ndkHostTag}/bin") : null
 
 tasks.register('buildRustAndroid', Exec) {
     workingDir rootProject.file('../../core')

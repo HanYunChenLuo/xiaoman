@@ -33,6 +33,7 @@ import {
   todayStr,
   uid
 } from './model'
+import { APP_VERSION, checkDesktopUpdate } from './update'
 import {
   accountEmail,
   cloudConnected,
@@ -652,7 +653,8 @@ class App {
     root.append(
       E('div', { class: 'section' }, E('h2', { text: '关于' }), this.group([
         this.linkRow('项目主页', 'GitHub', () => window.open('https://github.com/HanYunChenLuo/xiaoman', '_blank')),
-        this.linkRow('版本', '1.0.0', null),
+        ...(isTauri() ? [this.linkRow('检查更新', `v${APP_VERSION}`, () => this.checkUpdate())] : []),
+        this.linkRow('版本', APP_VERSION, null),
         this.linkRow('核心版本', coreVersion(), null)
       ]), E('p', {
         class: 'muted',
@@ -716,6 +718,28 @@ class App {
     input.checked = checked
     input.addEventListener('change', () => onChange(input.checked))
     return E('label', { class: 'row' }, E('span', { class: 'grow', text: label }), E('span', { class: 'toggle' }, input))
+  }
+
+  // ---------------- 应用更新（桌面端） ----------------
+  async checkUpdate(): Promise<void> {
+    toast('正在检查更新…')
+    try {
+      const update = await checkDesktopUpdate()
+      if (!update) {
+        toast(`已是最新版本 v${APP_VERSION}`)
+        return
+      }
+      const notes = update.notes.trim()
+      const ok = await this.askConfirm(
+        `${notes ? notes.slice(0, 600) + '\n\n' : ''}发现新版本 ${update.version}，是否下载并安装？`,
+        '检查更新'
+      )
+      if (!ok) return
+      toast('正在下载更新… 0%', 6000)
+      await update.install((pct) => toast(`正在下载更新… ${pct}%`, 1200))
+    } catch (e) {
+      toast('检查更新失败：' + ((e as Error)?.message ?? String(e)), 6000)
+    }
   }
 
   checkBrands(): void {

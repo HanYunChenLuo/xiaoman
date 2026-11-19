@@ -4,6 +4,7 @@
 pub mod backup;
 pub mod calc;
 pub mod cloud;
+pub mod update;
 
 pub const VERSION: &str = "0.1.0";
 
@@ -285,6 +286,60 @@ mod android {
         let out = crate::cloud::parse_file(status, &body);
         ret_string(&mut env, out.to_string())
     }
+
+    // ---------- 更新检查协议 ----------
+
+    #[no_mangle]
+    pub extern "system" fn Java_com_xiaoman_app_NativeCore_updateApiUrl(
+        mut env: JNIEnv,
+        _class: JClass,
+    ) -> jstring {
+        ret_string(&mut env, crate::update::release_api_url())
+    }
+
+    #[no_mangle]
+    pub extern "system" fn Java_com_xiaoman_app_NativeCore_updateReleasePage(
+        mut env: JNIEnv,
+        _class: JClass,
+    ) -> jstring {
+        ret_string(&mut env, crate::update::release_page_url())
+    }
+
+    #[no_mangle]
+    pub extern "system" fn Java_com_xiaoman_app_NativeCore_updateParseRelease(
+        mut env: JNIEnv,
+        _class: JClass,
+        status: jint,
+        body: JString,
+    ) -> jstring {
+        let Ok(body) = take_string(&mut env, &body) else { return std::ptr::null_mut() };
+        let out = crate::update::parse_release(status, &body);
+        ret_string(&mut env, out.to_string())
+    }
+
+    #[no_mangle]
+    pub extern "system" fn Java_com_xiaoman_app_NativeCore_updateIsNewer(
+        mut env: JNIEnv,
+        _class: JClass,
+        current: JString,
+        latest: JString,
+    ) -> jni::sys::jboolean {
+        let Ok(cur) = take_string(&mut env, &current) else { return 0 };
+        let Ok(new) = take_string(&mut env, &latest) else { return 0 };
+        crate::update::is_newer(&cur, &new) as jni::sys::jboolean
+    }
+
+    #[no_mangle]
+    pub extern "system" fn Java_com_xiaoman_app_NativeCore_updatePickAsset(
+        mut env: JNIEnv,
+        _class: JClass,
+        assets: JString,
+        suffix: JString,
+    ) -> jstring {
+        let Ok(a) = take_string(&mut env, &assets) else { return std::ptr::null_mut() };
+        let Ok(s) = take_string(&mut env, &suffix) else { return std::ptr::null_mut() };
+        ret_string(&mut env, crate::update::pick_asset(&a, &s).to_string())
+    }
 }
 
 #[cfg(target_arch = "wasm32")]
@@ -389,5 +444,32 @@ mod wasm {
     #[wasm_bindgen]
     pub fn cloud_parse_file(status: i32, body: &str) -> String {
         crate::cloud::parse_file(status, body).to_string()
+    }
+
+    // ---------- 更新检查协议 ----------
+
+    #[wasm_bindgen]
+    pub fn update_api_url() -> String {
+        crate::update::release_api_url()
+    }
+
+    #[wasm_bindgen]
+    pub fn update_release_page() -> String {
+        crate::update::release_page_url()
+    }
+
+    #[wasm_bindgen]
+    pub fn update_parse_release(status: i32, body: &str) -> String {
+        crate::update::parse_release(status, body).to_string()
+    }
+
+    #[wasm_bindgen]
+    pub fn update_is_newer(current: &str, latest: &str) -> bool {
+        crate::update::is_newer(current, latest)
+    }
+
+    #[wasm_bindgen]
+    pub fn update_pick_asset(assets_json: &str, suffix: &str) -> String {
+        crate::update::pick_asset(assets_json, suffix).to_string()
     }
 }

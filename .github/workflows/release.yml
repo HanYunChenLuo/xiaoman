@@ -1,0 +1,127 @@
+# 发布工作流：推送 v* 标签时为 Android 与 macOS 生成更新包，并写入 GitHub Release。
+#
+# 需要配置的仓库 Secrets：
+#   TAURI_SIGNING_PRIVATE_KEY        ~/.tauri/xiaoman-updater.key 的内容
+#   ANDROID_KEYSTORE_BASE64          replica.keystore 的 base64
+#   ANDROID_KEYSTORE_PASSWORD        keystore 口令
+#   ANDROID_KEY_PASSWORD             key 口令
+#   ANDROID_KEY_ALIAS                默认 replica
+#   XIAOMAN_ANDROID_GOOGLE_CLIENT_ID （可选，Android Google 登录）
+#   XIAOMAN_ANDROID_GITHUB_CLIENT_ID （可选）
+#
+# 发布前记得提升 apps/android/app/build.gradle 的 versionCode/versionName，
+# 并让 tag（v1.0.1）与 versionName 一致；桌面版本取 tauri.conf.json 的 version。
+name: release
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  desktop:
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
+
+      - name: Install wasm-bindgen-cli
+        run: cargo install wasm-bindgen-cli --version 0.2.130 --locked
+
+      - name: Build web
+        working-directory: web
+        run: |
+          npm ci
+          npm run build
+
+      - name: Inject OAuth credentials
+        env:
+          OAUTH_ENC: ${{ secrets.XIAOMAN_OAUTH_ENC }}
+        run: |
+          if [ -n "$OAUTH_ENC" ]; then
+            python3 -c 'import base64,os,sys; open("desktop/src-tauri/oauth.enc","wb").write(base64.b64decode(os.environ["OAUTH_ENC"]))'
+          else
+            echo -n "" > desktop/src-tauri/oauth.enc
+            echo "XIAOMAN_OAUTH_ENC not set; cloud sync disabled in this build"
+          fi
+
+      - name: Build and release desktop
+        uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+        with:
+          projectPath: desktop/src-tauri
+          tagName: ${{ github.ref_name }}
+          releaseName: 小满 ${{ github.ref_name }}
+          releaseBody: 见仓库提交记录与更新说明。
+          releaseDraft: false
+          prerelease: false
+          includeUpdaterJson: true
+
+  android:
+    runs-on: ubuntu-latest
+    needs: desktop
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-linux-android
+
+      - uses: android-actions/setup-android@v3
+
+      - name: Install Android SDK packages
+        run: |
+          sdkmanager "platforms;android-34" "build-tools;34.0.0" "ndk;30.0.16248370"
+          yes | sdkmanager --licenses >/dev/null || true
+
+      - name: Prepare signing and OAuth config
+        env:
+          KEYSTORE: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          STORE_PASS: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          KEY_PASS: ${{ secrets.ANDROID_KEY_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          GOOGLE_ID: ${{ secrets.XIAOMAN_ANDROID_GOOGLE_CLIENT_ID }}
+          GITHUB_ID: ${{ secrets.XIAOMAN_ANDROID_GITHUB_CLIENT_ID }}
+        run: |
+          printf '%s' "$KEYSTORE" | base64 -d > apps/android/replica.keystore
+          cat > apps/android/local.properties <<EOF
+          sdk.dir=$ANDROID_SDK_ROOT
+          signing.storePassword=$STORE_PASS
+          signing.keyPassword=$KEY_PASS
+          signing.keyAlias=${KEY_ALIAS:-replica}
+          oauth.google.clientId=$GOOGLE_ID
+          oauth.github.clientId=$GITHUB_ID
+          EOF
+
+      - name: Build APK
+        working-directory: apps/android
+        run: |
+          chmod +x gradlew
+          ./gradlew assembleRelease
+
+      - name: Upload APK to release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release upload "${{ github.ref_name }}" \
+            apps/android/app/build/outputs/apk/release/app-release.apk#xiaoman-android.apk \
+            --clobber

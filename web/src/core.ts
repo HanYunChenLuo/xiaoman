@@ -44,6 +44,58 @@ export function decodeIas(bytes: Uint8Array): unknown {
   return JSON.parse(wasm.decode_ias(bytes))
 }
 
+// ---------------- 云备份协议（core/src/cloud.rs） ----------------
+
+export interface CloudRequest {
+  method: string
+  url: string
+  headers: Record<string, string>
+  body?: string
+}
+
+export interface CloudFile {
+  id: string
+  name?: string
+  modifiedTime?: string
+  size?: string
+}
+
+export interface CloudParseResult {
+  ok: boolean
+  file?: CloudFile | null
+  status?: number
+  relogin?: boolean
+  error?: string
+}
+
+export function cloudBackupName(): string {
+  return wasm.cloud_backup_name()
+}
+
+export function cloudFindRequest(token: string): CloudRequest {
+  return JSON.parse(wasm.cloud_find_request(token))
+}
+
+export function cloudCreateRequest(token: string): CloudRequest {
+  return JSON.parse(wasm.cloud_create_request(token))
+}
+
+export function cloudUploadRequest(token: string, fileId: string): CloudRequest {
+  return JSON.parse(wasm.cloud_upload_request(token, fileId))
+}
+
+export function cloudDownloadRequest(token: string, fileId: string): CloudRequest {
+  return JSON.parse(wasm.cloud_download_request(token, fileId))
+}
+
+export function cloudParseFileList(status: number, body: string): CloudParseResult {
+  return JSON.parse(wasm.cloud_parse_file_list(status, body))
+}
+
+export function cloudParseFile(status: number, body: string): CloudParseResult {
+  return JSON.parse(wasm.cloud_parse_file(status, body))
+}
+
 function tzOffsetMs(): number {
   return -new Date().getTimezoneOffset() * 60000
 }

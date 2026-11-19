@@ -30,6 +30,19 @@ import {
   todayStr,
   uid
 } from './model'
+import {
+  accountEmail,
+  cloudConnected,
+  cloudSupported,
+  cloudTokenFresh,
+  cloudUnsupportedReason,
+  downloadBackup,
+  lastSyncText,
+  remoteInfo,
+  signIn,
+  signOut,
+  uploadBackup
+} from './cloud'
 
 type View = 'home' | 'wishes' | 'trends' | 'settings'
 
@@ -107,6 +120,7 @@ class App {
   filter = 'all'
   categoryFilter = 'all'
   range = 365
+  cloudBusy = false
 
   async boot(): Promise<void> {
     await initCore()
@@ -153,7 +167,7 @@ class App {
       E(
         'div',
         { class: 'footer-ver' },
-        `版本 1.0.0 · 核心 ${coreVersion()}\n全部数据仅保存在本机（浏览器）`
+        `版本 1.0.0 · 核心 ${coreVersion()}\n数据默认保存在本机（浏览器），可选择备份到云端`
       )
     )
     appEl.append(wrap, this.nav(), this.fab())
@@ -613,6 +627,9 @@ class App {
       ]))
     )
     root.append(
+      E('div', { class: 'section' }, E('h2', { text: '数据同步' }), this.group(this.cloudRows()))
+    )
+    root.append(
       E('div', { class: 'section' }, E('h2', { text: '提醒' }), this.group([
         this.rowCheck('到期提醒（浏览器通知）', !!s.notifyExpiry, async (v) => {
           if (v) {
@@ -705,6 +722,126 @@ class App {
         this.render()
       })
       .catch((e) => toast('检查更新失败：' + (e as Error).message))
+  }
+
+  // ---------------- 云同步 ----------------
+  cloudRows(): HTMLElement[] {
+    if (!cloudSupported()) {
+      return [this.linkRow('Google 云备份', cloudUnsupportedReason(), null)]
+    }
+    if (!cloudConnected()) {
+      return [
+        this.linkRow('Google 账号', '点击登录', () => this.cloudSignIn()),
+        this.linkRow('云端备份', '登录后可上传 / 恢复', null)
+      ]
+    }
+    if (!cloudTokenFresh()) {
+      return [
+        this.linkRow('Google 账号', '登录已过期，点击重新授权', () => this.cloudSignIn()),
+        this.linkRow('云端备份', '重新授权后可用', null)
+      ]
+    }
+    return [
+      this.linkRow('Google 账号', accountEmail(), () => this.cloudAccountModal()),
+      this.linkRow('上传备份到云端', lastSyncText(), () => this.cloudUpload()),
+      this.linkRow('从云端恢复', '下载', () => this.cloudRestore())
+    ]
+  }
+
+  async cloudSignIn(): Promise<void> {
+    if (this.cloudBusy) return
+    this.cloudBusy = true
+    toast('正在打开 Google 登录…')
+    try {
+      const acc = await signIn()
+      toast('已登录 ' + (acc.email || 'Google 账号'))
+      this.render()
+    } catch (e) {
+      toast((e as Error).message)
+    } finally {
+      this.cloudBusy = false
+    }
+  }
+
+  async cloudUpload(): Promise<void> {
+    if (this.cloudBusy) return
+    this.cloudBusy = true
+    toast('正在上传备份…')
+    try {
+      const bytes = exportIas(this.state)
+      await uploadBackup(bytes)
+      toast('已上传到云端')
+    } catch (e) {
+      toast('上传失败：' + (e as Error).message)
+    } finally {
+      this.cloudBusy = false
+      this.render()
+    }
+  }
+
+  async cloudRestore(): Promise<void> {
+    if (this.cloudBusy) return
+    this.cloudBusy = true
+    toast('正在读取云端备份…')
+    try {
+      const got = await downloadBackup()
+      if (!got) {
+        toast('云端暂无备份')
+        return
+      }
+      const when = got.file.modifiedTime ? new Date(got.file.modifiedTime).toLocaleString('zh-CN') : ''
+      this.applyBackup(got.bytes, when ? `云端备份（${when}）` : '云端备份')
+    } catch (e) {
+      toast('恢复失败：' + (e as Error).message)
+    } finally {
+      this.cloudBusy = false
+      this.render()
+    }
+  }
+
+  cloudAccountModal(): void {
+    const content = E('div', {})
+    const rows = E('div', { class: 'group' })
+    const addRow = (k: string, v: string) =>
+      rows.append(E('div', { class: 'row' }, E('span', { class: 'grow', text: k }), E('span', { class: 'val', text: v })))
+    addRow('账号', accountEmail())
+    addRow('上次上传', lastSyncText())
+    const remote = E('span', { class: 'val', text: '查询中…' })
+    rows.append(E('div', { class: 'row' }, E('span', { class: 'grow', text: '云端文件' }), remote))
+    content.append(
+      E('button', { class: 'close', text: '✕', on: { click: () => this.closeModal() } }),
+      E('h2', { text: 'Google 账号' }),
+      rows,
+      E(
+        'div',
+        { class: 'form-actions' },
+        E('button', {
+          class: 'btn danger',
+          text: '退出登录',
+          on: {
+            click: async () => {
+              await signOut()
+              this.closeModal()
+              this.render()
+              toast('已退出 Google')
+            }
+          }
+        }),
+        E('button', { class: 'btn', text: '关闭', on: { click: () => this.closeModal() } })
+      )
+    )
+    this.openModal(content)
+    remoteInfo()
+      .then((info) => {
+        remote.textContent = info
+          ? `${info.modifiedTime ? new Date(info.modifiedTime).toLocaleString('zh-CN') : '已上传'}${
+              info.size ? ` · ${(Number(info.size) / 1024).toFixed(1)} KB` : ''
+            }`
+          : '尚无备份'
+      })
+      .catch((e) => {
+        remote.textContent = '读取失败：' + (e as Error).message
+      })
   }
 
   checkExpiryNotifications(): void {
@@ -1362,35 +1499,40 @@ class App {
       if (!file) return
       try {
         const bytes = new Uint8Array(await file.arrayBuffer())
-        const { state, count } = importIas(bytes)
-        const replace = confirm(`读取到 ${count} 条记录。\n\n确定 = 覆盖本地数据；取消 = 合并到本地。`)
-        if (replace) {
-          this.state.assets = state.assets ?? []
-        } else {
-          const byId = new Map(this.state.assets.map((a) => [a.id, a]))
-          for (const a of state.assets ?? []) byId.set(a.id, a)
-          this.state.assets = [...byId.values()]
-        }
-        for (const c of state.categories ?? []) {
-          if (!this.state.categories.some((x) => x.id === c.id)) this.state.categories.push(c)
-        }
-        for (const t of state.tags ?? []) {
-          if (!this.state.tags.some((x) => x.id === t.id)) this.state.tags.push(t)
-        }
-        // 兼容从其他端导入时没有图标的情况
-        for (const a of this.state.assets) {
-          if (!a.icon || a.icon.includes('default')) a.icon = autoIcon(a.model || a.name)
-          if (!a.status) a.status = 'serving'
-          if (!a.kind) a.kind = 'asset'
-        }
-        this.save()
-        this.render()
-        toast(`成功导入 ${count} 条数据`)
+        this.applyBackup(bytes, '本地备份')
       } catch (e) {
         toast('导入失败：' + (e as Error).message)
       }
     })
     input.click()
+  }
+
+  /** 解析 .ias 字节并按用户选择覆盖或合并；文件导入与云端恢复共用。 */
+  applyBackup(bytes: Uint8Array, source: string): void {
+    const { state, count } = importIas(bytes)
+    const replace = confirm(`已读取${source}，共 ${count} 条记录。\n\n确定 = 覆盖本地数据；取消 = 合并到本地。`)
+    if (replace) {
+      this.state.assets = state.assets ?? []
+    } else {
+      const byId = new Map(this.state.assets.map((a) => [a.id, a]))
+      for (const a of state.assets ?? []) byId.set(a.id, a)
+      this.state.assets = [...byId.values()]
+    }
+    for (const c of state.categories ?? []) {
+      if (!this.state.categories.some((x) => x.id === c.id)) this.state.categories.push(c)
+    }
+    for (const t of state.tags ?? []) {
+      if (!this.state.tags.some((x) => x.id === t.id)) this.state.tags.push(t)
+    }
+    // 兼容从其他端导入时没有图标的情况
+    for (const a of this.state.assets) {
+      if (!a.icon || a.icon.includes('default')) a.icon = autoIcon(a.model || a.name)
+      if (!a.status) a.status = 'serving'
+      if (!a.kind) a.kind = 'asset'
+    }
+    this.save()
+    this.render()
+    toast(`成功导入 ${count} 条数据`)
   }
 }
 

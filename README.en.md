@@ -23,7 +23,7 @@
 - **Insights**: daily-cost chart with category and status filters
 - **Brands & models**: 70+ brands and 2000+ models across digital, cars and bicycles, grouped by product line; automatic brand and icon detection
 - **Backup & restore**: import and export encrypted `.ias` backups (WinZip AES-256)
-- **Cloud sync** (Android): Google sign-in with the Drive app data folder; manual encrypted backup upload/restore (GitHub device flow + Gist is implemented but hidden for now — see TODO)
+- **Cloud sync** (Android / Web): Google sign-in with the Drive app data folder; manual encrypted backup upload/restore. The cloud protocol lives in the shared Rust core (GitHub device flow + Gist is implemented but hidden for now — see TODO)
 
 ## Download & install
 
@@ -79,9 +79,9 @@ Brands, aliases and models are remotely updatable data. The single source of tru
 Cloud sync uses your own OAuth clients (none are shipped):
 
 - **GitHub** (hidden for now, TODO): re-enable once a Device Flow OAuth App Client ID is available; `ENABLE_GITHUB_LOGIN=false` hides the UI.
-- **Google**: create a Google Cloud project, enable the Drive API, configure the OAuth consent screen, then create a Desktop-app OAuth client and paste its Client ID in the app (Google sign-in uses a 127.0.0.1 loopback redirect).
+- **Google**: create a Google Cloud project, enable the Drive API, configure the OAuth consent screen, then create a Desktop-app OAuth client and paste its Client ID in the app (Google sign-in uses a 127.0.0.1 loopback redirect). For the web app, create a Web-application OAuth client instead and add the site origins (e.g. `http://localhost:5173` and your production domain) to the authorized JavaScript origins; the SPA uses the GIS token model (no client secret) and its Client ID lives in `web/src/cloud.ts`.
 
-You can also set `oauth.github.clientId` / `oauth.google.clientId` in `apps/android/local.properties` as defaults. **Google redirect sign-in**: when a Google client ID is present at build time, the app registers `com.googleusercontent.apps.<client-id>:/oauth2redirect` and the browser returns directly to the app; IDs entered only in-app fall back to a 127.0.0.1 loopback redirect. GitHub keeps device flow because its OAuth App token exchange requires a client secret that must not ship in the client. Cloud storage holds encrypted `.ias` backups; web/desktop cloud sync is not wired yet.
+You can also set `oauth.github.clientId` / `oauth.google.clientId` in `apps/android/local.properties` as defaults. **Google redirect sign-in**: when a Google client ID is present at build time, the app registers `com.googleusercontent.apps.<client-id>:/oauth2redirect` and the browser returns directly to the app; IDs entered only in-app fall back to a 127.0.0.1 loopback redirect. GitHub keeps device flow because its OAuth App token exchange requires a client secret that must not ship in the client. Cloud storage holds encrypted `.ias` backups; Android and Web share the same request/parse logic in `core/src/cloud.rs`. Desktop cloud sync is not wired yet.
 
 ## Project layout
 

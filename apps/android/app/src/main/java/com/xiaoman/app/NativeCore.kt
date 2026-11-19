@@ -27,4 +27,19 @@ object NativeCore {
     @JvmStatic external fun dailyOfKind(assetsJson: String, kind: String, nowMs: Long, tzOffsetMs: Long): Double
 
     @JvmStatic external fun countOfKind(assetsJson: String, kind: String, status: String): Int
+
+    // 云备份协议（core/src/cloud.rs）：返回请求 JSON / 解析结果 JSON
+    @JvmStatic external fun cloudBackupName(): String
+
+    @JvmStatic external fun cloudFindRequest(token: String): String
+
+    @JvmStatic external fun cloudCreateRequest(token: String): String
+
+    @JvmStatic external fun cloudUploadRequest(token: String, fileId: String): String
+
+    @JvmStatic external fun cloudDownloadRequest(token: String, fileId: String): String
+
+    @JvmStatic external fun cloudParseFileList(status: Int, body: String): String
+
+    @JvmStatic external fun cloudParseFile(status: Int, body: String): String
 }

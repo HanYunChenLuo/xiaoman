@@ -23,7 +23,7 @@
 - **趋势统计**：日均成本曲线、分类与状态筛选
 - **品牌与型号**：数码 / 汽车 / 自行车 70+ 品牌、2000+ 型号，按产品线分组；支持自动识别品牌与实物图标
 - **备份与恢复**：支持加密 `.ias` 备份的导入与导出（WinZip AES-256）
-- **云同步**（Android）：Google 登录 + Drive 应用数据文件夹，手动上传/恢复加密备份（GitHub 设备码 + Gist 已实现但暂时隐藏，见 TODO）
+- **云同步**（Android / Web）：Google 登录 + Drive 应用数据文件夹，手动上传/恢复加密备份；云端协议由 Rust core 统一实现（GitHub 设备码 + Gist 已实现但暂时隐藏，见 TODO）
 
 ## 下载与安装
 
@@ -74,14 +74,15 @@ cd ../desktop/src-tauri && cargo build    # 桌面（需先构建 Web）
 - App 启动时通过 GitHub Contents API（失败回退 raw）读取，校验版本区间，`dataVersion` 更新后即时生效；设置 → 数据管理 → 品牌与型号数据可手动检查
 - 构建时 `syncBrandData` 会把 `data/brands.json` 复制进 assets 作为离线内置数据
 
-## 登录与云同步配置（Android）
+## 登录与云同步配置（Android / Web）
 
 云同步需要自备 OAuth 客户端（不会随仓库分发）：
 
 - **GitHub**（暂时隐藏，TODO）：待提供启用 Device Flow 的 OAuth App Client ID 后恢复；`ENABLE_GITHUB_LOGIN=false` 时界面不显示。
-- **Google**：在 Google Cloud 创建项目、启用 Drive API、配置 OAuth 同意屏幕，创建「桌面应用」类型 OAuth 客户端；将 Client ID 粘贴到 App 内对应项（Google 登录使用 127.0.0.1 loopback 回调）。
+- **Google（Android）**：在 Google Cloud 创建项目、启用 Drive API、配置 OAuth 同意屏幕，创建「桌面应用」类型 OAuth 客户端；将 Client ID 粘贴到 App 内对应项（Google 登录使用 127.0.0.1 loopback 回调）。
+- **Google（Web）**：在同一项目创建「Web 应用」类型 OAuth 客户端，把站点来源（如 `http://localhost:5173` 与线上域名）加入「已获授权的 JavaScript 来源」。SPA 走 GIS Token 模型，无需 client_secret；Client ID 写在 `web/src/cloud.ts` 的 `CLIENT_ID`。
 
-也可在 `apps/android/local.properties` 写入 `oauth.github.clientId=...` 与 `oauth.google.clientId=...` 作为默认值。**Google 跳转登录**：构建时写入 `oauth.google.clientId` 会注册 `com.googleusercontent.apps.<client-id>:/oauth2redirect` 回调，授权后浏览器直接跳回 App；应用内临时填写的 Client ID 因无法动态注册 Scheme，会自动使用 127.0.0.1 loopback 方式。GitHub 仍使用设备码（网页授权 + 输入代码），因为其 OAuth App 交换令牌需要 client_secret，不适合内置。云端保存的是加密 `.ias` 备份；Web/桌面端的云同步尚未接入。
+也可在 `apps/android/local.properties` 写入 `oauth.github.clientId=...` 与 `oauth.google.clientId=...` 作为默认值。**Google 跳转登录**：构建时写入 `oauth.google.clientId` 会注册 `com.googleusercontent.apps.<client-id>:/oauth2redirect` 回调，授权后浏览器直接跳回 App；应用内临时填写的 Client ID 因无法动态注册 Scheme，会自动使用 127.0.0.1 loopback 方式。GitHub 仍使用设备码（网页授权 + 输入代码），因为其 OAuth App 交换令牌需要 client_secret，不适合内置。云端保存的是加密 `.ias` 备份，Android 与 Web 共用 `core/src/cloud.rs` 的请求构造与解析；桌面端尚未接入。
 
 ## 目录结构
 
@@ -96,7 +97,7 @@ AGENTS.md                            # 开发约定与维护说明
 ## 数据与隐私
 
 - Android 数据保存在应用本地（SharedPreferences + 私有目录），Web 保存在浏览器 localStorage，桌面复用 Web 本地存储
-- 默认无账号体系、不上传用户数据（GitHub/Google 登录与云同步为后续功能）
+- 默认无账号体系；数据默认只保存在本机，只有用户主动点击「上传」时才会把加密备份写入自己的 Google Drive 应用数据文件夹
 - 备份文件由用户主动导出，格式为加密的 `.ias`，可在兼容的备份工具之间互相导入
 
 ## 第三方资源与商标

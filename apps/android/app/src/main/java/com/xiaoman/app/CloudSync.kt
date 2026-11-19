@@ -30,7 +30,6 @@ class CloudSync(private val ctx: Context) {
     companion object {
         private const val GIST_DESC = "小满云备份"
         private const val GIST_FILE = "xiaoman_backup.ias.b64"
-        private const val DRIVE_FILE = "xiaoman_backup.ias"
         private const val REDIRECT = "http://127.0.0.1"
     }
 
@@ -396,35 +395,75 @@ class CloudSync(private val ctx: Context) {
     }
 
     // ---------- Google Drive ----------
+    // 云端协议（文件名、URL、错误文案）由 Rust core 提供，与 Web 端一致。
+
+    private data class CloudReq(
+        val method: String,
+        val url: String,
+        val headers: Map<String, String>,
+        val body: ByteArray?
+    )
+
+    private data class HttpResponse(val code: Int, val bytes: ByteArray, val text: String)
+
+    private fun cloudReq(json: String): CloudReq {
+        val obj = JSONObject(json)
+        val headers = LinkedHashMap<String, String>()
+        obj.optJSONObject("headers")?.let { h ->
+            for (key in h.keys()) headers[key] = h.optString(key)
+        }
+        val body = obj.optString("body", "").takeIf { obj.has("body") && it.isNotEmpty() }
+        return CloudReq(
+            obj.optString("method", "GET"),
+            obj.optString("url"),
+            headers,
+            body?.toByteArray(Charsets.UTF_8)
+        )
+    }
+
+    private fun execute(req: CloudReq, body: ByteArray? = null): HttpResponse =
+        httpRaw(req.url, req.method, body ?: req.body, req.headers)
+
+    private fun httpRaw(url: String, method: String, body: ByteArray?, headers: Map<String, String>): HttpResponse {
+        val conn = URL(url).openConnection() as HttpURLConnection
+        conn.requestMethod = method
+        conn.connectTimeout = 15000
+        conn.readTimeout = 30000
+        for ((k, v) in headers) conn.setRequestProperty(k, v)
+        if (body != null) {
+            conn.doOutput = true
+            conn.outputStream.use { it.write(body) }
+        }
+        val code = conn.responseCode
+        val data = readBytes(if (code in 200..299) conn.inputStream else conn.errorStream)
+        return HttpResponse(code, data, String(data, Charsets.UTF_8))
+    }
+
+    /** 解析 core 返回的 {ok,file,error,status}；失败时抛出中文错误。 */
+    private fun cloudResult(json: String): JSONObject {
+        val obj = JSONObject(json)
+        if (!obj.optBoolean("ok")) {
+            if (obj.optInt("status", 0) == 404) prefs.edit().remove("g_file").apply()
+            throw Exception(obj.optString("error", "云端请求失败"))
+        }
+        return obj
+    }
+
     fun googleUpload(bytes: ByteArray, onDone: () -> Unit, onError: (String) -> Unit) {
         Thread {
             try {
                 val token = googleToken()
                 var id = prefs.getString("g_file", "") ?: ""
                 if (id.isEmpty()) id = findDriveFile(token)
-                if (id.isNotEmpty()) {
-                    rawRequest(
-                        "https://www.googleapis.com/upload/drive/v3/files/$id?uploadType=media",
-                        "PATCH", bytes, "application/octet-stream",
-                        mapOf("Authorization" to "Bearer $token")
-                    )
-                } else {
-                    val boundary = "xiaoman" + System.currentTimeMillis()
-                    val meta = JSONObject().put("name", DRIVE_FILE).put("parents", JSONArray().put("appDataFolder")).toString()
-                    val bos = ByteArrayOutputStream()
-                    bos.write(("--$boundary\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n$meta\r\n").toByteArray())
-                    bos.write(("--$boundary\r\nContent-Type: application/octet-stream\r\n\r\n").toByteArray())
-                    bos.write(bytes)
-                    bos.write(("\r\n--$boundary--\r\n").toByteArray())
-                    val res = rawRequest(
-                        "https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart",
-                        "POST", bos.toByteArray(), "multipart/related; boundary=$boundary",
-                        mapOf("Authorization" to "Bearer $token")
-                    )
-                    id = JSONObject(String(res, Charsets.UTF_8)).optString("id")
+                if (id.isEmpty()) {
+                    val created = execute(cloudReq(NativeCore.cloudCreateRequest(token)))
+                    val parsed = cloudResult(NativeCore.cloudParseFile(created.code, created.text))
+                    id = parsed.optJSONObject("file")?.optString("id").orEmpty()
+                    if (id.isEmpty()) throw Exception("上传到 Drive 失败")
+                    prefs.edit().putString("g_file", id).apply()
                 }
-                if (id.isEmpty()) throw Exception("上传到 Drive 失败")
-                prefs.edit().putString("g_file", id).apply()
+                val up = execute(cloudReq(NativeCore.cloudUploadRequest(token, id)), bytes)
+                cloudResult(NativeCore.cloudParseFile(up.code, up.text))
                 markSync("google")
                 onDone()
             } catch (e: Exception) {
@@ -441,11 +480,13 @@ class CloudSync(private val ctx: Context) {
                 var id = prefs.getString("g_file", "") ?: ""
                 if (id.isEmpty()) id = findDriveFile(token)
                 if (id.isEmpty()) throw Exception("云端没有备份")
-                val bytes = httpBytes(
-                    "https://www.googleapis.com/drive/v3/files/$id?alt=media",
-                    mapOf("Authorization" to "Bearer $token")
-                )
-                onDone(bytes)
+                val req = cloudReq(NativeCore.cloudDownloadRequest(token, id))
+                val res = execute(req)
+                if (res.code !in 200..299) {
+                    cloudResult(NativeCore.cloudParseFile(res.code, res.text))
+                    throw Exception("下载失败")
+                }
+                onDone(res.bytes)
             } catch (e: Exception) {
                 android.util.Log.w("XiaomanCloud", "download failed", e)
                 onError(e.message ?: "下载失败")
@@ -454,14 +495,9 @@ class CloudSync(private val ctx: Context) {
     }
 
     private fun findDriveFile(token: String): String {
-        val q = URLEncoder.encode("name='$DRIVE_FILE'", "UTF-8")
-        val res = httpJson(
-            "https://www.googleapis.com/drive/v3/files?spaces=appDataFolder&q=$q&fields=files(id,name)",
-            "GET", null, mapOf("Authorization" to "Bearer $token")
-        )
-        val files = res.optJSONArray("files") ?: return ""
-        if (files.length() == 0) return ""
-        val id = files.optJSONObject(0)?.optString("id") ?: ""
+        val res = execute(cloudReq(NativeCore.cloudFindRequest(token)))
+        val parsed = cloudResult(NativeCore.cloudParseFileList(res.code, res.text))
+        val id = parsed.optJSONObject("file")?.optString("id").orEmpty()
         if (id.isNotEmpty()) prefs.edit().putString("g_file", id).apply()
         return id
     }
@@ -547,9 +583,6 @@ class CloudSync(private val ctx: Context) {
         }
         return data
     }
-
-    private fun rawRequest(url: String, method: String, body: ByteArray, contentType: String, headers: Map<String, String>): ByteArray =
-        httpBytes(url, headers, method, body, contentType)
 
     private fun readBytes(input: java.io.InputStream?): ByteArray {
         if (input == null) return ByteArray(0)

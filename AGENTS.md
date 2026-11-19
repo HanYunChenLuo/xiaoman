@@ -11,7 +11,7 @@ apps/android/            # Android 工程（Gradle 单模块 :app）
   app/src/main/java/com/xiaoman/app/   # Kotlin UI（MainActivity/DialogKit/Ui/Store/Backup/NativeCore 等）
   app/src/main/assets/                 # 内置图标；brands/brands.json 由 data/ 同步（gitignore）
   app/build.gradle                     # 版本号、Rust 构建任务、签名配置
-core/                    # Rust 核心：calc.rs（计算）、backup.rs（.ias 编解码）、lib.rs（JNI/wasm 导出）
+core/                    # Rust 核心：calc.rs（计算）、backup.rs（.ias 编解码）、cloud.rs（Drive 云备份协议）、lib.rs（JNI/wasm 导出）
 web/                     # Vite + TypeScript Web 端（wasm-bindgen）
 desktop/src-tauri/       # Tauri 桌面外壳，加载 web/dist
 data/brands.json         # 品牌与型号数据唯一来源（远程更新入口）
@@ -45,9 +45,13 @@ cd ../desktop/src-tauri && cargo build
 ```
 Tauri 通过 `frontendDist: ../../web/dist` 加载 Web 端；正式打包需安装 Tauri CLI。
 
-## 云同步（Android）
+## 云同步（Android / Web）
 
-`apps/android/.../CloudSync.kt` 实现 GitHub 设备码 OAuth + Gist、Google PKCE + Drive appDataFolder；**当前 GitHub 通过 `ENABLE_GITHUB_LOGIN=false` 隐藏（TODO: 提供真实 OAuth App Client ID 后恢复，并去掉界面条件）**；只有 Google 显示在设置登录入口与云同步页；云端内容为 `.ias` 字节（Gist 用 Base64 文本），手动上传/恢复。Client ID 可写在 `apps/android/local.properties` 的 `oauth.github.clientId` / `oauth.google.clientId`，或在 App 内「设置 → 数据同步」填写。Google 构建时 Client ID（local.properties）会生成自定义 Scheme 回调并注册 intent-filter（授权后直接跳回 App）；应用内填写的 ID 因 Scheme 不可动态注册，自动回退 loopback（需「桌面应用」类型客户端）。MainActivity 为 singleTask 并在 onNewIntent 处理回调。GitHub 仍用设备码（OAuth App 需启用 Device Flow），不使用重定向（交换令牌需 client_secret）。Web/桌面云同步尚未实现。
+云端协议（文件名 `xiaoman_backup.ias`、Drive appDataFolder 的 URL/方法/头部、响应解析、中文错误映射）统一在 `core/src/cloud.rs`，通过 JNI 与 wasm 导出；各端只负责 OAuth 授权、token 存储和 HTTP 执行：
+
+- Android：`apps/android/.../CloudSync.kt` 负责 GitHub 设备码 OAuth + Gist、Google PKCE + Drive；Drive 部分调用 `NativeCore.cloud*`。**当前 GitHub 通过 `ENABLE_GITHUB_LOGIN=false` 隐藏（TODO: 提供真实 OAuth App Client ID 后恢复，并去掉界面条件）**；云端内容为 `.ias` 字节（Gist 用 Base64 文本），手动上传/恢复。Client ID 可写在 `apps/android/local.properties` 的 `oauth.github.clientId` / `oauth.google.clientId`，或在 App 内「设置 → 数据同步」填写。Google 构建时 Client ID（local.properties）会生成自定义 Scheme 回调并注册 intent-filter（授权后直接跳回 App）；应用内填写的 ID 因 Scheme 不可动态注册，自动回退 loopback（需「桌面应用」类型客户端）。MainActivity 为 singleTask 并在 onNewIntent 处理回调。GitHub 仍用设备码（OAuth App 需启用 Device Flow），不使用重定向（交换令牌需 client_secret）。
+- Web：`web/src/cloud.ts` 用 Google Identity Services Token 模型（`web/src/cloud.ts` 内 `CLIENT_ID`，SPA 无 client_secret）+ `core/src/cloud.rs` 的请求描述，`fetch` 执行；设置页「数据同步」提供登录、上传、恢复、退出。token 存 localStorage `xiaoman_google_v1`。OAuth 客户端需配置「已获授权的 JavaScript 来源」（localhost:5173、线上域名）。
+- 桌面（Tauri）：`cloudSupported()` 返回 false，暂未接入（自定义 scheme 不在 Google 授权来源内，后续可做 loopback 或 Rust 原生 OAuth）。
 
 ## 品牌/型号数据
 
@@ -71,7 +75,8 @@ Tauri 通过 `frontendDist: ../../web/dist` 加载 Web 端；正式打包需安�
 - UI：Android 改 `apps/android/app/src/main/java/com/xiaoman/app/`；Web 改 `web/src/`；桌面仅外壳。
 - Web 端已支持主图/备注图片（Canvas 压缩为 JPEG data URL，存 localStorage；随 `.ias` 的 images/ 条目互通，已在 Android 导入验证）与到期时间字段；图片数量/体积受 localStorage 限制。
 - Web 品牌数据会缓存到 localStorage（`xiaoman_brands_v1`），设置页「品牌与型号数据」可通过 GitHub（Contents API，失败回退 raw）拉取最新版本；分类/标签支持重命名与上下移动；到期提醒使用浏览器 Notification（页面打开时检查，需手动授权）；提供 `public/manifest.webmanifest` 支持安装为 PWA。
-- 计算与 `.ias` 编解码以 Rust `core/` 为准，跨端保持一致；改动后在 Android + Web 两端验证导入导出。
+- 计算、`.ias` 编解码与云备份协议以 Rust `core/` 为准，跨端保持一致；改动后在 Android + Web 两端验证导入导出与云同步。
+- 云同步只改 `core/src/cloud.rs` 的协议与各端授权/存储；新增云端字段时同步更新 JNI（`lib.rs`）与 wasm 导出、两端薄适配层（`CloudSync.kt` / `web/src/cloud.ts`）。
 - 品牌数据只改 `data/brands.json`；各端构建/启动时同步。
 - 应用图标/Logo：`apps/android/app/src/main/res/drawable/appicon.png`（浅色版，启动器图标）；`apps/android/app/src/main/assets/img/logo_light.png` 与 `logo_dark.png` 用于 Android 首页顶栏随主题切换；Web 端 `web/public/logo_light.png`/`logo_dark.png`（由 sync-data 从 Android assets 复制，gitignore）用于页面 Logo，favicon/PWA 图标使用浅色版。
 - 暗色模式：Android 表单图标用 `themedIcon()`，品牌 Logo 需白色底板；Web 使用 CSS 变量。

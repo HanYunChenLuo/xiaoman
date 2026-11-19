@@ -3,6 +3,7 @@
 
 pub mod backup;
 pub mod calc;
+pub mod cloud;
 
 pub const VERSION: &str = "0.1.0";
 
@@ -188,6 +189,102 @@ mod android {
         let Ok(s) = take_string(&mut env, &status) else { return 0 };
         calc::count(&parse(&a), &k, &s)
     }
+
+    // ---------- 云备份协议 ----------
+
+    fn to_json_string<T: serde::Serialize>(value: &T) -> String {
+        serde_json::to_string(value).unwrap_or_else(|_| "{}".to_string())
+    }
+
+    fn ret_string(env: &mut JNIEnv, text: String) -> jstring {
+        match env.new_string(text) {
+            Ok(s) => s.into_raw(),
+            Err(e) => {
+                let _ = env.throw_new("java/lang/Exception", e.to_string());
+                std::ptr::null_mut()
+            }
+        }
+    }
+
+    #[no_mangle]
+    pub extern "system" fn Java_com_xiaoman_app_NativeCore_cloudBackupName(
+        mut env: JNIEnv,
+        _class: JClass,
+    ) -> jstring {
+        ret_string(&mut env, crate::cloud::backup_name().to_string())
+    }
+
+    #[no_mangle]
+    pub extern "system" fn Java_com_xiaoman_app_NativeCore_cloudFindRequest(
+        mut env: JNIEnv,
+        _class: JClass,
+        token: JString,
+    ) -> jstring {
+        let Ok(token) = take_string(&mut env, &token) else { return std::ptr::null_mut() };
+        let req = crate::cloud::find_request(&token);
+        ret_string(&mut env, to_json_string(&req))
+    }
+
+    #[no_mangle]
+    pub extern "system" fn Java_com_xiaoman_app_NativeCore_cloudCreateRequest(
+        mut env: JNIEnv,
+        _class: JClass,
+        token: JString,
+    ) -> jstring {
+        let Ok(token) = take_string(&mut env, &token) else { return std::ptr::null_mut() };
+        let req = crate::cloud::create_request(&token);
+        ret_string(&mut env, to_json_string(&req))
+    }
+
+    #[no_mangle]
+    pub extern "system" fn Java_com_xiaoman_app_NativeCore_cloudUploadRequest(
+        mut env: JNIEnv,
+        _class: JClass,
+        token: JString,
+        file_id: JString,
+    ) -> jstring {
+        let Ok(token) = take_string(&mut env, &token) else { return std::ptr::null_mut() };
+        let Ok(id) = take_string(&mut env, &file_id) else { return std::ptr::null_mut() };
+        let req = crate::cloud::upload_request(&token, &id);
+        ret_string(&mut env, to_json_string(&req))
+    }
+
+    #[no_mangle]
+    pub extern "system" fn Java_com_xiaoman_app_NativeCore_cloudDownloadRequest(
+        mut env: JNIEnv,
+        _class: JClass,
+        token: JString,
+        file_id: JString,
+    ) -> jstring {
+        let Ok(token) = take_string(&mut env, &token) else { return std::ptr::null_mut() };
+        let Ok(id) = take_string(&mut env, &file_id) else { return std::ptr::null_mut() };
+        let req = crate::cloud::download_request(&token, &id);
+        ret_string(&mut env, to_json_string(&req))
+    }
+
+    #[no_mangle]
+    pub extern "system" fn Java_com_xiaoman_app_NativeCore_cloudParseFileList(
+        mut env: JNIEnv,
+        _class: JClass,
+        status: jint,
+        body: JString,
+    ) -> jstring {
+        let Ok(body) = take_string(&mut env, &body) else { return std::ptr::null_mut() };
+        let out = crate::cloud::parse_file_list(status, &body);
+        ret_string(&mut env, out.to_string())
+    }
+
+    #[no_mangle]
+    pub extern "system" fn Java_com_xiaoman_app_NativeCore_cloudParseFile(
+        mut env: JNIEnv,
+        _class: JClass,
+        status: jint,
+        body: JString,
+    ) -> jstring {
+        let Ok(body) = take_string(&mut env, &body) else { return std::ptr::null_mut() };
+        let out = crate::cloud::parse_file(status, &body);
+        ret_string(&mut env, out.to_string())
+    }
 }
 
 #[cfg(target_arch = "wasm32")]
@@ -251,5 +348,46 @@ mod wasm {
     #[wasm_bindgen]
     pub fn count_of_kind(assets_json: &str, kind: &str, status: &str) -> i32 {
         crate::calc::count(&parse(assets_json), kind, status)
+    }
+
+    // ---------- 云备份协议 ----------
+
+    fn json_of<T: serde::Serialize>(value: &T) -> String {
+        serde_json::to_string(value).unwrap_or_else(|_| "{}".to_string())
+    }
+
+    #[wasm_bindgen]
+    pub fn cloud_backup_name() -> String {
+        crate::cloud::backup_name().to_string()
+    }
+
+    #[wasm_bindgen]
+    pub fn cloud_find_request(token: &str) -> String {
+        json_of(&crate::cloud::find_request(token))
+    }
+
+    #[wasm_bindgen]
+    pub fn cloud_create_request(token: &str) -> String {
+        json_of(&crate::cloud::create_request(token))
+    }
+
+    #[wasm_bindgen]
+    pub fn cloud_upload_request(token: &str, file_id: &str) -> String {
+        json_of(&crate::cloud::upload_request(token, file_id))
+    }
+
+    #[wasm_bindgen]
+    pub fn cloud_download_request(token: &str, file_id: &str) -> String {
+        json_of(&crate::cloud::download_request(token, file_id))
+    }
+
+    #[wasm_bindgen]
+    pub fn cloud_parse_file_list(status: i32, body: &str) -> String {
+        crate::cloud::parse_file_list(status, body).to_string()
+    }
+
+    #[wasm_bindgen]
+    pub fn cloud_parse_file(status: i32, body: &str) -> String {
+        crate::cloud::parse_file(status, body).to_string()
     }
 }

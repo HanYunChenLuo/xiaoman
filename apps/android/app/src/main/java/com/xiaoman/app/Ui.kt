@@ -4,11 +4,13 @@ import android.app.Activity
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.graphics.Color
+import android.graphics.Outline
 import android.graphics.Typeface
 import android.graphics.drawable.GradientDrawable
 import android.view.Gravity
 import android.view.View
 import android.view.ViewGroup
+import android.view.ViewOutlineProvider
 import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
@@ -131,6 +133,28 @@ class Ui(activity: Activity) {
     fun card(v: View) {
         v.background = round(card(), 16f)
         v.elevation = dp(2f).toFloat()
+    }
+
+    /**
+     * 显式指定阴影轮廓。部分 ROM 不会从 GradientDrawable 推导轮廓，
+     * 导致圆角卡片/圆形按钮出现方形阴影。
+     */
+    fun clipRound(v: View, radiusDp: Float): View {
+        v.outlineProvider = object : ViewOutlineProvider() {
+            override fun getOutline(view: View, outline: Outline) {
+                outline.setRoundRect(0, 0, view.width, view.height, dp(radiusDp).toFloat())
+            }
+        }
+        return v
+    }
+
+    fun clipCircle(v: View): View {
+        v.outlineProvider = object : ViewOutlineProvider() {
+            override fun getOutline(view: View, outline: Outline) {
+                outline.setOval(0, 0, view.width, view.height)
+            }
+        }
+        return v
     }
 
     // ---------- 图片 ----------

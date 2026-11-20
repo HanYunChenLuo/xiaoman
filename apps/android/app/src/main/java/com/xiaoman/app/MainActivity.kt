@@ -171,7 +171,8 @@ class MainActivity : Activity() {
         val fab = ui.text("+", 28f, if (dark) 0xFF111111.toInt() else 0xFFFFFFFF.toInt(), ui.regular)
         fab.gravity = Gravity.CENTER
         fab.background = ui.circle(if (dark) 0xFFF2F2F2.toInt() else 0xFF111111.toInt())
-        fab.elevation = dp(8f).toFloat()
+        ui.clipCircle(fab)
+        fab.elevation = 0f
         fab.setOnClickListener { openAdd(null, if ("wishes" == tab) "wish" else "asset") }
         val fp = LinearLayout.LayoutParams(dp(64f), dp(64f))
         fp.leftMargin = dp(16f)
@@ -396,6 +397,7 @@ class MainActivity : Activity() {
     private fun overviewCard(): View {
         val card = ui.vbox()
         card.background = ui.round(ui.card(), 20f)
+        ui.clipRound(card, 20f)
         card.elevation = dp(3f).toFloat()
         card.setPadding(dp(20f), dp(22f), dp(20f), dp(16f))
 
@@ -473,6 +475,7 @@ class MainActivity : Activity() {
     private fun circleIconButton(iconName: String, onClick: Runnable): FrameLayout {
         val btn = FrameLayout(this)
         btn.background = ui.circle(if (dark) 0xFF2A2A2A.toInt() else ui.card())
+        ui.clipCircle(btn)
         btn.elevation = dp(2f).toFloat()
         val iv = themedIcon(iconName, 16)
         btn.addView(iv, FrameLayout.LayoutParams(dp(16f), dp(16f), Gravity.CENTER))
@@ -543,6 +546,7 @@ class MainActivity : Activity() {
     private fun assetCard(a: JSONObject): View {
         val card = FrameLayout(this)
         card.background = ui.round(ui.card(), 16f)
+        ui.clipRound(card, 16f)
         card.elevation = dp(2f).toFloat()
         card.setOnClickListener { showDetail(a.optString("id")) }
 
@@ -609,6 +613,7 @@ class MainActivity : Activity() {
         val list = store.ofKind("wish")
         val card = FrameLayout(this)
         card.background = ui.round(ui.card(), 20f)
+        ui.clipRound(card, 20f)
         card.elevation = dp(2f).toFloat()
         card.setPadding(dp(20f), dp(20f), dp(20f), dp(20f))
         val info = ui.vbox()
@@ -766,6 +771,7 @@ class MainActivity : Activity() {
     private fun trendCard(): LinearLayout {
         val card = ui.vbox()
         card.background = ui.round(ui.card(), 18f)
+        ui.clipRound(card, 18f)
         card.elevation = dp(2f).toFloat()
         card.setPadding(dp(18f), dp(18f), dp(18f), dp(18f))
         val cp = LinearLayout.LayoutParams(-1, -2)
@@ -1021,6 +1027,7 @@ class MainActivity : Activity() {
     private fun group(): LinearLayout {
         val g = ui.vbox()
         g.background = ui.round(ui.card(), 16f)
+        ui.clipRound(g, 16f)
         g.elevation = dp(2f).toFloat()
         val gp = LinearLayout.LayoutParams(-1, -2)
         gp.setMargins(dp(14f), 0, dp(14f), dp(14f))
@@ -1225,6 +1232,7 @@ class MainActivity : Activity() {
         val back = ui.pillButton("‹", ui.card(), ui.ink(), 17f)
         back.setTextSize(20f)
         back.setPadding(dp(12f), dp(2f), dp(14f), dp(4f))
+        ui.clipRound(back, 17f)
         back.elevation = dp(2f).toFloat()
         back.setOnClickListener { showSettings() }
         head.addView(back)
@@ -1260,6 +1268,7 @@ class MainActivity : Activity() {
         val wipe = ui.text("抹掉所有内容", 13f, Ui.RED, ui.medium)
         wipe.gravity = Gravity.CENTER
         wipe.background = ui.round(ui.card(), 26f)
+        ui.clipRound(wipe, 26f)
         wipe.elevation = dp(2f).toFloat()
         wipe.setPadding(0, dp(18f), 0, dp(18f))
         wipe.setOnClickListener {
@@ -1457,6 +1466,7 @@ class MainActivity : Activity() {
         val back = ui.pillButton("‹", ui.card(), ui.ink(), 17f)
         back.setTextSize(20f)
         back.setPadding(dp(12f), dp(2f), dp(14f), dp(4f))
+        ui.clipRound(back, 17f)
         back.elevation = dp(2f).toFloat()
         back.setOnClickListener { showSettings() }
         head.addView(back)
@@ -2451,6 +2461,7 @@ class MainActivity : Activity() {
     private fun formCard(): LinearLayout {
         val g = ui.vbox()
         g.background = ui.round(ui.card(), 16f)
+        ui.clipRound(g, 16f)
         g.elevation = dp(2f).toFloat()
         g.setPadding(dp(24f), dp(2f), dp(24f), dp(2f))
         val gp = LinearLayout.LayoutParams(-1, -2)

@@ -1,7 +1,6 @@
 package com.xiaoman.app
 
 import android.app.Activity
-import android.app.AlertDialog
 import android.app.DatePickerDialog
 import android.app.Dialog
 import android.app.ProgressDialog
@@ -987,12 +986,10 @@ class MainActivity : Activity() {
             }
             val notes = info.notes.trim()
             val message = (if (notes.isEmpty()) "" else notes.take(600) + "\n\n") + "是否下载并安装？"
-            AlertDialog.Builder(this)
-                .setTitle("发现新版本 ${info.version}")
-                .setMessage(message)
-                .setPositiveButton("下载并安装") { _, _ -> downloadUpdate(info) }
-                .setNegativeButton("取消", null)
-                .show()
+            DialogKit.confirm(
+                this, "发现新版本 ${info.version}", message, "取消", "下载并安装",
+                Runnable { downloadUpdate(info) }
+            )
         }, { msg ->
             toast("检查更新失败：$msg")
         })
@@ -2720,7 +2717,7 @@ class MainActivity : Activity() {
         center.gravity = Gravity.CENTER
         center.setPadding(0, dp(8f), 0, 0)
         val dcv = a.optString("coverPath")
-        if (dcv.isNotEmpty() && java.io.File(dcv).exists()) center.addView(ui.fileImage(dcv, 96))
+        if (dcv.isNotEmpty() && java.io.File(dcv).exists()) center.addView(ui.fileImage(dcv, 96, 16f))
         else center.addView(ui.image(a.optString("icon", "emoji/icon_default_object.png"), 88))
         val name = ui.text(displayName(a), 20f, ui.ink(), ui.bold)
         name.gravity = Gravity.CENTER

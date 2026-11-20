@@ -52,10 +52,16 @@ object DialogKit {
     private fun dialog(a: Activity, card: View): Dialog {
         val d = Dialog(a)
         d.requestWindowFeature(Window.FEATURE_NO_TITLE)
-        d.setContentView(card)
+        // 外层留边，保证卡片自身的圆角不被窗口裁掉
+        val wrap = FrameLayout(a)
+        val pad = dp(a, 18f)
+        wrap.setPadding(pad, 0, pad, 0)
+        wrap.addView(card, FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT))
+        d.setContentView(wrap)
         val w = d.window
         if (w != null) {
             w.setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
+            w.setGravity(Gravity.CENTER)
             w.setLayout(
                 ViewGroup.LayoutParams.MATCH_PARENT,
                 ViewGroup.LayoutParams.WRAP_CONTENT

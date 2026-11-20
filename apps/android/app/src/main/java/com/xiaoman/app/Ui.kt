@@ -159,7 +159,7 @@ class Ui(activity: Activity) {
 
     fun icon(name: String, sizeDp: Int): ImageView = image("icons/$name.png", sizeDp)
 
-    fun fileImage(path: String, sizeDp: Int): ImageView {
+    fun fileImage(path: String, sizeDp: Int, radiusDp: Float = 10f): ImageView {
         val iv = ImageView(a)
         try {
             iv.setImageBitmap(BitmapFactory.decodeFile(path))
@@ -167,6 +167,8 @@ class Ui(activity: Activity) {
         }
         iv.layoutParams = LinearLayout.LayoutParams(dp(sizeDp.toFloat()), dp(sizeDp.toFloat()))
         iv.scaleType = ImageView.ScaleType.CENTER_CROP
+        iv.background = round(0x00000000, radiusDp)
+        iv.clipToOutline = true
         return iv
     }
 

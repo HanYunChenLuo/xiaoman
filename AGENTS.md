@@ -90,6 +90,7 @@ Tauri 通过 `frontendDist: ../../web/dist` 加载 Web 端（编译期嵌入）�
 - 品牌数据只改 `data/brands.json`；各端构建/启动时同步。
 - 应用图标/Logo：`apps/android/app/src/main/res/drawable/appicon.png`（浅色版，启动器图标）；`apps/android/app/src/main/assets/img/logo_light.png` 与 `logo_dark.png` 用于 Android 首页顶栏随主题切换；Web 端 `web/public/logo_light.png`/`logo_dark.png`（由 sync-data 从 Android assets 复制，gitignore）用于页面 Logo，favicon/PWA 图标使用浅色版。
 - 暗色模式：Android 表单图标用 `themedIcon()`，品牌 Logo 需白色底板；Web 使用 CSS 变量。
+- Android UI 尺寸统一引用 `app/src/main/java/com/xiaoman/app/Design.kt` 的 `Radius` / `FontSize` / `Size` / `Spacing` 令牌；不要在布局里新增 `16f`、`20f` 之类的裸数字。
 - 升级版本：`apps/android/app/build.gradle` 的 `versionCode/versionName`；Android 的 `APP_VERSION_CODE` 取自 `BuildConfig`。
 - 测试设备时先导出 `.ias` 备份，避免破坏数据。
 - 本机 github.com HTTPS 不通，`origin` 使用 SSH：`git@github.com:HanYunChenLuo/xiaoman.git`；cargo 走 rsproxy 镜像。

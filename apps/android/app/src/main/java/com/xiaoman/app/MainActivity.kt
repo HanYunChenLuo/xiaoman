@@ -134,14 +134,14 @@ class MainActivity : Activity() {
     private fun buildNav(active: String): View {
         val host = FrameLayout(this)
         val bar = ui.hbox()
-        bar.background = ui.roundStroke(ui.card(), 32f, ui.line(), 1f)
+        bar.background = ui.roundStroke(ui.card(), Radius.NAV , ui.line(), 1f)
         bar.elevation = 0f
         bar.setPadding(dp(6f), 0, dp(6f), 0)
         val group = ui.hbox()
         group.gravity = Gravity.CENTER_VERTICAL
-        group.addView(bar, LinearLayout.LayoutParams(-2, dp(64f)))
+        group.addView(bar, LinearLayout.LayoutParams(-2, dp(Size.NAV_BAR_H.toFloat())))
         val gp = FrameLayout.LayoutParams(-2, -2, Gravity.BOTTOM or Gravity.CENTER_HORIZONTAL)
-        gp.bottomMargin = dp(22f)
+        gp.bottomMargin = dp(Size.NAV_BOTTOM_MARGIN.toFloat())
         host.addView(group, gp)
 
         val tabs = arrayOf(
@@ -160,22 +160,22 @@ class MainActivity : Activity() {
             if (on) iconWrap.background = ui.circle(if (dark) 0xFF2C2C2C.toInt() else 0xFFF0F0F0.toInt())
             iconWrap.addView(tabIcon, FrameLayout.LayoutParams(dp(22f), dp(22f), Gravity.CENTER))
             item.addView(iconWrap, LinearLayout.LayoutParams(dp(40f), dp(40f)))
-            val label = ui.text(t[1], 10f, if (on) ui.ink() else ui.gray(), if (on) ui.medium else ui.regular)
+            val label = ui.text(t[1], FontSize.CAPTION , if (on) ui.ink() else ui.gray(), if (on) ui.medium else ui.regular)
             label.gravity = Gravity.CENTER
             label.setPadding(0, dp(4f), 0, 0)
             item.addView(label)
             item.setOnClickListener { switchTab(t[0]) }
-            bar.addView(item, LinearLayout.LayoutParams(dp(84f), -1))
+            bar.addView(item, LinearLayout.LayoutParams(dp(Size.NAV_ITEM_W.toFloat()), -1))
         }
 
-        val fab = ui.text("+", 28f, if (dark) 0xFF111111.toInt() else 0xFFFFFFFF.toInt(), ui.regular)
+        val fab = ui.text("+", FontSize.LARGE , if (dark) 0xFF111111.toInt() else 0xFFFFFFFF.toInt(), ui.regular)
         fab.gravity = Gravity.CENTER
         fab.background = ui.circle(if (dark) 0xFFF2F2F2.toInt() else 0xFF111111.toInt())
         ui.clipCircle(fab)
         fab.elevation = 0f
         fab.setOnClickListener { openAdd(null, if ("wishes" == tab) "wish" else "asset") }
-        val fp = LinearLayout.LayoutParams(dp(64f), dp(64f))
-        fp.leftMargin = dp(16f)
+        val fp = LinearLayout.LayoutParams(dp(Size.FAB.toFloat()), dp(Size.FAB.toFloat()))
+        fp.leftMargin = dp(Spacing.XXL)
         group.addView(fab, fp)
         return host
     }
@@ -203,13 +203,13 @@ class MainActivity : Activity() {
         art.layoutParams = ap
         body.addView(art)
 
-        val title = ui.text(OB[obPage][0], 40f, 0xFF111111.toInt(), ui.bold)
+        val title = ui.text(OB[obPage][0], FontSize.HERO, 0xFF111111.toInt(), ui.bold)
         val tp = LinearLayout.LayoutParams(-2, -2)
         tp.topMargin = dp(70f)
         body.addView(title, tp)
-        val sub = ui.text(OB[obPage][1], 14f, 0xFF5F6352.toInt())
+        val sub = ui.text(OB[obPage][1], FontSize.BODY , 0xFF5F6352.toInt())
         val sp = LinearLayout.LayoutParams(-2, -2)
-        sp.topMargin = dp(12f)
+        sp.topMargin = dp(Spacing.XL)
         body.addView(sub, sp)
 
         body.addView(View(this), LinearLayout.LayoutParams(1, 0, 1f))
@@ -219,15 +219,15 @@ class MainActivity : Activity() {
         for (i in OB.indices) {
             val dot = View(this)
             val dp2 = LinearLayout.LayoutParams(dp(if (i == obPage) 22f else 18f), dp(4f))
-            dp2.rightMargin = dp(8f)
+            dp2.rightMargin = dp(Spacing.M)
             dot.layoutParams = dp2
-            dot.background = ui.round(if (i == obPage) 0xFF1A1A1A.toInt() else 0xFFC9CDA9.toInt(), 2f)
+            dot.background = ui.round(if (i == obPage) 0xFF1A1A1A.toInt() else 0xFFC9CDA9.toInt(), Radius.INDICATOR)
             dots.addView(dot)
         }
         foot.addView(dots, lpw(1f, -2))
 
         val next = FrameLayout(this)
-        next.background = ui.round(Ui.LIME, 16f)
+        next.background = ui.round(Ui.LIME, Radius.CARD )
         val arrow = ImageView(this)
         arrow.setImageResource(R.drawable.ic_next)
         next.addView(arrow, FrameLayout.LayoutParams(dp(24f), dp(24f), Gravity.CENTER))
@@ -259,7 +259,7 @@ class MainActivity : Activity() {
         catRow.setPadding(0, 0, 0, 0)
         val catsList = store.objs("categories")
         val allCat = ui.text(
-            "全部", 13f,
+            "全部", FontSize.BODY_SM ,
             if (categoryFilter == "all") ui.ink() else ui.gray(),
             if (categoryFilter == "all") ui.medium else ui.regular
         )
@@ -274,7 +274,7 @@ class MainActivity : Activity() {
             val cid = c.optString("id")
             val on = categoryFilter == cid
             val ct = ui.text(
-                c.optString("name"), 13f,
+                c.optString("name"), FontSize.BODY_SM ,
                 if (on) ui.ink() else ui.gray(),
                 if (on) ui.medium else ui.regular
             )
@@ -288,7 +288,7 @@ class MainActivity : Activity() {
         }
         val uncategorized = categoryFilter == "__none__"
         val nc = ui.text(
-            "未分类", 13f,
+            "未分类", FontSize.BODY_SM ,
             if (uncategorized) ui.ink() else ui.gray(),
             if (uncategorized) ui.medium else ui.regular
         )
@@ -314,10 +314,10 @@ class MainActivity : Activity() {
         )
         for (d in defs) {
             val on = filter == d[0]
-            val chip = ui.text(d[1], 11f, if (on) ui.chipOnInk() else ui.gray(), if (on) ui.medium else ui.regular)
+            val chip = ui.text(d[1], FontSize.SMALL , if (on) ui.chipOnInk() else ui.gray(), if (on) ui.medium else ui.regular)
             chip.gravity = Gravity.CENTER
             chip.setPadding(dp(14f), 0, dp(14f), 0)
-            if (on) chip.background = ui.round(ui.chipOnBg(), 20f)
+            if (on) chip.background = ui.round(ui.chipOnBg(), Radius.CARD_LG )
             chip.setOnClickListener {
                 filter = d[0]
                 showHome()
@@ -332,18 +332,18 @@ class MainActivity : Activity() {
         sort.alpha = 0.65f
         if (dark) sort.setColorFilter(0xFFF2F2F2.toInt())
         val ip = LinearLayout.LayoutParams(dp(16f), dp(16f))
-        ip.leftMargin = dp(12f)
+        ip.leftMargin = dp(Spacing.XL)
         filters.addView(sort, ip)
         val funnel = ui.icon("ic_funnel", 16)
         funnel.alpha = 0.65f
         if (dark) funnel.setColorFilter(0xFFF2F2F2.toInt())
         val fp = LinearLayout.LayoutParams(dp(16f), dp(16f))
-        fp.leftMargin = dp(12f)
+        fp.leftMargin = dp(Spacing.XL)
         filters.addView(funnel, fp)
         val view = ui.icon("ic_view", 16)
         if (dark) view.setColorFilter(0xFFF2F2F2.toInt())
         val vp = LinearLayout.LayoutParams(dp(16f), dp(16f))
-        vp.leftMargin = dp(12f)
+        vp.leftMargin = dp(Spacing.XL)
         filters.addView(view, vp)
         view.setOnClickListener {
             grid = !grid
@@ -388,7 +388,7 @@ class MainActivity : Activity() {
         row.addView(search)
         val fav = BookmarkView(this, ui.ink())
         val f = LinearLayout.LayoutParams(dp(20f), dp(22f))
-        f.leftMargin = dp(16f)
+        f.leftMargin = dp(Spacing.XXL)
         row.addView(fav, f)
         head.addView(row, FrameLayout.LayoutParams(-1, -2))
         return head
@@ -396,33 +396,33 @@ class MainActivity : Activity() {
 
     private fun overviewCard(): View {
         val card = ui.vbox()
-        card.background = ui.round(ui.card(), 20f)
-        ui.clipRound(card, 20f)
+        card.background = ui.round(ui.card(), Radius.CARD_LG )
+        ui.clipRound(card, Radius.CARD_LG )
         card.elevation = dp(3f).toFloat()
         card.setPadding(dp(20f), dp(22f), dp(20f), dp(16f))
 
         val top = ui.hbox()
-        val title = ui.text("资产总览", 16f, ui.ink(), ui.bold)
+        val title = ui.text("资产总览", FontSize.TITLE , ui.ink(), ui.bold)
         top.addView(title)
-        val count = ui.text(store.count("asset", "serving").toString() + "/" + store.ofKind("asset").size, 11f, ui.gray())
+        val count = ui.text(store.count("asset", "serving").toString() + "/" + store.ofKind("asset").size, FontSize.SMALL , ui.gray())
         val cp = LinearLayout.LayoutParams(-2, -2)
-        cp.leftMargin = dp(8f)
+        cp.leftMargin = dp(Spacing.M)
         top.addView(count, cp)
         card.addView(top)
 
         val nums = ui.hbox()
         val np = LinearLayout.LayoutParams(-1, -2)
-        np.topMargin = dp(16f)
+        np.topMargin = dp(Spacing.XXL)
         card.addView(nums, np)
 
         val left = ui.vbox()
-        left.addView(ui.text("总资产", 11f, ui.gray()))
+        left.addView(ui.text("总资产", FontSize.SMALL , ui.gray()))
         left.addView(moneyLine(store.total("asset"), 22f))
         nums.addView(left, lpw(1f, -2))
 
         val right = ui.vbox()
         right.gravity = Gravity.END
-        val lbl = ui.text("日均成本", 11f, ui.gray())
+        val lbl = ui.text("日均成本", FontSize.SMALL , ui.gray())
         lbl.gravity = Gravity.END
         right.addView(lbl)
         right.addView(moneyLine(store.daily("asset"), 22f))
@@ -437,16 +437,16 @@ class MainActivity : Activity() {
         for (i in defs.indices) {
             val col = ui.vbox()
             val cap = ui.hbox()
-            cap.addView(ui.text(defs[i][0], 11f, ui.ink2()), lpw(1f, -2))
+            cap.addView(ui.text(defs[i][0], FontSize.SMALL , ui.ink2()), lpw(1f, -2))
             cap.addView(
                 ui.text(
-                    store.count("asset", defs[i][1]).toString(), 11f, ui.ink(), ui.medium
+                    store.count("asset", defs[i][1]).toString(), FontSize.SMALL , ui.ink(), ui.medium
                 )
             )
             col.addView(cap)
             val bar = ui.bar(store.count("asset", defs[i][1]) / total.toFloat(), Ui.LIME_DEEP)
             val bp = LinearLayout.LayoutParams(-1, dp(6f))
-            bp.topMargin = dp(6f)
+            bp.topMargin = dp(Spacing.S)
             col.addView(bar, bp)
             stats.addView(col, lpw(1f, -2))
             if (i < defs.size - 1) stats.addView(View(this), LinearLayout.LayoutParams(dp(14f), 1))
@@ -463,7 +463,7 @@ class MainActivity : Activity() {
     private fun moneyLine(v: Double, size: Float): View {
         val row = ui.hbox()
         row.gravity = Gravity.BOTTOM
-        val s = ui.text(store.sym(), 12f, ui.ink(), ui.medium)
+        val s = ui.text(store.sym(), FontSize.META , ui.ink(), ui.medium)
         val m = ui.text(store.fmt(v, store.settingInt("decimals", 2)), size, ui.ink(), ui.bold)
         val sp = LinearLayout.LayoutParams(-2, -2)
         sp.rightMargin = dp(2f)
@@ -492,9 +492,9 @@ class MainActivity : Activity() {
     private fun moneyLineSuffix(v: Double, size: Float, suffix: String): View {
         val row = ui.hbox()
         row.gravity = Gravity.CENTER
-        val s = ui.text(store.sym(), 12f, ui.ink(), ui.medium)
+        val s = ui.text(store.sym(), FontSize.META , ui.ink(), ui.medium)
         val m = ui.text(store.fmt(v, store.settingInt("decimals", 2)), size, ui.ink(), ui.bold)
-        val sfx = ui.text(suffix, 12f, ui.ink2())
+        val sfx = ui.text(suffix, FontSize.META , ui.ink2())
         val sp = LinearLayout.LayoutParams(-2, -2)
         sp.rightMargin = dp(2f)
         row.addView(s, sp)
@@ -510,11 +510,11 @@ class MainActivity : Activity() {
         val img = ui.image("img/empty.png", 96)
         img.alpha = 0.9f
         box.addView(img)
-        val t = ui.text("空空如也", 14f, ui.ink2(), ui.medium)
+        val t = ui.text("空空如也", FontSize.BODY , ui.ink2(), ui.medium)
         t.gravity = Gravity.CENTER
         t.setPadding(0, dp(14f), 0, 0)
         box.addView(t)
-        val s = ui.text("点击 + 添加资产", 11f, ui.gray())
+        val s = ui.text("点击 + 添加资产", FontSize.SMALL , ui.gray())
         s.gravity = Gravity.CENTER
         s.setPadding(0, dp(6f), 0, 0)
         box.addView(s)
@@ -545,26 +545,26 @@ class MainActivity : Activity() {
 
     private fun assetCard(a: JSONObject): View {
         val card = FrameLayout(this)
-        card.background = ui.round(ui.card(), 16f)
-        ui.clipRound(card, 16f)
+        card.background = ui.round(ui.card(), Radius.CARD )
+        ui.clipRound(card, Radius.CARD )
         card.elevation = dp(2f).toFloat()
         card.setOnClickListener { showDetail(a.optString("id")) }
 
         val inner = ui.vbox()
-        inner.setPadding(dp(12f), dp(12f), dp(12f), dp(12f))
+        inner.setPadding(dp(Spacing.XL), dp(Spacing.XL), dp(Spacing.XL), dp(Spacing.XL))
         val icon: View
         val cvp = a.optString("coverPath")
         icon = if (cvp.isNotEmpty() && java.io.File(cvp).exists()) ui.fileImage(cvp, 44)
         else ui.image(a.optString("icon", "emoji/icon_default_object.png"), 44)
         inner.addView(icon)
-        val name = ui.text(displayName(a), 14f, ui.ink(), ui.medium)
+        val name = ui.text(displayName(a), FontSize.BODY , ui.ink(), ui.medium)
         name.isSingleLine = true
         name.setPadding(0, dp(10f), 0, 0)
         inner.addView(name)
         val brandPrefix = if (a.optString("brandName").isEmpty()) "" else a.optString("brandName") + " ｜ "
         val sub = ui.text(
             brandPrefix + store.sym() + store.fmt(a.optDouble("price"), store.settingInt("decimals", 2)) +
-                " ｜ " + store.ageDays(a) + " 天", 10f, ui.gray()
+                " ｜ " + store.ageDays(a) + " 天", FontSize.CAPTION , ui.gray()
         )
         sub.isSingleLine = true
         sub.setPadding(0, dp(3f), 0, 0)
@@ -573,19 +573,18 @@ class MainActivity : Activity() {
         cost.gravity = Gravity.BOTTOM
         cost.setPadding(0, dp(8f), 0, 0)
         val c = ui.text(
-            store.sym() + store.fmt(store.dailyCost(a), store.settingInt("decimals", 2)),
-            13f, ui.ink(), ui.bold
+            store.sym() + store.fmt(store.dailyCost(a), store.settingInt("decimals", 2)), FontSize.BODY_SM , ui.ink(), ui.bold
         )
-        val per = ui.text("/天", 10f, ui.ink2(), ui.regular)
+        val per = ui.text("/天", FontSize.CAPTION , ui.ink2(), ui.regular)
         cost.addView(c)
         cost.addView(per)
         inner.addView(cost)
         card.addView(inner, FrameLayout.LayoutParams(-1, -2))
 
         val status = a.optString("status", "serving")
-        val badge = ui.text("● " + Store.statusText(status), 9f, badgeInk(status), ui.medium)
+        val badge = ui.text("● " + Store.statusText(status), FontSize.TINY , badgeInk(status), ui.medium)
         val bp = FrameLayout.LayoutParams(-2, -2, Gravity.TOP or Gravity.END)
-        bp.setMargins(0, dp(10f), dp(10f), 0)
+        bp.setMargins(0, dp(Spacing.L), dp(Spacing.L), 0)
         card.addView(badge, bp)
         return card
     }
@@ -607,19 +606,19 @@ class MainActivity : Activity() {
         val body = pageBody()
         val head = ui.hbox()
         head.setPadding(dp(18f), dp(14f), dp(18f), dp(10f))
-        head.addView(ui.text("心愿", 24f, ui.ink(), ui.bold))
+        head.addView(ui.text("心愿", FontSize.DISPLAY , ui.ink(), ui.bold))
         body.addView(head)
 
         val list = store.ofKind("wish")
         val card = FrameLayout(this)
-        card.background = ui.round(ui.card(), 20f)
-        ui.clipRound(card, 20f)
+        card.background = ui.round(ui.card(), Radius.CARD_LG )
+        ui.clipRound(card, Radius.CARD_LG )
         card.elevation = dp(2f).toFloat()
-        card.setPadding(dp(20f), dp(20f), dp(20f), dp(20f))
+        card.setPadding(dp(Spacing.HUGE), dp(Spacing.HUGE), dp(Spacing.HUGE), dp(Spacing.HUGE))
         val info = ui.vbox()
-        info.addView(ui.text("心愿总值", 12f, ui.gray()))
+        info.addView(ui.text("心愿总值", FontSize.META , ui.gray()))
         info.addView(moneyLine(store.total("wish"), 30f))
-        val cnt = ui.text("心愿数量 " + list.size + " 个", 11f, ui.gray())
+        val cnt = ui.text("心愿数量 " + list.size + " 个", FontSize.SMALL , ui.gray())
         cnt.setPadding(0, dp(10f), 0, 0)
         info.addView(cnt)
         card.addView(info, FrameLayout.LayoutParams(-2, -2))
@@ -627,7 +626,7 @@ class MainActivity : Activity() {
         bottle.setColorFilter(Ui.LIME_DEEP)
         card.addView(bottle, FrameLayout.LayoutParams(dp(64f), dp(64f), Gravity.END))
         val cp = LinearLayout.LayoutParams(-1, -2)
-        cp.setMargins(dp(14f), dp(4f), dp(14f), 0)
+        cp.setMargins(dp(14f), dp(Spacing.XS), dp(14f), 0)
         card.layoutParams = cp
         body.addView(card)
 
@@ -646,8 +645,8 @@ class MainActivity : Activity() {
         val body = pageBody()
         val head = ui.hbox()
         head.setPadding(dp(18f), dp(14f), dp(18f), dp(10f))
-        val trendPill = ui.text("趋势", 15f, ui.ink(), ui.medium)
-        trendPill.background = ui.round(ui.chipBg(), 18f)
+        val trendPill = ui.text("趋势", FontSize.BODY_LG , ui.ink(), ui.medium)
+        trendPill.background = ui.round(ui.chipBg(), Radius.CARD_MD )
         trendPill.setPadding(dp(16f), dp(7f), dp(16f), dp(7f))
         head.addView(trendPill)
         body.addView(head)
@@ -667,14 +666,14 @@ class MainActivity : Activity() {
                 showTrends()
             }
             val cp = LinearLayout.LayoutParams(-2, -2)
-            cp.rightMargin = dp(8f)
+            cp.rightMargin = dp(Spacing.M)
             chips.addView(chip, cp)
         }
         hs.addView(chips)
         body.addView(hs)
 
         val t1 = trendCard()
-        t1.addView(ui.text("资产总值", 12f, ui.gray()))
+        t1.addView(ui.text("资产总值", FontSize.META , ui.gray()))
         t1.addView(moneyLine(store.total("asset"), 22f))
         val rows = arrayOf(
             arrayOf("服役", "serving", "0xFFB6EE25"),
@@ -689,14 +688,14 @@ class MainActivity : Activity() {
             val dot = View(this)
             dot.background = ui.circle(Color.parseColor(r[2].replace("0x", "#")))
             val dp2 = LinearLayout.LayoutParams(dp(6f), dp(6f))
-            dp2.rightMargin = dp(8f)
+            dp2.rightMargin = dp(Spacing.M)
             line.addView(dot, dp2)
-            line.addView(ui.text(r[0], 12f, ui.ink2()))
+            line.addView(ui.text(r[0], FontSize.META , ui.ink2()))
             val n = store.count("asset", r[1])
-            val pct = ui.text("  " + Math.round(n * 100f / total) + "%", 10f, ui.gray())
+            val pct = ui.text("  " + Math.round(n * 100f / total) + "%", FontSize.CAPTION , ui.gray())
             line.addView(pct)
             block.addView(line)
-            val v = ui.text(store.money(if (r[1] == "serving") store.daily("asset") else 0.0), 15f, ui.ink(), ui.bold)
+            val v = ui.text(store.money(if (r[1] == "serving") store.daily("asset") else 0.0), FontSize.BODY_LG , ui.ink(), ui.bold)
             v.setPadding(0, dp(4f), 0, 0)
             block.addView(v)
             t1.addView(block)
@@ -705,8 +704,8 @@ class MainActivity : Activity() {
         body.addView(t1)
 
         val t2 = trendCard()
-        t2.addView(ui.text("资产价值趋势", 13f, ui.ink(), ui.medium))
-        val big = ui.text(store.money(store.total("asset")), 17f, ui.ink(), ui.bold)
+        t2.addView(ui.text("资产价值趋势", FontSize.BODY_SM , ui.ink(), ui.medium))
+        val big = ui.text(store.money(store.total("asset")), FontSize.TITLE_LG , ui.ink(), ui.bold)
         big.setPadding(0, dp(6f), 0, 0)
         t2.addView(big)
         val chart = ChartView(this)
@@ -716,14 +715,14 @@ class MainActivity : Activity() {
             store.fmt(chartMax(trendSeries(rangeDays())) / 2, 0), "0", "", ""
         )
         val chp = LinearLayout.LayoutParams(-1, dp(150f))
-        chp.topMargin = dp(8f)
+        chp.topMargin = dp(Spacing.M)
         t2.addView(chart, chp)
         body.addView(t2)
 
         val t3 = trendCard()
-        t3.addView(ui.text("类型分布", 13f, ui.ink(), ui.medium))
+        t3.addView(ui.text("类型分布", FontSize.BODY_SM , ui.ink(), ui.medium))
         val assets = store.ofKind("asset")
-        if (assets.isEmpty()) t3.addView(ui.text("暂无数据", 11f, ui.gray()))
+        if (assets.isEmpty()) t3.addView(ui.text("暂无数据", FontSize.SMALL , ui.gray()))
         else {
             val colors = intArrayOf(Ui.LIME, Ui.TEAL, Ui.ORANGE, 0xFF7AA2FF.toInt(), 0xFFFFD166.toInt())
             val names = ArrayList<String>()
@@ -741,9 +740,9 @@ class MainActivity : Activity() {
             for (i in names.indices) {
                 val row = ui.hbox()
                 val rp = LinearLayout.LayoutParams(-1, -2)
-                rp.topMargin = dp(8f)
-                row.addView(ui.text(names[i], 11f, ui.ink2()), lpw(1f, -2))
-                row.addView(ui.text(counts[i].toString() + " 件", 11f, ui.ink2()))
+                rp.topMargin = dp(Spacing.M)
+                row.addView(ui.text(names[i], FontSize.SMALL , ui.ink2()), lpw(1f, -2))
+                row.addView(ui.text(counts[i].toString() + " 件", FontSize.SMALL , ui.ink2()))
                 t3.addView(row, rp)
                 val bar = ui.bar(counts[i] / assets.size.toFloat(), colors[i % colors.size])
                 val bp = LinearLayout.LayoutParams(-1, dp(5f))
@@ -753,11 +752,11 @@ class MainActivity : Activity() {
             val totalBox = ui.vbox()
             totalBox.gravity = Gravity.CENTER
             val tlp = LinearLayout.LayoutParams(-1, -2)
-            tlp.topMargin = dp(16f)
-            val totalLabel = ui.text("总计（件）", 11f, ui.gray())
+            tlp.topMargin = dp(Spacing.XXL)
+            val totalLabel = ui.text("总计（件）", FontSize.SMALL , ui.gray())
             totalLabel.gravity = Gravity.CENTER
             totalBox.addView(totalLabel)
-            val totalValue = ui.text(assets.size.toString(), 22f, ui.ink(), ui.bold)
+            val totalValue = ui.text(assets.size.toString(), FontSize.NUMBER , ui.ink(), ui.bold)
             totalValue.gravity = Gravity.CENTER
             totalValue.setPadding(0, dp(4f), 0, 0)
             totalBox.addView(totalValue)
@@ -770,12 +769,12 @@ class MainActivity : Activity() {
 
     private fun trendCard(): LinearLayout {
         val card = ui.vbox()
-        card.background = ui.round(ui.card(), 18f)
-        ui.clipRound(card, 18f)
+        card.background = ui.round(ui.card(), Radius.CARD_MD )
+        ui.clipRound(card, Radius.CARD_MD )
         card.elevation = dp(2f).toFloat()
-        card.setPadding(dp(18f), dp(18f), dp(18f), dp(18f))
+        card.setPadding(dp(Spacing.XXXL), dp(Spacing.XXXL), dp(Spacing.XXXL), dp(Spacing.XXXL))
         val cp = LinearLayout.LayoutParams(-1, -2)
-        cp.setMargins(dp(14f), 0, dp(14f), dp(12f))
+        cp.setMargins(dp(14f), 0, dp(14f), dp(Spacing.XL))
         card.layoutParams = cp
         return card
     }
@@ -819,7 +818,7 @@ class MainActivity : Activity() {
         val body = pageBody()
         val head = ui.hbox()
         head.setPadding(dp(18f), dp(14f), dp(18f), dp(10f))
-        head.addView(ui.text("设置", 24f, ui.ink(), ui.bold), lpw(1f, -2))
+        head.addView(ui.text("设置", FontSize.DISPLAY , ui.ink(), ui.bold), lpw(1f, -2))
         body.addView(head)
 
         val login = ui.hbox()
@@ -840,8 +839,8 @@ class MainActivity : Activity() {
             else -> "点击登录"
         }
         val secondary = if (gh || g) "已登录，点击管理云备份" else "使用 Google 账号登录并同步数据"
-        texts.addView(ui.text(primary, 15f, ui.ink(), ui.medium))
-        texts.addView(ui.text(secondary, 11f, ui.gray()))
+        texts.addView(ui.text(primary, FontSize.BODY_LG , ui.ink(), ui.medium))
+        texts.addView(ui.text(secondary, FontSize.SMALL , ui.gray()))
         login.addView(texts)
         login.setOnClickListener {
             if (gh || g) showCloudPage()
@@ -889,11 +888,11 @@ class MainActivity : Activity() {
         for (m in modes) {
             val dot = FrameLayout(this)
             val on = m[0] == theme
-            dot.background = ui.roundStroke(ui.card(), 14f, if (on) ui.ink() else ui.line(), 1f)
+            dot.background = ui.roundStroke(ui.card(), Radius.CHIP , if (on) ui.ink() else ui.line(), 1f)
             val img = ui.icon(m[1], 16)
             dot.addView(img, FrameLayout.LayoutParams(dp(16f), dp(16f), Gravity.CENTER))
             val dlp = LinearLayout.LayoutParams(dp(26f), dp(26f))
-            dlp.leftMargin = dp(10f)
+            dlp.leftMargin = dp(Spacing.L)
             dot.setOnClickListener {
                 store.setSetting("theme", m[0])
                 dark = store.isDark()
@@ -974,7 +973,7 @@ class MainActivity : Activity() {
             vc = if (Build.VERSION.SDK_INT >= 28) pi.longVersionCode else pi.versionCode.toLong()
         } catch (_: Exception) {
         }
-        val ver = ui.text("版本 $vn($vc)\n全部数据仅保存在本机", 9f, ui.gray())
+        val ver = ui.text("版本 $vn($vc)\n全部数据仅保存在本机", FontSize.TINY , ui.gray())
         ver.gravity = Gravity.CENTER
         ver.setPadding(0, dp(14f), 0, dp(20f))
         body.addView(ver)
@@ -1019,15 +1018,15 @@ class MainActivity : Activity() {
     }
 
     private fun section(body: LinearLayout, label: String) {
-        val t = ui.text(label, 11f, ui.gray())
-        t.setPadding(dp(20f), dp(4f), dp(20f), dp(8f))
+        val t = ui.text(label, FontSize.SMALL , ui.gray())
+        t.setPadding(dp(Spacing.HUGE), dp(Spacing.XS), dp(Spacing.HUGE), dp(Spacing.M))
         body.addView(t)
     }
 
     private fun group(): LinearLayout {
         val g = ui.vbox()
-        g.background = ui.round(ui.card(), 16f)
-        ui.clipRound(g, 16f)
+        g.background = ui.round(ui.card(), Radius.CARD )
+        ui.clipRound(g, Radius.CARD )
         g.elevation = dp(2f).toFloat()
         val gp = LinearLayout.LayoutParams(-1, -2)
         gp.setMargins(dp(14f), 0, dp(14f), dp(14f))
@@ -1040,18 +1039,18 @@ class MainActivity : Activity() {
         r.setPadding(dp(16f), 0, dp(16f), 0)
         r.minimumHeight = dp(52f)
         r.addView(themedIcon(icon, 18))
-        val t = ui.text(label, 16f, ui.ink())
+        val t = ui.text(label, FontSize.TITLE , ui.ink())
         t.setPadding(dp(10f), 0, 0, 0)
         r.addView(t, lpw(1f, -2))
         if (value != null) {
-            val v = ui.text(value, 12f, ui.gray())
+            val v = ui.text(value, FontSize.META , ui.gray())
             r.addView(v)
         }
         if (chevron) {
             val c = themedIcon("ic_chevron", 10)
             c.alpha = if (dark) 0.75f else 0.35f
             val cp = LinearLayout.LayoutParams(dp(6f), dp(10f))
-            cp.leftMargin = dp(8f)
+            cp.leftMargin = dp(Spacing.M)
             r.addView(c, cp)
         }
         if (click != null) {
@@ -1066,7 +1065,7 @@ class MainActivity : Activity() {
         r.setPadding(dp(16f), 0, dp(16f), 0)
         r.minimumHeight = dp(52f)
         r.addView(themedIcon(icon, 18))
-        val t = ui.text(label, 16f, ui.ink())
+        val t = ui.text(label, FontSize.TITLE , ui.ink())
         t.setPadding(dp(10f), 0, 0, 0)
         r.addView(t, lpw(1f, -2))
         val sw = Switch(this)
@@ -1084,7 +1083,7 @@ class MainActivity : Activity() {
     private fun segment(labels: Array<String>, selected: Int, size: Float, cb: IntClick): LinearLayout {
         val seg = ui.hbox()
         val bgc = if (dark) 0xFF2A2A2A.toInt() else 0xFFF2F2F2.toInt()
-        seg.background = ui.round(bgc, 10f)
+        seg.background = ui.round(bgc, Radius.FIELD )
         seg.setPadding(dp(3f), dp(3f), dp(3f), dp(3f))
         for (i in labels.indices) {
             val on = i == selected
@@ -1095,7 +1094,7 @@ class MainActivity : Activity() {
             )
             t.gravity = Gravity.CENTER
             t.setPadding(dp(12f), dp(5f), dp(12f), dp(5f))
-            if (on) t.background = ui.round(if (dark) 0xFF3F3F3F.toInt() else ui.card(), 8f)
+            if (on) t.background = ui.round(if (dark) 0xFF3F3F3F.toInt() else ui.card(), Radius.SEGMENT )
             t.setOnClickListener { cb.on(i) }
             seg.addView(t)
         }
@@ -1228,11 +1227,11 @@ class MainActivity : Activity() {
         body.setPadding(0, 0, 0, dp(28f))
 
         val head = ui.hbox()
-        head.setPadding(dp(18f), dp(12f), dp(18f), dp(8f))
-        val back = ui.pillButton("‹", ui.card(), ui.ink(), 17f)
+        head.setPadding(dp(Spacing.XXXL), dp(Spacing.XL), dp(Spacing.XXXL), dp(Spacing.M))
+        val back = ui.pillButton("‹", ui.card(), ui.ink(), Radius.PILL )
         back.setTextSize(20f)
         back.setPadding(dp(12f), dp(2f), dp(14f), dp(4f))
-        ui.clipRound(back, 17f)
+        ui.clipRound(back, Radius.PILL )
         back.elevation = dp(2f).toFloat()
         back.setOnClickListener { showSettings() }
         head.addView(back)
@@ -1242,17 +1241,17 @@ class MainActivity : Activity() {
         center.gravity = Gravity.CENTER
         center.setPadding(0, dp(14f), 0, dp(20f))
         val bigIcon = FrameLayout(this)
-        bigIcon.background = ui.round(Ui.LIME_DEEP, 20f)
-        val arrow = ui.text("↑", 34f, 0xFFFFFFFF.toInt(), ui.bold)
+        bigIcon.background = ui.round(Ui.LIME_DEEP, Radius.CARD_LG )
+        val arrow = ui.text("↑", FontSize.ARROW, 0xFFFFFFFF.toInt(), ui.bold)
         arrow.gravity = Gravity.CENTER
         bigIcon.addView(arrow, FrameLayout.LayoutParams(dp(76f), dp(76f), Gravity.CENTER))
         val bip = LinearLayout.LayoutParams(dp(76f), dp(76f))
         bip.gravity = Gravity.CENTER_HORIZONTAL
         center.addView(bigIcon, bip)
-        val bt = ui.text("备份与恢复", 20f, ui.ink(), ui.bold)
+        val bt = ui.text("备份与恢复", FontSize.HEADLINE , ui.ink(), ui.bold)
         bt.gravity = Gravity.CENTER
         center.addView(bt, LinearLayout.LayoutParams(-1, -2))
-        val cnt = ui.text(store.ofKind("asset").size.toString() + "条记录", 11f, ui.gray())
+        val cnt = ui.text(store.ofKind("asset").size.toString() + "条记录", FontSize.SMALL , ui.gray())
         cnt.gravity = Gravity.CENTER
         cnt.setPadding(0, dp(8f), 0, 0)
         center.addView(cnt, LinearLayout.LayoutParams(-1, -2))
@@ -1265,10 +1264,10 @@ class MainActivity : Activity() {
 
         body.addView(View(this), LinearLayout.LayoutParams(1, 0, 1f))
 
-        val wipe = ui.text("抹掉所有内容", 13f, Ui.RED, ui.medium)
+        val wipe = ui.text("抹掉所有内容", FontSize.BODY_SM , Ui.RED, ui.medium)
         wipe.gravity = Gravity.CENTER
-        wipe.background = ui.round(ui.card(), 26f)
-        ui.clipRound(wipe, 26f)
+        wipe.background = ui.round(ui.card(), Radius.ACTION )
+        ui.clipRound(wipe, Radius.ACTION )
         wipe.elevation = dp(2f).toFloat()
         wipe.setPadding(0, dp(18f), 0, dp(18f))
         wipe.setOnClickListener {
@@ -1281,7 +1280,7 @@ class MainActivity : Activity() {
                 })
         }
         val wp = LinearLayout.LayoutParams(-1, -2)
-        wp.setMargins(dp(14f), 0, dp(14f), dp(10f))
+        wp.setMargins(dp(14f), 0, dp(14f), dp(Spacing.L))
         body.addView(wipe, wp)
 
         setScreen(body, false, null)
@@ -1462,11 +1461,11 @@ class MainActivity : Activity() {
         body.setPadding(0, 0, 0, dp(28f))
 
         val head = ui.hbox()
-        head.setPadding(dp(18f), dp(12f), dp(18f), dp(8f))
-        val back = ui.pillButton("‹", ui.card(), ui.ink(), 17f)
+        head.setPadding(dp(Spacing.XXXL), dp(Spacing.XL), dp(Spacing.XXXL), dp(Spacing.M))
+        val back = ui.pillButton("‹", ui.card(), ui.ink(), Radius.PILL )
         back.setTextSize(20f)
         back.setPadding(dp(12f), dp(2f), dp(14f), dp(4f))
-        ui.clipRound(back, 17f)
+        ui.clipRound(back, Radius.PILL )
         back.elevation = dp(2f).toFloat()
         back.setOnClickListener { showSettings() }
         head.addView(back)
@@ -1476,17 +1475,17 @@ class MainActivity : Activity() {
         center.gravity = Gravity.CENTER
         center.setPadding(0, dp(10f), 0, dp(16f))
         val bigIcon = FrameLayout(this)
-        bigIcon.background = ui.round(Ui.LIME_DEEP, 20f)
+        bigIcon.background = ui.round(Ui.LIME_DEEP, Radius.CARD_LG )
         val icon = themedIcon("ic_cloud", 34)
         icon.alpha = 1f
         bigIcon.addView(icon, FrameLayout.LayoutParams(dp(76f), dp(76f), Gravity.CENTER))
         val bip = LinearLayout.LayoutParams(dp(76f), dp(76f))
         bip.gravity = Gravity.CENTER_HORIZONTAL
         center.addView(bigIcon, bip)
-        val bt = ui.text("数据同步", 20f, ui.ink(), ui.bold)
+        val bt = ui.text("数据同步", FontSize.HEADLINE , ui.ink(), ui.bold)
         bt.gravity = Gravity.CENTER
         center.addView(bt, LinearLayout.LayoutParams(-1, -2))
-        val sub = ui.text(if (ENABLE_GITHUB_LOGIN) "GitHub Gist · Google Drive" else "Google Drive", 11f, ui.gray())
+        val sub = ui.text(if (ENABLE_GITHUB_LOGIN) "GitHub Gist · Google Drive" else "Google Drive", FontSize.SMALL , ui.gray())
         sub.gravity = Gravity.CENTER
         sub.setPadding(0, dp(6f), 0, 0)
         center.addView(sub)
@@ -1517,8 +1516,7 @@ class MainActivity : Activity() {
         body.addView(g3)
 
         val hint = ui.text(
-            "云端保存的是加密的 .ias 备份。当前仅支持 Google 账号（GitHub 登录暂时隐藏）。",
-            11f, ui.gray()
+            "云端保存的是加密的 .ias 备份。当前仅支持 Google 账号（GitHub 登录暂时隐藏）。", FontSize.SMALL , ui.gray()
         )
         hint.setPadding(dp(22f), dp(12f), dp(22f), 0)
         body.addView(hint)
@@ -1788,10 +1786,10 @@ class MainActivity : Activity() {
         val page = ui.vbox()
         page.gravity = Gravity.CENTER
         page.setPadding(dp(30f), 0, dp(30f), dp(40f))
-        val title = ui.text("请输入密码", 20f, ui.ink(), ui.bold)
+        val title = ui.text("请输入密码", FontSize.HEADLINE , ui.ink(), ui.bold)
         title.gravity = Gravity.CENTER
         page.addView(title, LinearLayout.LayoutParams(-1, -2))
-        val hint = ui.text("输入4位数字密码", 12f, ui.gray())
+        val hint = ui.text("输入4位数字密码", FontSize.META , ui.gray())
         hint.gravity = Gravity.CENTER
         hint.setPadding(0, dp(8f), 0, dp(26f))
         page.addView(hint, LinearLayout.LayoutParams(-1, -2))
@@ -1800,7 +1798,7 @@ class MainActivity : Activity() {
         dots.gravity = Gravity.CENTER
         val dotViews = arrayOfNulls<TextView>(4)
         for (i in 0 until 4) {
-            val dv = ui.text("○", 22f, ui.ink())
+            val dv = ui.text("○", FontSize.NUMBER , ui.ink())
             dv.setPadding(dp(10f), 0, dp(10f), 0)
             dotViews[i] = dv
             dots.addView(dv)
@@ -1815,13 +1813,13 @@ class MainActivity : Activity() {
         page.addView(pad, pl)
         val keys = arrayOf("1", "2", "3", "4", "5", "6", "7", "8", "9", "", "0", "⌫")
         for (key in keys) {
-            val btn = ui.text(key, 20f, ui.ink(), ui.medium)
+            val btn = ui.text(key, FontSize.HEADLINE , ui.ink(), ui.medium)
             btn.gravity = Gravity.CENTER
             btn.background = ui.circle(ui.chipBg())
             val gp = GridLayout.LayoutParams()
             gp.width = dp(64f)
             gp.height = dp(64f)
-            gp.setMargins(dp(10f), dp(8f), dp(10f), dp(8f))
+            gp.setMargins(dp(Spacing.L), dp(Spacing.M), dp(Spacing.L), dp(Spacing.M))
             if (key.isNotEmpty()) {
                 btn.setOnClickListener {
                     if ("⌫" == key) {
@@ -1896,10 +1894,10 @@ class MainActivity : Activity() {
         body.setPadding(0, 0, 0, dp(30f))
 
         val top = ui.hbox()
-        top.setPadding(dp(18f), dp(12f), dp(18f), dp(8f))
+        top.setPadding(dp(Spacing.XXXL), dp(Spacing.XL), dp(Spacing.XXXL), dp(Spacing.M))
         val back = circleIconButton("ic_close", Runnable { restoreTab() })
         top.addView(back, LinearLayout.LayoutParams(dp(36f), dp(36f)))
-        val title = ui.text(if (editing) "编辑资产" else "新增资产", 19f, ui.ink(), ui.medium)
+        val title = ui.text(if (editing) "编辑资产" else "新增资产", FontSize.HEADING, ui.ink(), ui.medium)
         title.gravity = Gravity.CENTER
         top.addView(title, lpw(1f, -2))
         val save = FrameLayout(this)
@@ -1917,7 +1915,7 @@ class MainActivity : Activity() {
         iconPick.setPadding(0, dp(16f), 0, dp(22f))
         iconPreview = ui.image(draft.optString("icon", "emoji/icon_default_object.png"), 84)
         iconPick.addView(iconPreview)
-        val change = ui.text("更换图标", 10f, ui.gray())
+        val change = ui.text("更换图标", FontSize.CAPTION , ui.gray())
         change.gravity = Gravity.CENTER
         change.setPadding(0, dp(8f), 0, 0)
         iconPick.addView(change)
@@ -1947,7 +1945,7 @@ class MainActivity : Activity() {
         val modelChev = themedIcon("ic_chevron", 10)
         modelChev.alpha = if (dark) 0.75f else 0.35f
         val mcp = LinearLayout.LayoutParams(dp(6f), dp(10f))
-        mcp.leftMargin = dp(8f)
+        mcp.leftMargin = dp(Spacing.M)
         modelChev.setOnClickListener { openModelPicker() }
         modelRow.addView(modelChev, mcp)
         g1.addView(modelRow)
@@ -1983,20 +1981,20 @@ class MainActivity : Activity() {
         brandRowLogo!!.layoutParams = FrameLayout.LayoutParams(dp(16f), dp(16f), Gravity.CENTER)
         if (dark) {
             val plate = FrameLayout(this)
-            plate.background = ui.round(0xFFFFFFFF.toInt(), 11f)
+            plate.background = ui.round(0xFFFFFFFF.toInt(), Radius.PLATE)
             plate.setPadding(dp(3f), dp(3f), dp(3f), dp(3f))
             plate.addView(brandRowLogo)
             brandVal.addView(plate, LinearLayout.LayoutParams(dp(22f), dp(22f)))
         } else {
             brandVal.addView(brandRowLogo, LinearLayout.LayoutParams(dp(18f), dp(18f)))
         }
-        brandRowText = ui.text("未设置", 13f, ui.gray())
+        brandRowText = ui.text("未设置", FontSize.BODY_SM , ui.gray())
         brandRowText!!.setPadding(dp(6f), 0, 0, 0)
         brandVal.addView(brandRowText)
         val bchev = themedIcon("ic_chevron", 10)
         bchev.alpha = if (dark) 0.75f else 0.35f
         val bcp = LinearLayout.LayoutParams(dp(6f), dp(10f))
-        bcp.leftMargin = dp(6f)
+        bcp.leftMargin = dp(Spacing.S)
         brandVal.addView(bchev, bcp)
         brandRow.addView(brandVal)
         updateBrandRow()
@@ -2015,13 +2013,13 @@ class MainActivity : Activity() {
 
         val g2 = formCard()
         val dateRow = fieldLabel("ic_calendar", "购买日期", null)
-        val date = ui.text(draft.optString("buyDate", Store.today()), 13f, ui.gray())
+        val date = ui.text(draft.optString("buyDate", Store.today()), FontSize.BODY_SM , ui.gray())
         dateRow.addView(date)
         dateRow.setOnClickListener { pickDate(date) }
         g2.addView(dateRow)
 
         val catRow = fieldLabel("ic_category2", "分类", null)
-        val catName = ui.text(categoryName(draft.optString("categoryId")), 13f, ui.gray())
+        val catName = ui.text(categoryName(draft.optString("categoryId")), FontSize.BODY_SM , ui.gray())
         catRow.addView(catName)
         val catWrap = ui.hbox()
         val cc = themedIcon("ic_chevron", 10)
@@ -2032,7 +2030,7 @@ class MainActivity : Activity() {
         g2.addView(catRow)
 
         val tagRow = fieldLabel("ic_tag2", "标签", null)
-        val tagNames = ui.text(tagNames(), 13f, ui.gray())
+        val tagNames = ui.text(tagNames(), FontSize.BODY_SM , ui.gray())
         tagRow.addView(tagNames)
         val tagWrap = ui.hbox()
         val tc = themedIcon("ic_chevron", 10)
@@ -2043,7 +2041,7 @@ class MainActivity : Activity() {
         g2.addView(tagRow)
 
         val noteRow = fieldLabel("ic_note", "备注", null)
-        val noteVal = ui.text(if (draft.optString("note").isEmpty()) "添加备注" else draft.optString("note"), 13f, ui.gray())
+        val noteVal = ui.text(if (draft.optString("note").isEmpty()) "添加备注" else draft.optString("note"), FontSize.BODY_SM , ui.gray())
         noteVal.isSingleLine = true
         noteRow.addView(noteVal)
         val ncv = themedIcon("ic_chevron", 10)
@@ -2062,7 +2060,7 @@ class MainActivity : Activity() {
         val coverPath = draft.optString("coverPath")
         if (coverPath.isNotEmpty() && java.io.File(coverPath).exists())
             coverRow.addView(ui.fileImage(coverPath, 40), LinearLayout.LayoutParams(dp(40f), dp(40f)))
-        val coverVal = ui.text(if (coverPath.isEmpty()) "未设置" else "更换", 13f, ui.gray())
+        val coverVal = ui.text(if (coverPath.isEmpty()) "未设置" else "更换", FontSize.BODY_SM , ui.gray())
         coverRow.addView(coverVal)
         val ccv = themedIcon("ic_chevron", 10)
         ccv.alpha = if (dark) 0.75f else 0.35f
@@ -2073,7 +2071,7 @@ class MainActivity : Activity() {
         val noteImgRow = fieldLabel("ic_photo_add", "备注图片", null)
         val noteImgs = draft.optJSONArray("noteImages")
         val ni = noteImgs?.length() ?: 0
-        val niVal = ui.text(if (ni == 0) "添加" else "$ni 张", 13f, ui.gray())
+        val niVal = ui.text(if (ni == 0) "添加" else "$ni 张", FontSize.BODY_SM , ui.gray())
         noteImgRow.addView(niVal)
         val ncv2 = themedIcon("ic_chevron", 10)
         ncv2.alpha = if (dark) 0.75f else 0.35f
@@ -2089,8 +2087,7 @@ class MainActivity : Activity() {
         val exVal = ui.text(
             if (ex.isEmpty()) "未设置"
             else ex + (if (draft.optInt("remindDays", 0) > 0)
-                " · 提前" + draft.optInt("remindDays") + unitLabel + " " + timeLabel else ""),
-            13f, ui.gray()
+                " · 提前" + draft.optInt("remindDays") + unitLabel + " " + timeLabel else ""), FontSize.BODY_SM , ui.gray()
         )
         expireRow.addView(exVal)
         val ecv = themedIcon("ic_chevron", 10)
@@ -2137,26 +2134,26 @@ class MainActivity : Activity() {
         val ruleHead = ui.hbox()
         ruleHead.setPadding(0, dp(14f), 0, dp(10f))
         ruleHead.addView(themedIcon("ic_rule", 16))
-        val rl = ui.text("成本计算规则", 14f, ui.ink())
+        val rl = ui.text("成本计算规则", FontSize.BODY , ui.ink())
         rl.setPadding(dp(10f), 0, 0, 0)
         ruleHead.addView(rl)
         g3.addView(ruleHead)
         val rule = draft.optString("rule", "day")
         val rsel = if ("count" == rule) 1 else if ("custom" == rule) 2 else 0
         val ruleSeg = ui.hbox()
-        ruleSeg.background = ui.round(if (dark) 0xFF2A2A2A.toInt() else 0xFFF4F4F4.toInt(), 10f)
-        ruleSeg.setPadding(dp(4f), dp(4f), dp(4f), dp(4f))
+        ruleSeg.background = ui.round(if (dark) 0xFF2A2A2A.toInt() else 0xFFF4F4F4.toInt(), Radius.FIELD )
+        ruleSeg.setPadding(dp(Spacing.XS), dp(Spacing.XS), dp(Spacing.XS), dp(Spacing.XS))
         val rules = arrayOf("按天", "按次", "自定义")
         for (i in rules.indices) {
             val on = i == rsel
             val t = ui.text(
-                rules[i], 12f,
+                rules[i], FontSize.META ,
                 if (on) 0xFF1A1A1A.toInt() else ui.gray(),
                 if (on) ui.medium else ui.regular
             )
             t.gravity = Gravity.CENTER
             t.setPadding(0, dp(10f), 0, dp(10f))
-            if (on) t.background = ui.round(Ui.LIME, 9f)
+            if (on) t.background = ui.round(Ui.LIME, Radius.SEGMENT_SM)
             t.setOnClickListener {
                 draft.put("rule", arrayOf("day", "count", "custom")[i])
                 showAdd()
@@ -2192,7 +2189,7 @@ class MainActivity : Activity() {
             body.addView(g4)
         }
 
-        val hint = ui.text("按天：价格 ÷ 已使用天数；按次：价格 ÷ 使用次数；自定义：价格 ÷ 自定义天数。", 11f, ui.gray())
+        val hint = ui.text("按天：价格 ÷ 已使用天数；按次：价格 ÷ 使用次数；自定义：价格 ÷ 自定义天数。", FontSize.SMALL , ui.gray())
         hint.setPadding(dp(20f), dp(10f), dp(20f), 0)
         body.addView(hint)
 
@@ -2249,7 +2246,7 @@ class MainActivity : Activity() {
     private fun addDateRow(parent: LinearLayout, icon: String, label: String, key: String) {
         val row = fieldLabel(icon, label, null)
         val def = Store.today()
-        val v = ui.text(draft.optString(key, def), 13f, ui.gray())
+        val v = ui.text(draft.optString(key, def), FontSize.BODY_SM , ui.gray())
         row.addView(v)
         val c = themedIcon("ic_chevron", 10)
         c.alpha = if (dark) 0.75f else 0.35f
@@ -2460,12 +2457,12 @@ class MainActivity : Activity() {
 
     private fun formCard(): LinearLayout {
         val g = ui.vbox()
-        g.background = ui.round(ui.card(), 16f)
-        ui.clipRound(g, 16f)
+        g.background = ui.round(ui.card(), Radius.CARD )
+        ui.clipRound(g, Radius.CARD )
         g.elevation = dp(2f).toFloat()
         g.setPadding(dp(24f), dp(2f), dp(24f), dp(2f))
         val gp = LinearLayout.LayoutParams(-1, -2)
-        gp.setMargins(dp(28f), 0, dp(28f), dp(12f))
+        gp.setMargins(dp(28f), 0, dp(28f), dp(Spacing.XL))
         g.layoutParams = gp
         return g
     }
@@ -2716,7 +2713,7 @@ class MainActivity : Activity() {
         body.setPadding(0, 0, 0, dp(40f))
 
         val top = ui.hbox()
-        top.setPadding(dp(18f), dp(12f), dp(18f), dp(8f))
+        top.setPadding(dp(Spacing.XXXL), dp(Spacing.XL), dp(Spacing.XXXL), dp(Spacing.M))
         val back = circleIconButton("ic_close", Runnable { restoreTab() })
         top.addView(back, LinearLayout.LayoutParams(dp(36f), dp(36f)))
         top.addView(View(this), lpw(1f, 1))
@@ -2730,27 +2727,27 @@ class MainActivity : Activity() {
         val dcv = a.optString("coverPath")
         if (dcv.isNotEmpty() && java.io.File(dcv).exists()) center.addView(ui.fileImage(dcv, 96, 16f))
         else center.addView(ui.image(a.optString("icon", "emoji/icon_default_object.png"), 88))
-        val name = ui.text(displayName(a), 20f, ui.ink(), ui.bold)
+        val name = ui.text(displayName(a), FontSize.HEADLINE , ui.ink(), ui.bold)
         name.gravity = Gravity.CENTER
         name.setPadding(0, dp(14f), 0, 0)
         center.addView(name)
         center.addView(moneyLineSuffix(store.dailyCost(a), 22f, "/天"))
         val days = store.ageDays(a)
-        val meta = ui.text("总价：" + store.money(a.optDouble("price")) + "  |  已服役 " + days + " 天", 11f, ui.gray())
+        val meta = ui.text("总价：" + store.money(a.optDouble("price")) + "  |  已服役 " + days + " 天", FontSize.SMALL , ui.gray())
         meta.gravity = Gravity.CENTER
         meta.setPadding(0, dp(10f), 0, 0)
         center.addView(meta)
         body.addView(center, LinearLayout.LayoutParams(-1, -2))
 
         val chartCard = ui.vbox()
-        chartCard.background = ui.round(ui.card(), 16f)
+        chartCard.background = ui.round(ui.card(), Radius.CARD )
         chartCard.elevation = 0f
         chartCard.clipToOutline = true
-        chartCard.setPadding(dp(16f), dp(16f), dp(16f), dp(10f))
+        chartCard.setPadding(dp(Spacing.XXL), dp(Spacing.XXL), dp(Spacing.XXL), dp(Spacing.L))
         val ccp = LinearLayout.LayoutParams(-1, -2)
-        ccp.setMargins(dp(14f), dp(18f), dp(14f), dp(12f))
+        ccp.setMargins(dp(14f), dp(Spacing.XXXL), dp(14f), dp(Spacing.XL))
         chartCard.layoutParams = ccp
-        chartCard.addView(ui.text("日均成本", 13f, ui.ink(), ui.medium))
+        chartCard.addView(ui.text("日均成本", FontSize.BODY_SM , ui.ink(), ui.medium))
         val series = detailSeries(a, days)
         val chart = ChartView(this)
         val buyDate = a.optString("buyDate")
@@ -2779,18 +2776,18 @@ class MainActivity : Activity() {
         if (a.optString("brandName").isNotEmpty()) {
             val br = ui.hbox()
             br.setPadding(0, dp(13f), 0, dp(13f))
-            br.addView(ui.text("品牌", 12f, ui.ink2()), lpw(1f, -2))
+            br.addView(ui.text("品牌", FontSize.META , ui.ink2()), lpw(1f, -2))
             val blogo = ui.image("brands/" + a.optString("brandId") + ".png", 16)
             if (dark) {
                 val plate = FrameLayout(this)
-                plate.background = ui.round(0xFFFFFFFF.toInt(), 10f)
+                plate.background = ui.round(0xFFFFFFFF.toInt(), Radius.FIELD )
                 plate.setPadding(dp(2f), dp(2f), dp(2f), dp(2f))
                 plate.addView(blogo, FrameLayout.LayoutParams(dp(16f), dp(16f), Gravity.CENTER))
                 br.addView(plate, LinearLayout.LayoutParams(dp(20f), dp(20f)))
             } else {
                 br.addView(blogo)
             }
-            val bname = ui.text(a.optString("brandName"), 12f, ui.ink(), ui.medium)
+            val bname = ui.text(a.optString("brandName"), FontSize.META , ui.ink(), ui.medium)
             bname.setPadding(dp(6f), 0, 0, 0)
             br.addView(bname)
             val wrap = ui.vbox()
@@ -2830,7 +2827,7 @@ class MainActivity : Activity() {
                 if (java.io.File(p).exists()) {
                     val iv = ui.fileImage(p, 56)
                     val ip = LinearLayout.LayoutParams(dp(56f), dp(56f))
-                    ip.rightMargin = dp(8f)
+                    ip.rightMargin = dp(Spacing.M)
                     imgsRow.addView(iv, ip)
                 }
                 i++
@@ -2852,12 +2849,12 @@ class MainActivity : Activity() {
 
         val del = ui.hbox()
         del.gravity = Gravity.CENTER
-        del.background = ui.round(if (dark) 0xFF3A1F1D.toInt() else 0xFFFFF0EE.toInt(), 24f)
+        del.background = ui.round(if (dark) 0xFF3A1F1D.toInt() else 0xFFFFF0EE.toInt(), Radius.ACTION_LG)
         del.setPadding(0, dp(15f), 0, dp(15f))
         val delIcon = ui.icon("ic_delete", 16)
         delIcon.setColorFilter(Ui.RED)
         del.addView(delIcon)
-        val dt = ui.text("删除资产", 14f, Ui.RED, ui.medium)
+        val dt = ui.text("删除资产", FontSize.BODY , Ui.RED, ui.medium)
         dt.setPadding(dp(8f), 0, 0, 0)
         del.addView(dt)
         val delLp = LinearLayout.LayoutParams(-1, -2)
@@ -2879,8 +2876,8 @@ class MainActivity : Activity() {
     private fun drow(k: String, v: String): View {
         val row = ui.hbox()
         row.setPadding(0, dp(13f), 0, dp(13f))
-        row.addView(ui.text(k, 12f, ui.ink2()), lpw(1f, -2))
-        row.addView(ui.text(v, 12f, ui.ink(), ui.medium))
+        row.addView(ui.text(k, FontSize.META , ui.ink2()), lpw(1f, -2))
+        row.addView(ui.text(v, FontSize.META , ui.ink(), ui.medium))
         val wrap = ui.vbox()
         wrap.addView(row)
         wrap.addView(ui.hline())

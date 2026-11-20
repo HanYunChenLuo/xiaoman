@@ -120,7 +120,7 @@ class Ui(activity: Activity) {
 
     fun gradient(vararg colors: Int): GradientDrawable {
         val d = GradientDrawable(GradientDrawable.Orientation.TL_BR, colors)
-        d.cornerRadius = dp(18f).toFloat()
+        d.cornerRadius = dp(Radius.CARD_MD).toFloat()
         return d
     }
 
@@ -131,7 +131,7 @@ class Ui(activity: Activity) {
     }
 
     fun card(v: View) {
-        v.background = round(card(), 16f)
+        v.background = round(card(), Radius.CARD)
         v.elevation = dp(2f).toFloat()
     }
 
@@ -183,7 +183,7 @@ class Ui(activity: Activity) {
 
     fun icon(name: String, sizeDp: Int): ImageView = image("icons/$name.png", sizeDp)
 
-    fun fileImage(path: String, sizeDp: Int, radiusDp: Float = 10f): ImageView {
+    fun fileImage(path: String, sizeDp: Int, radiusDp: Float = Radius.FIELD): ImageView {
         val iv = ImageView(a)
         try {
             iv.setImageBitmap(BitmapFactory.decodeFile(path))
@@ -204,8 +204,8 @@ class Ui(activity: Activity) {
 
     // ---------- 常用控件 ----------
     fun chip(label: String, on: Boolean): TextView {
-        val t = text(label, 11f, if (on) chipOnInk() else chipInk(), medium)
-        t.background = round(if (on) chipOnBg() else chipBg(), 14f)
+        val t = text(label, FontSize.SMALL, if (on) chipOnInk() else chipInk(), medium)
+        t.background = round(if (on) chipOnBg() else chipBg(), Radius.CHIP)
         t.setPadding(dp(13f), dp(7f), dp(13f), dp(7f))
         return t
     }
@@ -215,12 +215,12 @@ class Ui(activity: Activity) {
         b.frac = Math.max(0f, Math.min(1f, fraction))
         b.bgColor = line()
         b.fgColor = fillColor
-        b.layoutParams = LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(5f))
+        b.layoutParams = LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(Size.BAR_HEIGHT.toFloat()))
         return b
     }
 
     fun pillButton(label: String, bg: Int, fg: Int, radius: Float): TextView {
-        val t = text(label, 12f, fg, medium)
+        val t = text(label, FontSize.META, fg, medium)
         t.background = round(bg, radius)
         t.setPadding(dp(14f), dp(8f), dp(14f), dp(8f))
         return t

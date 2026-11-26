@@ -83,6 +83,7 @@ Tauri 通过 `frontendDist: ../../web/dist` 加载 Web 端（编译期嵌入）�
 
 - UI：Android 改 `apps/android/app/src/main/java/com/xiaoman/app/`；Web 改 `web/src/`；桌面仅外壳。
 - 桌面：`frontendDist` 在**编译期**嵌入二进制，改完 Web 后必须 `touch desktop/src-tauri/src/main.rs && cargo build` 再启动，否则运行的是旧前端。凭据文件：`node desktop/scripts/seed-oauth.mjs`（需环境变量 `XIAOMAN_GOOGLE_CLIENT_ID` / `XIAOMAN_GOOGLE_CLIENT_SECRET`），生成 `desktop/src-tauri/oauth.enc`（gitignore）。关闭窗口=隐藏到菜单栏（不退出），托盘左键恢复、菜单「打开小满 / 退出」；macOS 图标按苹果网格留边（1024 画布内 824 圆角方），Dock 大小才与其他应用一致。
+- Web UI 尺寸使用 `web/src/style.css` 顶部的 `--radius-*` / `--space-*` / `--font-*` CSS 变量；新增样式优先引用变量。
 - Web 端已支持主图/备注图片（Canvas 压缩为 JPEG data URL，存 localStorage；随 `.ias` 的 images/ 条目互通，已在 Android 导入验证）与到期时间字段；图片数量/体积受 localStorage 限制。
 - Web 品牌数据会缓存到 localStorage（`xiaoman_brands_v1`），设置页「品牌与型号数据」可通过 GitHub（Contents API，失败回退 raw）拉取最新版本；分类/标签支持重命名与上下移动；到期提醒使用浏览器 Notification（页面打开时检查，需手动授权）；提供 `public/manifest.webmanifest` 支持安装为 PWA。
 - 计算、`.ias` 编解码与云备份协议以 Rust `core/` 为准，跨端保持一致；改动后在 Android + Web 两端验证导入导出与云同步。

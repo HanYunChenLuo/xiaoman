@@ -832,20 +832,14 @@ class MainActivity : Activity() {
         login.addView(avatar, LinearLayout.LayoutParams(dp(46f), dp(46f)))
         val texts = ui.vbox()
         texts.setPadding(dp(12f), 0, 0, 0)
-        val gh = ENABLE_GITHUB_LOGIN && cloud.githubLoggedIn()
         val g = cloud.googleLoggedIn()
-        val primary = when {
-            gh -> "GitHub · " + cloud.githubLogin()
-            g -> "Google · " + cloud.googleEmail().ifEmpty { "已登录" }
-            else -> "点击登录"
-        }
-        val secondary = if (gh || g) "已登录，点击管理云备份" else "使用 Google 账号登录并同步数据"
+        val primary = if (g) "Google · " + cloud.googleEmail().ifEmpty { "已登录" } else "点击登录"
+        val secondary = if (g) "已登录，点击管理云备份" else "使用 Google 账号登录并同步数据"
         texts.addView(ui.text(primary, FontSize.BODY_LG , ui.ink(), ui.medium))
         texts.addView(ui.text(secondary, FontSize.SMALL , ui.gray()))
         login.addView(texts)
         login.setOnClickListener {
-            if (gh || g) showCloudPage()
-            else googleAccountAction()
+            if (g) showCloudPage() else googleAccountAction()
         }
         body.addView(login)
 
@@ -1454,11 +1448,8 @@ class MainActivity : Activity() {
     }
 
     // ================= 云同步 =================
-    private fun cloudSyncSummary(): String? = when {
-        cloud.googleLoggedIn() -> "Google"
-        ENABLE_GITHUB_LOGIN && cloud.githubLoggedIn() -> "GitHub"
-        else -> null
-    }
+    private fun cloudSyncSummary(): String? =
+        if (cloud.googleLoggedIn()) "Google" else null
 
     private fun showCloudPage() {
         screen = "cloud"
@@ -1490,7 +1481,7 @@ class MainActivity : Activity() {
         val bt = ui.text("数据同步", FontSize.HEADLINE , ui.ink(), ui.bold)
         bt.gravity = Gravity.CENTER
         center.addView(bt, LinearLayout.LayoutParams(-1, -2))
-        val sub = ui.text(if (ENABLE_GITHUB_LOGIN) "GitHub Gist · Google Drive" else "Google Drive", FontSize.SMALL , ui.gray())
+        val sub = ui.text("Google Drive", FontSize.SMALL , ui.gray())
         sub.gravity = Gravity.CENTER
         sub.setPadding(0, dp(6f), 0, 0)
         center.addView(sub)
@@ -1498,10 +1489,6 @@ class MainActivity : Activity() {
 
         section(body, "账号")
         val g1 = group()
-        // TODO: GitHub 登录暂时隐藏，恢复时启用 ENABLE_GITHUB_LOGIN 与下面的行
-        if (ENABLE_GITHUB_LOGIN) {
-            g1.addView(row("ic_cloud", "GitHub", if (cloud.githubLoggedIn()) cloud.githubLogin() else "未登录", true) { githubAccountAction() })
-        }
         g1.addView(row("ic_cloud", "Google", if (cloud.googleLoggedIn()) cloud.googleEmail().ifEmpty { "已登录" } else "未登录", true) { googleAccountAction() })
         body.addView(g1)
 
@@ -1513,15 +1500,11 @@ class MainActivity : Activity() {
 
         section(body, "开发者配置")
         val g3 = group()
-        // TODO: 恢复 GitHub 后显示 GitHub Client ID 配置行
-        if (ENABLE_GITHUB_LOGIN) {
-            g3.addView(row("ic_cloud", "GitHub Client ID", maskId(cloud.githubClientId()), true) { inputClientId("github") })
-        }
-        g3.addView(row("ic_cloud", "Google Client ID", maskId(cloud.googleClientId()), true) { inputClientId("google") })
+        g3.addView(row("ic_cloud", "Google Client ID", maskId(cloud.googleClientId()), true) { inputClientId() })
         body.addView(g3)
 
         val hint = ui.text(
-            "云端保存的是加密的 .ias 备份。当前仅支持 Google 账号（GitHub 登录暂时隐藏）。", FontSize.SMALL , ui.gray()
+            "云端保存的是加密的 .ias 备份，仅支持 Google 账号。", FontSize.SMALL , ui.gray()
         )
         hint.setPadding(dp(22f), dp(12f), dp(22f), 0)
         body.addView(hint)
@@ -1532,72 +1515,18 @@ class MainActivity : Activity() {
 
     private fun cloudSyncLast(): String? {
         val g = cloud.lastSync("google")
-        if (g.isNotEmpty()) return "Google $g"
-        if (ENABLE_GITHUB_LOGIN) {
-            val gh = cloud.lastSync("github")
-            if (gh.isNotEmpty()) return "GitHub $gh"
-        }
-        return null
+        return if (g.isNotEmpty()) "Google $g" else null
     }
 
     private fun maskId(id: String): String =
         if (id.isEmpty()) "未配置" else id.take(6) + "…" + id.takeLast(4)
 
-    private fun inputClientId(which: String) {
-        val isGithub = which == "github"
-        val current = if (isGithub) cloud.githubClientId() else cloud.googleClientId()
-        DialogKit.input(
-            this,
-            if (isGithub) "GitHub Client ID" else "Google Client ID",
-            "粘贴 OAuth Client ID",
-            current,
-            "保存"
-        ) { id ->
-            if (isGithub) cloud.setGithubClientId(id) else cloud.setGoogleClientId(id)
+    private fun inputClientId() {
+        DialogKit.input(this, "Google Client ID", "粘贴 OAuth Client ID", cloud.googleClientId(), "保存") { id ->
+            cloud.setGoogleClientId(id)
             toast("已保存")
             showCloudPage()
         }
-    }
-
-    private fun githubAccountAction() {
-        if (cloud.githubLoggedIn()) {
-            DialogKit.list(this, "GitHub", arrayOf("退出登录"), IntConsumer {
-                cloud.logoutGithub()
-                toast("已退出 GitHub")
-                showCloudPage()
-            }, null, null)
-            return
-        }
-        if (cloud.githubClientId().isEmpty()) {
-            toast("请先配置 GitHub Client ID")
-            inputClientId("github")
-            return
-        }
-        var waitDialog: android.app.Dialog? = null
-        val progress = DialogKit.progress(this, "GitHub 登录", "正在获取设备码…")
-        cloud.startGithubLogin(this, { code, url ->
-            progress.dismiss()
-            android.app.AlertDialog.Builder(this)
-                .setTitle("GitHub 授权")
-                .setMessage("请在浏览器中输入代码：\n\n$code\n\n授权完成后返回小满。")
-                .setPositiveButton("打开浏览器") { _, _ ->
-                    try {
-                        startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)))
-                    } catch (_: Exception) {
-                    }
-                }
-                .setNegativeButton("取消", null)
-                .show()
-            waitDialog = DialogKit.progress(this, "GitHub 登录", "等待授权…")
-        }, { login ->
-            waitDialog?.dismiss()
-            toast("已登录 GitHub：$login")
-            showCloudPage()
-        }, { msg ->
-            progress.dismiss()
-            waitDialog?.dismiss()
-            toast(msg)
-        })
     }
 
     private fun googleAccountAction() {
@@ -1611,7 +1540,7 @@ class MainActivity : Activity() {
         }
         if (cloud.googleClientId().isEmpty()) {
             toast("请先配置 Google Client ID")
-            inputClientId("google")
+            inputClientId()
             return
         }
         val progress = DialogKit.progress(this, "Google 登录", "正在打开浏览器…")
@@ -1627,33 +1556,21 @@ class MainActivity : Activity() {
     }
 
     private fun chooseCloudProvider(upload: Boolean) {
-        val providers = ArrayList<String>()
-        // TODO: 恢复 GitHub Gist 选项
-        if (ENABLE_GITHUB_LOGIN && cloud.githubLoggedIn()) providers.add("GitHub Gist")
-        if (cloud.googleLoggedIn()) providers.add("Google Drive")
-        if (providers.isEmpty()) {
+        if (!cloud.googleLoggedIn()) {
             toast("请先登录 Google 账号")
             return
         }
-        if (providers.size == 1) {
-            val github = providers[0].startsWith("GitHub")
-            if (upload) cloudUpload(github) else cloudRestore(github)
-            return
-        }
-        DialogKit.list(this, if (upload) "上传到云端" else "从云端恢复", providers.toTypedArray(), IntConsumer { idx ->
-            val github = providers[idx].startsWith("GitHub")
-            if (upload) cloudUpload(github) else cloudRestore(github)
-        }, null, null)
+        if (upload) cloudUpload() else cloudRestore()
     }
 
-    private fun cloudUpload(github: Boolean) {
+    private fun cloudUpload() {
         val progress = DialogKit.progress(this, "上传备份", "正在生成并上传…")
         Thread {
             try {
                 val bytes = Backup.writeIas(store)
                 val done = Runnable {
                     progress.dismiss()
-                    toast("已上传到${if (github) " GitHub" else " Google Drive"}")
+                    toast("已上传到 Google Drive")
                     if (screen == "cloud") showCloudPage()
                 }
                 val fail = { msg: String ->
@@ -1662,8 +1579,7 @@ class MainActivity : Activity() {
                         toast(msg)
                     }
                 }
-                if (github) cloud.githubUpload(bytes, { runOnUiThread(done) }, fail)
-                else cloud.googleUpload(bytes, { runOnUiThread(done) }, fail)
+                cloud.googleUpload(bytes, { runOnUiThread(done) }, fail)
             } catch (e: Exception) {
                 runOnUiThread {
                     progress.dismiss()
@@ -1673,7 +1589,7 @@ class MainActivity : Activity() {
         }.start()
     }
 
-    private fun cloudRestore(github: Boolean) {
+    private fun cloudRestore() {
         val progress = DialogKit.progress(this, "云端恢复", "正在下载备份…")
         val onData = { bytes: ByteArray ->
             runOnUiThread {
@@ -1687,8 +1603,7 @@ class MainActivity : Activity() {
                 toast(msg)
             }
         }
-        if (github) cloud.githubDownload(onData, onError)
-        else cloud.googleDownload(onData, onError)
+        cloud.googleDownload(onData, onError)
     }
 
     private fun importCloudBytes(bytes: ByteArray) {
@@ -3141,8 +3056,6 @@ class MainActivity : Activity() {
         private const val BRAND_DATA_URL =
             "https://raw.githubusercontent.com/HanYunChenLuo/xiaoman/main/data/brands.json"
         private const val BRAND_DATA_TAG = "XiaomanBrandData"
-        // TODO: 恢复 GitHub 登录（设备码 + Gist），需真实 GitHub OAuth App Client ID 与真机验证
-        private const val ENABLE_GITHUB_LOGIN = false
         private const val REQ_RESTORE = 1001
         private const val REQ_EXPORT = 1002
         private const val REQ_COVER = 1003

@@ -4,7 +4,6 @@ import android.app.Activity
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
-import org.json.JSONArray
 import org.json.JSONObject
 import java.io.ByteArrayOutputStream
 import java.net.HttpURLConnection
@@ -19,52 +18,30 @@ import java.util.Date
 import java.util.Locale
 
 /**
- * 云端备份：GitHub Gist（设备码 OAuth）与 Google Drive 应用数据文件夹（PKCE）。
- * 云文件内容为 .ias 备份的 Base64 文本 / 原始字节。
+ * 云端备份：Google Drive 应用数据文件夹（PKCE）。
+ * 云端文件内容为 .ias 备份的原始字节。
  */
 class CloudSync(private val ctx: Context) {
     private val prefs = ctx.getSharedPreferences("xiaoman_cloud", Context.MODE_PRIVATE)
 
-    @Volatile private var ghCancel = false
-
     companion object {
-        private const val GIST_DESC = "小满云备份"
-        private const val GIST_FILE = "xiaoman_backup.ias.b64"
         private const val REDIRECT = "http://127.0.0.1"
     }
 
     // ---------- 配置 ----------
-    fun githubClientId(): String {
-        val custom = prefs.getString("gh_client_id", "") ?: ""
-        return if (custom.isNotEmpty()) custom else BuildConfig.GITHUB_CLIENT_ID
-    }
-
     fun googleClientId(): String {
         val custom = prefs.getString("g_client_id", "") ?: ""
         return if (custom.isNotEmpty()) custom else BuildConfig.GOOGLE_CLIENT_ID
-    }
-
-    fun setGithubClientId(id: String) {
-        prefs.edit().putString("gh_client_id", id.trim()).apply()
     }
 
     fun setGoogleClientId(id: String) {
         prefs.edit().putString("g_client_id", id.trim()).apply()
     }
 
-    fun githubLogin(): String = prefs.getString("gh_login", "") ?: ""
-
     fun googleEmail(): String = prefs.getString("g_email", "") ?: ""
-
-    fun githubLoggedIn(): Boolean = prefs.getString("gh_token", "")?.isNotEmpty() == true
 
     fun googleLoggedIn(): Boolean =
         prefs.getString("g_refresh", "")?.isNotEmpty() == true || prefs.getString("g_token", "")?.isNotEmpty() == true
-
-    fun logoutGithub() {
-        ghCancel = true
-        prefs.edit().remove("gh_token").remove("gh_login").remove("gh_gist").apply()
-    }
 
     fun logoutGoogle() {
         clearPending()
@@ -78,168 +55,7 @@ class CloudSync(private val ctx: Context) {
         prefs.edit().putString("last_$provider", t).apply()
     }
 
-    fun hasGithubBackup(): Boolean = prefs.getString("gh_gist", "")?.isNotEmpty() == true
     fun hasGoogleBackup(): Boolean = prefs.getString("g_file", "")?.isNotEmpty() == true
-
-    // ---------- GitHub 设备码登录（暂时隐藏，TODO: 配置真实 OAuth App 后启用）----------
-    fun startGithubLogin(
-        activity: Activity,
-        onCode: (userCode: String, url: String) -> Unit,
-        onDone: (login: String) -> Unit,
-        onError: (String) -> Unit
-    ) {
-        val clientId = githubClientId()
-        if (clientId.isEmpty()) {
-            onError("请先配置 GitHub Client ID")
-            return
-        }
-        ghCancel = false
-        Thread {
-            try {
-                val codeRes = postForm(
-                    "https://github.com/login/device/code",
-                    mapOf("client_id" to clientId, "scope" to "gist"),
-                    json = true
-                )
-                val deviceCode = codeRes.optString("device_code")
-                val userCode = codeRes.optString("user_code")
-                val url = codeRes.optString("verification_uri", "https://github.com/login/device")
-                var interval = Math.max(5, codeRes.optInt("interval", 5))
-                val expires = System.currentTimeMillis() + codeRes.optLong("expires_in", 900) * 1000
-                if (deviceCode.isEmpty()) throw Exception(codeRes.optString("error_description", "设备码获取失败"))
-                activity.runOnUiThread { onCode(userCode, url) }
-
-                while (!ghCancel && System.currentTimeMillis() < expires) {
-                    Thread.sleep(interval * 1000L)
-                    val tokenRes = postForm(
-                        "https://github.com/login/oauth/access_token",
-                        mapOf(
-                            "client_id" to clientId,
-                            "device_code" to deviceCode,
-                            "grant_type" to "urn:ietf:params:oauth:grant-type:device_code"
-                        ),
-                        json = true
-                    )
-                    val token = tokenRes.optString("access_token")
-                    if (token.isNotEmpty()) {
-                        val user = httpJson(
-                            "https://api.github.com/user", "GET", null,
-                            mapOf("Authorization" to "Bearer $token", "Accept" to "application/vnd.github+json")
-                        )
-                        val login = user.optString("login")
-                        prefs.edit().putString("gh_token", token).putString("gh_login", login).apply()
-                        activity.runOnUiThread { onDone(login.ifEmpty { "GitHub" }) }
-                        return@Thread
-                    }
-                    when (tokenRes.optString("error")) {
-                        "authorization_pending" -> {}
-                        "slow_down" -> interval += 5
-                        "expired_token" -> throw Exception("授权已过期，请重试")
-                        "access_denied" -> throw Exception("已取消授权")
-                        else -> if (tokenRes.has("error")) {
-                            throw Exception(tokenRes.optString("error_description", tokenRes.optString("error")))
-                        }
-                    }
-                }
-            } catch (e: Exception) {
-                android.util.Log.w("XiaomanCloud", "github login failed", e)
-                if (!ghCancel) activity.runOnUiThread { onError(e.message ?: "GitHub 登录失败") }
-            }
-        }.start()
-    }
-
-    // ---------- GitHub Gist 备份（暂时隐藏，TODO: 与登录一起恢复）----------
-    fun githubUpload(bytes: ByteArray, onDone: () -> Unit, onError: (String) -> Unit) {
-        val token = prefs.getString("gh_token", "") ?: ""
-        if (token.isEmpty()) {
-            onError("请先登录 GitHub")
-            return
-        }
-        Thread {
-            try {
-                val b64 = android.util.Base64.encodeToString(bytes, android.util.Base64.NO_WRAP)
-                val desc = GIST_DESC + " · " + SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.US).format(Date())
-                var id = prefs.getString("gh_gist", "") ?: ""
-                val payload = JSONObject()
-                    .put("description", desc)
-                    .put("public", false)
-                    .put("files", JSONObject().put(GIST_FILE, JSONObject().put("content", b64)))
-                if (id.isEmpty()) id = findGist(token)
-                if (id.isNotEmpty()) {
-                    try {
-                        httpJson("https://api.github.com/gists/$id", "PATCH", payload.toString(), auth(token))
-                    } catch (_: Exception) {
-                        id = ""
-                    }
-                }
-                if (id.isEmpty()) {
-                    val created = httpJson("https://api.github.com/gists", "POST", payload.toString(), auth(token))
-                    id = created.optString("id")
-                }
-                if (id.isEmpty()) throw Exception("创建 Gist 失败")
-                prefs.edit().putString("gh_gist", id).apply()
-                markSync("github")
-                onDone()
-            } catch (e: Exception) {
-                android.util.Log.w("XiaomanCloud", "upload failed", e)
-                onError(e.message ?: "上传失败")
-            }
-        }.start()
-    }
-
-    fun githubDownload(onDone: (ByteArray) -> Unit, onError: (String) -> Unit) {
-        val token = prefs.getString("gh_token", "") ?: ""
-        if (token.isEmpty()) {
-            onError("请先登录 GitHub")
-            return
-        }
-        Thread {
-            try {
-                var id = prefs.getString("gh_gist", "") ?: ""
-                if (id.isEmpty()) id = findGist(token)
-                if (id.isEmpty()) throw Exception("云端没有备份")
-                val gist = httpJson("https://api.github.com/gists/$id", "GET", null, auth(token))
-                val file = gist.optJSONObject("files")?.optJSONObject(GIST_FILE)
-                    ?: throw Exception("备份文件不存在")
-                var b64 = file.optString("content")
-                if (file.optBoolean("truncated", false)) {
-                    val raw = file.optString("raw_url")
-                    b64 = String(httpBytes(raw, auth(token)), Charsets.UTF_8)
-                }
-                val bytes = android.util.Base64.decode(b64, android.util.Base64.DEFAULT)
-                onDone(bytes)
-            } catch (e: Exception) {
-                android.util.Log.w("XiaomanCloud", "download failed", e)
-                onError(e.message ?: "下载失败")
-            }
-        }.start()
-    }
-
-    private fun findGist(token: String): String {
-        val arr = JSONArray(
-            String(
-                httpBytes(
-                    "https://api.github.com/gists?per_page=100",
-                    mapOf("Authorization" to "Bearer $token", "Accept" to "application/vnd.github+json")
-                ),
-                Charsets.UTF_8
-            )
-        )
-        for (i in 0 until arr.length()) {
-            val g = arr.optJSONObject(i) ?: continue
-            if (g.optString("description").startsWith(GIST_DESC)) {
-                val id = g.optString("id")
-                prefs.edit().putString("gh_gist", id).apply()
-                return id
-            }
-        }
-        return ""
-    }
-
-    private fun auth(token: String) = mapOf(
-        "Authorization" to "Bearer $token",
-        "Accept" to "application/vnd.github+json"
-    )
 
     // ---------- Google 登录（PKCE + loopback） ----------
     private var pendingVerifier: String? = null

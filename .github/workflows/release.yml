@@ -8,7 +8,6 @@
 #   ANDROID_KEY_PASSWORD             key 口令
 #   ANDROID_KEY_ALIAS                默认 replica
 #   XIAOMAN_ANDROID_GOOGLE_CLIENT_ID （可选，Android Google 登录）
-#   XIAOMAN_ANDROID_GITHUB_CLIENT_ID （可选）
 #
 # 发布前记得提升 apps/android/app/build.gradle 的 versionCode/versionName、
 # desktop/src-tauri/tauri.conf.json 的 version，并让 tag（v1.0.1）与 versionName 一致。
@@ -139,7 +138,6 @@ jobs:
           KEY_PASS: ${{ secrets.ANDROID_KEY_PASSWORD }}
           KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
           GOOGLE_ID: ${{ secrets.XIAOMAN_ANDROID_GOOGLE_CLIENT_ID }}
-          GITHUB_ID: ${{ secrets.XIAOMAN_ANDROID_GITHUB_CLIENT_ID }}
         run: |
           printf '%s' "$KEYSTORE" | base64 -d > apps/android/replica.keystore
           cat > apps/android/local.properties <<EOF
@@ -148,7 +146,6 @@ jobs:
           signing.keyPassword=$KEY_PASS
           signing.keyAlias=${KEY_ALIAS:-replica}
           oauth.google.clientId=$GOOGLE_ID
-          oauth.github.clientId=$GITHUB_ID
           EOF
 
       - name: Build APK

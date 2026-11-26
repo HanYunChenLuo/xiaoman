@@ -23,7 +23,7 @@
 - **Insights**: daily-cost chart with category and status filters
 - **Brands & models**: 70+ brands and 2000+ models across digital, cars and bicycles, grouped by product line; automatic brand and icon detection
 - **Backup & restore**: import and export encrypted `.ias` backups (WinZip AES-256)
-- **Cloud sync** (Android / Web / desktop): Google sign-in with the Drive app data folder; manual encrypted backup upload/restore. The cloud protocol lives in the shared Rust core (GitHub device flow + Gist is implemented but hidden for now — see TODO)
+- **Cloud sync** (Android / Web / desktop): Google sign-in with the Drive app data folder; manual encrypted backup upload/restore. The cloud protocol lives in the shared Rust core
 - **In-app updates**: checks GitHub Releases; Android downloads the APK and opens the system installer, the desktop app uses signed Tauri auto-updates
 
 ## Download & install
@@ -79,10 +79,9 @@ Brands, aliases and models are remotely updatable data. The single source of tru
 
 Cloud sync uses your own OAuth clients (none are shipped):
 
-- **GitHub** (hidden for now, TODO): re-enable once a Device Flow OAuth App Client ID is available; `ENABLE_GITHUB_LOGIN=false` hides the UI.
 - **Google**: create a Google Cloud project, enable the Drive API, configure the OAuth consent screen, then create a Desktop-app OAuth client and paste its Client ID in the app (Google sign-in uses a 127.0.0.1 loopback redirect). For the web app, create a Web-application OAuth client instead and add the site origins (e.g. `http://localhost:5173` and your production domain) to the authorized JavaScript origins; the SPA uses the GIS token model (no client secret) and its Client ID lives in `web/src/cloud.ts`. For the desktop app, generate the encrypted credential file with `node desktop/scripts/seed-oauth.mjs` (env `XIAOMAN_GOOGLE_CLIENT_ID` / `XIAOMAN_GOOGLE_CLIENT_SECRET`); it is gitignored and cloud sync is hidden when missing. On CI, inject it from the `XIAOMAN_OAUTH_ENC` Actions secret (see `.github/workflows/build.yml`).
 
-You can also set `oauth.github.clientId` / `oauth.google.clientId` in `apps/android/local.properties` as defaults. **Google redirect sign-in**: when a Google client ID is present at build time, the app registers `com.googleusercontent.apps.<client-id>:/oauth2redirect` and the browser returns directly to the app; IDs entered only in-app fall back to a 127.0.0.1 loopback redirect. GitHub keeps device flow because its OAuth App token exchange requires a client secret that must not ship in the client. Cloud storage holds encrypted `.ias` backups; Android and Web share the same request/parse logic in `core/src/cloud.rs`. Desktop cloud sync is not wired yet.
+You can also set `oauth.google.clientId` in `apps/android/local.properties` as a default. **Google redirect sign-in**: when a Google client ID is present at build time, the app registers `com.googleusercontent.apps.<client-id>:/oauth2redirect` and the browser returns directly to the app; IDs entered only in-app fall back to a 127.0.0.1 loopback redirect. Cloud storage holds encrypted `.ias` backups; Android and Web share the same request/parse logic in `core/src/cloud.rs`. Desktop cloud sync uses a loopback client with an encrypted credential file (see above).
 
 ## Project layout
 
@@ -98,7 +97,7 @@ AGENTS.md            # development conventions
 ## Data & privacy
 
 - Android stores data locally (SharedPreferences + app-private storage); web uses localStorage; desktop reuses web storage
-- No accounts or cloud sync by default; nothing is uploaded (GitHub/Google sign-in and sync are upcoming)
+- No account is required; data stays local unless you sign in with Google and upload a backup
 - Backups are exported by the user as encrypted `.ias` files that can be exchanged with compatible backup tools
 
 ## Third-party assets & trademarks

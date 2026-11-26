@@ -22,7 +22,6 @@ android {
         versionCode 2
         versionName '1.0.1'
 
-        buildConfigField 'String', 'GITHUB_CLIENT_ID', "\"${localProps.getProperty('oauth.github.clientId', '')}\""
         def googleId = localProps.getProperty('oauth.google.clientId', '')
         buildConfigField 'String', 'GOOGLE_CLIENT_ID', "\"${googleId}\""
         def googleScheme = googleId.isEmpty()

@@ -23,7 +23,7 @@
 - **趋势统计**：日均成本曲线、分类与状态筛选
 - **品牌与型号**：数码 / 汽车 / 自行车 70+ 品牌、2000+ 型号，按产品线分组；支持自动识别品牌与实物图标
 - **备份与恢复**：支持加密 `.ias` 备份的导入与导出（WinZip AES-256）
-- **云同步**（Android / Web / 桌面）：Google 登录 + Drive 应用数据文件夹，手动上传/恢复加密备份；云端协议由 Rust core 统一实现（GitHub 设备码 + Gist 已实现但暂时隐藏，见 TODO）
+- **云同步**（Android / Web / 桌面）：Google 登录 + Drive 应用数据文件夹，手动上传/恢复加密备份；云端协议由 Rust core 统一实现
 - **应用内更新**：检查 GitHub Releases；Android 自动下载 APK 并拉起系统安装器，桌面端使用 Tauri 签名更新（自动下载、替换后重启）
 
 ## 下载与安装
@@ -79,12 +79,11 @@ cd ../desktop/src-tauri && cargo build    # 桌面（需先构建 Web）
 
 云同步需要自备 OAuth 客户端（不会随仓库分发）：
 
-- **GitHub**（暂时隐藏，TODO）：待提供启用 Device Flow 的 OAuth App Client ID 后恢复；`ENABLE_GITHUB_LOGIN=false` 时界面不显示。
 - **Google（Android）**：在 Google Cloud 创建项目、启用 Drive API、配置 OAuth 同意屏幕，创建「桌面应用」类型 OAuth 客户端；将 Client ID 粘贴到 App 内对应项（Google 登录使用 127.0.0.1 loopback 回调）。
 - **Google（Web）**：在同一项目创建「Web 应用」类型 OAuth 客户端，把站点来源（如 `http://localhost:5173` 与线上域名）加入「已获授权的 JavaScript 来源」。SPA 走 GIS Token 模型，无需 client_secret；Client ID 写在 `web/src/cloud.ts` 的 `CLIENT_ID`。
 - **Google（桌面）**：创建「桌面应用」类型 OAuth 客户端（loopback 回调 `http://127.0.0.1:41888`），用 `node desktop/scripts/seed-oauth.mjs` 生成加密凭据文件 `desktop/src-tauri/oauth.enc`（环境变量 `XIAOMAN_GOOGLE_CLIENT_ID` / `XIAOMAN_GOOGLE_CLIENT_SECRET`）。该文件已被 gitignore；没有它时桌面端不显示云同步入口。CI 中通过 Actions Secret `XIAOMAN_OAUTH_ENC`（base64）在构建前写入，见 `.github/workflows/build.yml`。
 
-也可在 `apps/android/local.properties` 写入 `oauth.github.clientId=...` 与 `oauth.google.clientId=...` 作为默认值。**Google 跳转登录**：构建时写入 `oauth.google.clientId` 会注册 `com.googleusercontent.apps.<client-id>:/oauth2redirect` 回调，授权后浏览器直接跳回 App；应用内临时填写的 Client ID 因无法动态注册 Scheme，会自动使用 127.0.0.1 loopback 方式。GitHub 仍使用设备码（网页授权 + 输入代码），因为其 OAuth App 交换令牌需要 client_secret，不适合内置。云端保存的是加密 `.ias` 备份，三端共用 `core/src/cloud.rs` 的请求构造与解析；桌面端凭据缺失时自动隐藏云同步。
+也可在 `apps/android/local.properties` 写入 `oauth.google.clientId=...` 作为默认值。**Google 跳转登录**：构建时写入 `oauth.google.clientId` 会注册 `com.googleusercontent.apps.<client-id>:/oauth2redirect` 回调，授权后浏览器直接跳回 App；应用内临时填写的 Client ID 因无法动态注册 Scheme，会自动使用 127.0.0.1 loopback 方式。云端保存的是加密 `.ias` 备份，三端共用 `core/src/cloud.rs` 的请求构造与解析；桌面端凭据缺失时自动隐藏云同步。
 
 ### 凭据轮换
 
@@ -130,7 +129,7 @@ AGENTS.md                            # 开发约定与维护说明
 ## 数据与隐私
 
 - Android 数据保存在应用本地（SharedPreferences + 私有目录），Web 保存在浏览器 localStorage，桌面复用 Web 本地存储
-- 默认无账号体系；数据默认只保存在本机，只有用户主动点击「上传」时才会把加密备份写入自己的 Google Drive 应用数据文件夹
+- 数据默认只保存在本机；只有用户主动登录 Google 并点击「上传」时，才会把加密备份写入自己的 Drive 应用数据文件夹
 - 备份文件由用户主动导出，格式为加密的 `.ias`，可在兼容的备份工具之间互相导入
 
 ## 第三方资源与商标

@@ -14,8 +14,8 @@ import android.view.View
 /** 细进度条 */
 class BarView(c: Context) : View(c) {
     @JvmField var frac: Float = 0f
-    @JvmField var bgColor: Int = 0xFFEFEFEF.toInt()
-    @JvmField var fgColor: Int = 0xFFB6EE25.toInt()
+    @JvmField var bgColor: Int = Colors.NEUTRAL_180
+    @JvmField var fgColor: Int = Colors.LIME_DEEP
     private val p = Paint(Paint.ANTI_ALIAS_FLAG)
 
     override fun onDraw(canvas: Canvas) {
@@ -39,10 +39,10 @@ class ChartView(c: Context) : View(c) {
     @JvmField var zeroLabel: String = ""
     @JvmField var leftLabel: String = ""
     @JvmField var rightLabel: String = ""
-    @JvmField var lineColor: Int = 0xFFB6EE25.toInt()
-    @JvmField var fillColor: Int = 0xFFC9F44F.toInt()
-    @JvmField var gridColor: Int = 0xFFEFEFEF.toInt()
-    @JvmField var textColor: Int = 0xFFA3A3A3.toInt()
+    @JvmField var lineColor: Int = Colors.LIME_DEEP
+    @JvmField var fillColor: Int = Colors.LIME
+    @JvmField var gridColor: Int = Colors.NEUTRAL_180
+    @JvmField var textColor: Int = Colors.NEUTRAL_380
 
     private val line = Paint(Paint.ANTI_ALIAS_FLAG)
     private val fill = Paint(Paint.ANTI_ALIAS_FLAG)
@@ -123,7 +123,7 @@ class ChartView(c: Context) : View(c) {
         canvas.drawPath(path, line)
 
         val dot = Paint(Paint.ANTI_ALIAS_FLAG)
-        dot.color = 0xFFFFFFFF.toInt()
+        dot.color = Colors.WHITE
         canvas.drawCircle(xs[xs.size - 1], ys[ys.size - 1], dp(3.5f), dot)
         dot.style = Paint.Style.STROKE
         dot.strokeWidth = dp(2f)

@@ -53,6 +53,11 @@ import {
 type View = 'home' | 'wishes' | 'trends' | 'settings'
 
 const appEl = document.getElementById('app')!
+
+// 图表与提示色（与 style.css 的 --lime/--lime-deep 一致）
+const COLOR_ON_DARK = '#ffffff'
+const COLOR_LIME = '#c9f44f'
+const COLOR_LIME_DEEP = '#b6ee25'
 const media = window.matchMedia('(prefers-color-scheme: dark)')
 
 type Props = {
@@ -108,7 +113,7 @@ function toast(msg: string, duration = 2200): void {
       bottom: '110px',
       transform: 'translateX(-50%)',
       background: 'rgba(20,20,20,0.9)',
-      color: '#fff',
+      color: COLOR_ON_DARK,
       padding: '10px 18px',
       borderRadius: '12px',
       fontSize: '13px',
@@ -526,12 +531,12 @@ class App {
     }
     const fill = document.createElementNS(svg.namespaceURI, 'path')
     fill.setAttribute('d', area)
-    fill.setAttribute('fill', '#c9f44f')
+    fill.setAttribute('fill', COLOR_LIME)
     fill.setAttribute('fill-opacity', '0.25')
     const stroke = document.createElementNS(svg.namespaceURI, 'path')
     stroke.setAttribute('d', path)
     stroke.setAttribute('fill', 'none')
-    stroke.setAttribute('stroke', '#b6ee25')
+    stroke.setAttribute('stroke', COLOR_LIME_DEEP)
     stroke.setAttribute('stroke-width', '2.5')
     stroke.setAttribute('stroke-linejoin', 'round')
     const label = (x: number, y: number, text: string, anchor = 'end') => {

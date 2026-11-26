@@ -38,16 +38,16 @@ class Ui(activity: Activity) {
     fun dp(v: Float): Int = Math.round(v * density)
 
     // ---------- 主题色 ----------
-    fun bg(): Int = if (MainActivity.dark) 0xFF101010.toInt() else 0xFFF4F4F4.toInt()
-    fun card(): Int = if (MainActivity.dark) 0xFF1C1C1C.toInt() else 0xFFFFFFFF.toInt()
-    fun ink(): Int = if (MainActivity.dark) 0xFFF2F2F2.toInt() else 0xFF1A1A1A.toInt()
-    fun ink2(): Int = if (MainActivity.dark) 0xFFB8B8B8.toInt() else 0xFF5C5C5C.toInt()
-    fun gray(): Int = if (MainActivity.dark) 0xFF9A9A9A.toInt() else 0xFFA3A3A3.toInt()
-    fun line(): Int = if (MainActivity.dark) 0xFF2A2A2A.toInt() else 0xFFEFEFEF.toInt()
-    fun chipBg(): Int = if (MainActivity.dark) 0xFF262626.toInt() else 0xFFE9E9E9.toInt()
-    fun chipInk(): Int = if (MainActivity.dark) 0xFF9A9A9A.toInt() else 0xFF7A7A7A.toInt()
-    fun chipOnBg(): Int = if (MainActivity.dark) 0xFFF2F2F2.toInt() else 0xFF111111.toInt()
-    fun chipOnInk(): Int = if (MainActivity.dark) 0xFF111111.toInt() else 0xFFFFFFFF.toInt()
+    fun bg(): Int = if (MainActivity.dark) Colors.NEUTRAL_980 else Colors.NEUTRAL_100
+    fun card(): Int = if (MainActivity.dark) Colors.NEUTRAL_900 else Colors.WHITE
+    fun ink(): Int = if (MainActivity.dark) Colors.NEUTRAL_120 else Colors.NEUTRAL_950
+    fun ink2(): Int = if (MainActivity.dark) Colors.NEUTRAL_360 else Colors.NEUTRAL_600
+    fun gray(): Int = if (MainActivity.dark) Colors.NEUTRAL_400 else Colors.NEUTRAL_380
+    fun line(): Int = if (MainActivity.dark) Colors.NEUTRAL_800 else Colors.NEUTRAL_180
+    fun chipBg(): Int = if (MainActivity.dark) Colors.NEUTRAL_830 else Colors.NEUTRAL_220
+    fun chipInk(): Int = if (MainActivity.dark) Colors.NEUTRAL_400 else Colors.NEUTRAL_500
+    fun chipOnBg(): Int = if (MainActivity.dark) Colors.NEUTRAL_120 else Colors.BLACK
+    fun chipOnInk(): Int = if (MainActivity.dark) Colors.BLACK else Colors.WHITE
 
     // ---------- 文本 ----------
     fun text(s: String, sp: Float, color: Int): TextView = text(s, sp, color, regular)
@@ -191,7 +191,7 @@ class Ui(activity: Activity) {
         }
         iv.layoutParams = LinearLayout.LayoutParams(dp(sizeDp.toFloat()), dp(sizeDp.toFloat()))
         iv.scaleType = ImageView.ScaleType.CENTER_CROP
-        iv.background = round(0x00000000, radiusDp)
+        iv.background = round(Colors.TRANSPARENT, radiusDp)
         iv.clipToOutline = true
         return iv
     }
@@ -230,11 +230,11 @@ class Ui(activity: Activity) {
         Color.argb((Color.alpha(color) * a).toInt(), Color.red(color), Color.green(color), Color.blue(color))
 
     companion object {
-        @JvmField val LIME = 0xFFC9F44F.toInt()
-        @JvmField val LIME_DEEP = 0xFFB6EE25.toInt()
-        @JvmField val TEAL = 0xFF3ED6B0.toInt()
-        @JvmField val ORANGE = 0xFFFF7A45.toInt()
-        @JvmField val RED = 0xFFFF5A4E.toInt()
+        @JvmField val LIME = Colors.LIME
+        @JvmField val LIME_DEEP = Colors.LIME_DEEP
+        @JvmField val TEAL = Colors.TEAL
+        @JvmField val ORANGE = Colors.ORANGE
+        @JvmField val RED = Colors.RED
 
         @JvmStatic
         fun margin(v: View, l: Int, t: Int, r: Int, b: Int) {

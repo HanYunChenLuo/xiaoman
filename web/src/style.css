@@ -11,6 +11,15 @@
   --cream: #fbfcef;
   --red: #ff5a4e;
   --shadow: 0 2px 10px rgba(20, 20, 10, 0.06);
+  --on-lime: #111111;
+  --on-lime-strong: #1a1a1a;
+  --hero-start: #e9fbc0;
+  --hero-mid: #c9f44f;
+  --hero-end: #d8f78a;
+  --badge-serving: #6f9718;
+  --badge-sold: #c75b28;
+  --danger-soft: #fff0ee;
+  --danger-ink: #c4473d;
   --radius: 18px;
   /* 尺寸令牌：圆角 / 间距 / 字号 */
   --radius-xs: 6px;
@@ -53,6 +62,10 @@ body.dark {
   --lime-soft: #22300c;
   --cream: #171a0e;
   --shadow: 0 2px 12px rgba(0, 0, 0, 0.45);
+  --badge-serving: #b9d97a;
+  --badge-sold: #e08a5e;
+  --danger-soft: #3a1f1d;
+  --danger-ink: #ff8b82;
 }
 
 * {
@@ -98,7 +111,7 @@ button {
 }
 
 .hero {
-  background: linear-gradient(120deg, #e9fbc0, #c9f44f 55%, #d8f78a);
+  background: linear-gradient(120deg, var(--hero-start), var(--hero-mid) 55%, var(--hero-end));
   border-radius: var(--radius-xl);
   margin: 10px 18px 0;
   padding: 22px 18px 58px;
@@ -116,7 +129,7 @@ button {
   font-size: var(--font-6xl);
   font-weight: 700;
   letter-spacing: 2px;
-  color: #1a1a1a;
+  color: var(--on-lime-strong);
 }
 
 .logo-img {
@@ -139,7 +152,7 @@ button {
   display: grid;
   place-items: center;
   font-size: var(--font-xl);
-  color: #1a1a1a;
+  color: var(--on-lime-strong);
 }
 
 .icon-btn:hover {
@@ -260,7 +273,7 @@ button {
 
 .chip.soft.on {
   background: var(--lime);
-  color: #111;
+  color: var(--on-lime);
 }
 
 .filters {
@@ -338,7 +351,7 @@ button {
   top: 14px;
   right: 14px;
   font-size: var(--font-xs);
-  color: #6f9718;
+  color: var(--badge-serving);
 }
 
 .badge::before {
@@ -351,20 +364,12 @@ button {
   margin-right: 4px;
 }
 
-body.dark .badge {
-  color: #b9d97a;
-}
-
 .badge.retired {
   color: var(--gray);
 }
 
 .badge.sold {
-  color: #c75b28;
-}
-
-body.dark .badge.sold {
-  color: #e08a5e;
+  color: var(--badge-sold);
 }
 
 .page-head {
@@ -482,17 +487,12 @@ select {
 
 .btn.lime {
   background: var(--lime);
-  color: #111;
+  color: var(--on-lime);
 }
 
 .btn.danger {
-  background: #fff0ee;
-  color: #c4473d;
-}
-
-body.dark .btn.danger {
-  background: #3a1f1d;
-  color: #ff8b82;
+  background: var(--danger-soft);
+  color: var(--danger-ink);
 }
 
 .btn:hover {
@@ -796,7 +796,7 @@ body.dark .btn.danger {
 
 .tag-chip.on {
   background: var(--lime);
-  color: #111;
+  color: var(--on-lime);
 }
 
 .thumb {

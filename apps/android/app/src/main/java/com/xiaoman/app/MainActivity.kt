@@ -7,7 +7,6 @@ import android.app.ProgressDialog
 import android.content.Intent
 import android.content.res.ColorStateList
 import android.graphics.Bitmap
-import android.graphics.Color
 import android.graphics.Typeface
 import android.net.Uri
 import android.os.Build
@@ -155,9 +154,9 @@ class MainActivity : Activity() {
             val item = ui.vbox()
             item.gravity = Gravity.CENTER
             val tabIcon = ui.icon(t[2] + if (on) "_s" else "_n", 22)
-            if (dark) tabIcon.setColorFilter(if (on) 0xFFF2F2F2.toInt() else 0xFF8A8A8A.toInt())
+            if (dark) tabIcon.setColorFilter(if (on) Colors.NEUTRAL_120 else Colors.NEUTRAL_460)
             val iconWrap = FrameLayout(this)
-            if (on) iconWrap.background = ui.circle(if (dark) 0xFF2C2C2C.toInt() else 0xFFF0F0F0.toInt())
+            if (on) iconWrap.background = ui.circle(if (dark) Colors.NEUTRAL_780 else Colors.NEUTRAL_160)
             iconWrap.addView(tabIcon, FrameLayout.LayoutParams(dp(22f), dp(22f), Gravity.CENTER))
             item.addView(iconWrap, LinearLayout.LayoutParams(dp(40f), dp(40f)))
             val label = ui.text(t[1], FontSize.CAPTION , if (on) ui.ink() else ui.gray(), if (on) ui.medium else ui.regular)
@@ -168,9 +167,9 @@ class MainActivity : Activity() {
             bar.addView(item, LinearLayout.LayoutParams(dp(Size.NAV_ITEM_W.toFloat()), -1))
         }
 
-        val fab = ui.text("+", FontSize.LARGE , if (dark) 0xFF111111.toInt() else 0xFFFFFFFF.toInt(), ui.regular)
+        val fab = ui.text("+", FontSize.LARGE , if (dark) Colors.BLACK else Colors.WHITE, ui.regular)
         fab.gravity = Gravity.CENTER
-        fab.background = ui.circle(if (dark) 0xFFF2F2F2.toInt() else 0xFF111111.toInt())
+        fab.background = ui.circle(if (dark) Colors.NEUTRAL_120 else Colors.BLACK)
         ui.clipCircle(fab)
         fab.elevation = 0f
         fab.setOnClickListener { openAdd(null, if ("wishes" == tab) "wish" else "asset") }
@@ -193,7 +192,7 @@ class MainActivity : Activity() {
     private fun showOnboarding() {
         screen = "onboard"
         val body = ui.vbox()
-        body.background = ui.gradient(0xFFFDFEF8.toInt(), 0xFFF7FBE4.toInt(), 0xFFEEF8CD.toInt())
+        body.background = ui.gradient(Colors.HERO_START, Colors.HERO_MID, Colors.HERO_END)
         body.setPadding(dp(28f), dp(56f), dp(28f), dp(40f))
 
         val art = ui.image(OB[obPage][2], 200)
@@ -203,11 +202,11 @@ class MainActivity : Activity() {
         art.layoutParams = ap
         body.addView(art)
 
-        val title = ui.text(OB[obPage][0], FontSize.HERO, 0xFF111111.toInt(), ui.bold)
+        val title = ui.text(OB[obPage][0], FontSize.HERO, Colors.BLACK, ui.bold)
         val tp = LinearLayout.LayoutParams(-2, -2)
         tp.topMargin = dp(70f)
         body.addView(title, tp)
-        val sub = ui.text(OB[obPage][1], FontSize.BODY , 0xFF5F6352.toInt())
+        val sub = ui.text(OB[obPage][1], FontSize.BODY , Colors.NEUTRAL_580)
         val sp = LinearLayout.LayoutParams(-2, -2)
         sp.topMargin = dp(Spacing.XL)
         body.addView(sub, sp)
@@ -221,7 +220,7 @@ class MainActivity : Activity() {
             val dp2 = LinearLayout.LayoutParams(dp(if (i == obPage) 22f else 18f), dp(4f))
             dp2.rightMargin = dp(Spacing.M)
             dot.layoutParams = dp2
-            dot.background = ui.round(if (i == obPage) 0xFF1A1A1A.toInt() else 0xFFC9CDA9.toInt(), Radius.INDICATOR)
+            dot.background = ui.round(if (i == obPage) Colors.NEUTRAL_950 else Colors.ONBOARD_DOT, Radius.INDICATOR)
             dots.addView(dot)
         }
         foot.addView(dots, lpw(1f, -2))
@@ -330,18 +329,18 @@ class MainActivity : Activity() {
 
         val sort = ui.icon("ic_sort", 16)
         sort.alpha = 0.65f
-        if (dark) sort.setColorFilter(0xFFF2F2F2.toInt())
+        if (dark) sort.setColorFilter(Colors.NEUTRAL_120)
         val ip = LinearLayout.LayoutParams(dp(16f), dp(16f))
         ip.leftMargin = dp(Spacing.XL)
         filters.addView(sort, ip)
         val funnel = ui.icon("ic_funnel", 16)
         funnel.alpha = 0.65f
-        if (dark) funnel.setColorFilter(0xFFF2F2F2.toInt())
+        if (dark) funnel.setColorFilter(Colors.NEUTRAL_120)
         val fp = LinearLayout.LayoutParams(dp(16f), dp(16f))
         fp.leftMargin = dp(Spacing.XL)
         filters.addView(funnel, fp)
         val view = ui.icon("ic_view", 16)
-        if (dark) view.setColorFilter(0xFFF2F2F2.toInt())
+        if (dark) view.setColorFilter(Colors.NEUTRAL_120)
         val vp = LinearLayout.LayoutParams(dp(16f), dp(16f))
         vp.leftMargin = dp(Spacing.XL)
         filters.addView(view, vp)
@@ -474,7 +473,7 @@ class MainActivity : Activity() {
 
     private fun circleIconButton(iconName: String, onClick: Runnable): FrameLayout {
         val btn = FrameLayout(this)
-        btn.background = ui.circle(if (dark) 0xFF2A2A2A.toInt() else ui.card())
+        btn.background = ui.circle(if (dark) Colors.NEUTRAL_800 else ui.card())
         ui.clipCircle(btn)
         btn.elevation = dp(2f).toFloat()
         val iv = themedIcon(iconName, 16)
@@ -590,15 +589,15 @@ class MainActivity : Activity() {
     }
 
     private fun badgeBg(s: String): Int {
-        if ("retired" == s) return if (dark) 0xFF2A2A2A.toInt() else 0xFFF0F0F0.toInt()
-        if ("sold" == s) return if (dark) 0xFF3A2419.toInt() else 0xFFFFF0E8.toInt()
-        return if (dark) 0xFF22300C.toInt() else 0xFFF1F8DC.toInt()
+        if ("retired" == s) return if (dark) Colors.NEUTRAL_800 else Colors.NEUTRAL_160
+        if ("sold" == s) return if (dark) Colors.SOLD_SURFACE_DARK else Colors.SOLD_SURFACE_LIGHT
+        return if (dark) Colors.LIME_SURFACE_DARK else Colors.LIME_SOFT
     }
 
     private fun badgeInk(s: String): Int {
-        if ("retired" == s) return if (dark) 0xFF9A9A9A.toInt() else 0xFF8D8D8D.toInt()
-        if ("sold" == s) return if (dark) 0xFFE08A5E.toInt() else 0xFFC75B28.toInt()
-        return if (dark) 0xFFB9D97A.toInt() else 0xFF5D7A14.toInt()
+        if ("retired" == s) return if (dark) Colors.NEUTRAL_400 else Colors.NEUTRAL_450
+        if ("sold" == s) return if (dark) Colors.SOLD_INK_DARK else Colors.SOLD_INK_LIGHT
+        return if (dark) Colors.LIME_INK_SOFT else Colors.LIME_INK
     }
 
     private fun showWishes() {
@@ -674,28 +673,28 @@ class MainActivity : Activity() {
 
         val t1 = trendCard()
         t1.addView(ui.text("资产总值", FontSize.META , ui.gray()))
-        t1.addView(moneyLine(store.total("asset"), 22f))
-        val rows = arrayOf(
-            arrayOf("服役", "serving", "0xFFB6EE25"),
-            arrayOf("退役", "retired", "0xFF3ED6B0"),
-            arrayOf("已卖出", "sold", "0xFFFF7A45")
+        t1.addView(moneyLine(store.total("asset"), FontSize.NUMBER))
+        val rows = listOf(
+            Triple("服役", "serving", Colors.LIME_DEEP),
+            Triple("退役", "retired", Colors.TEAL),
+            Triple("已卖出", "sold", Colors.ORANGE)
         )
         val total = Math.max(1, store.ofKind("asset").size)
-        for (r in rows) {
+        for ((label, key, color) in rows) {
             val block = ui.vbox()
             block.setPadding(0, dp(10f), 0, dp(10f))
             val line = ui.hbox()
             val dot = View(this)
-            dot.background = ui.circle(Color.parseColor(r[2].replace("0x", "#")))
+            dot.background = ui.circle(color)
             val dp2 = LinearLayout.LayoutParams(dp(6f), dp(6f))
             dp2.rightMargin = dp(Spacing.M)
             line.addView(dot, dp2)
-            line.addView(ui.text(r[0], FontSize.META , ui.ink2()))
-            val n = store.count("asset", r[1])
+            line.addView(ui.text(label, FontSize.META , ui.ink2()))
+            val n = store.count("asset", key)
             val pct = ui.text("  " + Math.round(n * 100f / total) + "%", FontSize.CAPTION , ui.gray())
             line.addView(pct)
             block.addView(line)
-            val v = ui.text(store.money(if (r[1] == "serving") store.daily("asset") else 0.0), FontSize.BODY_LG , ui.ink(), ui.bold)
+            val v = ui.text(store.money(if (key == "serving") store.daily("asset") else 0.0), FontSize.BODY_LG , ui.ink(), ui.bold)
             v.setPadding(0, dp(4f), 0, 0)
             block.addView(v)
             t1.addView(block)
@@ -724,7 +723,7 @@ class MainActivity : Activity() {
         val assets = store.ofKind("asset")
         if (assets.isEmpty()) t3.addView(ui.text("暂无数据", FontSize.SMALL , ui.gray()))
         else {
-            val colors = intArrayOf(Ui.LIME, Ui.TEAL, Ui.ORANGE, 0xFF7AA2FF.toInt(), 0xFFFFD166.toInt())
+            val colors = intArrayOf(Ui.LIME, Ui.TEAL, Ui.ORANGE, Colors.BLUE, Colors.AMBER)
             val names = ArrayList<String>()
             val counts = ArrayList<Int>()
             for (a in assets) {
@@ -824,7 +823,7 @@ class MainActivity : Activity() {
         val login = ui.hbox()
         login.setPadding(dp(14f), dp(10f), dp(14f), dp(8f))
         val avatar = FrameLayout(this)
-        avatar.background = ui.circle(if (dark) 0xFF2A2A2A.toInt() else 0xFFE9E9E9.toInt())
+        avatar.background = ui.circle(if (dark) Colors.NEUTRAL_800 else Colors.NEUTRAL_220)
         val av = ui.icon("ic_view", 20)
         av.setColorFilter(ui.gray())
         avatar.addView(av, FrameLayout.LayoutParams(dp(20f), dp(20f), Gravity.CENTER))
@@ -1070,11 +1069,11 @@ class MainActivity : Activity() {
         r.addView(t, lpw(1f, -2))
         val sw = Switch(this)
         sw.isChecked = checked
-        sw.thumbTintList = ColorStateList.valueOf(if (checked) Ui.LIME_DEEP else 0xFFCCCCCC.toInt())
-        sw.trackTintList = ColorStateList.valueOf(if (dark) 0xFF333333.toInt() else 0xFFE0E0E0.toInt())
+        sw.thumbTintList = ColorStateList.valueOf(if (checked) Ui.LIME_DEEP else Colors.NEUTRAL_300)
+        sw.trackTintList = ColorStateList.valueOf(if (dark) Colors.NEUTRAL_700 else Colors.NEUTRAL_250)
         sw.setOnCheckedChangeListener { _, c ->
             store.setSetting(key, c)
-            sw.thumbTintList = ColorStateList.valueOf(if (c) Ui.LIME_DEEP else 0xFFCCCCCC.toInt())
+            sw.thumbTintList = ColorStateList.valueOf(if (c) Ui.LIME_DEEP else Colors.NEUTRAL_300)
         }
         r.addView(sw)
         return r
@@ -1082,19 +1081,19 @@ class MainActivity : Activity() {
 
     private fun segment(labels: Array<String>, selected: Int, size: Float, cb: IntClick): LinearLayout {
         val seg = ui.hbox()
-        val bgc = if (dark) 0xFF2A2A2A.toInt() else 0xFFF2F2F2.toInt()
+        val bgc = if (dark) Colors.NEUTRAL_800 else Colors.NEUTRAL_120
         seg.background = ui.round(bgc, Radius.FIELD )
         seg.setPadding(dp(3f), dp(3f), dp(3f), dp(3f))
         for (i in labels.indices) {
             val on = i == selected
             val t = ui.text(
                 labels[i], size,
-                if (on) ui.ink() else (if (dark) 0xFFB8B8B8.toInt() else ui.gray()),
+                if (on) ui.ink() else (if (dark) Colors.NEUTRAL_360 else ui.gray()),
                 if (on) ui.medium else ui.regular
             )
             t.gravity = Gravity.CENTER
             t.setPadding(dp(12f), dp(5f), dp(12f), dp(5f))
-            if (on) t.background = ui.round(if (dark) 0xFF3F3F3F.toInt() else ui.card(), Radius.SEGMENT )
+            if (on) t.background = ui.round(if (dark) Colors.NEUTRAL_650 else ui.card(), Radius.SEGMENT )
             t.setOnClickListener { cb.on(i) }
             seg.addView(t)
         }
@@ -1242,7 +1241,7 @@ class MainActivity : Activity() {
         center.setPadding(0, dp(14f), 0, dp(20f))
         val bigIcon = FrameLayout(this)
         bigIcon.background = ui.round(Ui.LIME_DEEP, Radius.CARD_LG )
-        val arrow = ui.text("↑", FontSize.ARROW, 0xFFFFFFFF.toInt(), ui.bold)
+        val arrow = ui.text("↑", FontSize.ARROW, Colors.WHITE, ui.bold)
         arrow.gravity = Gravity.CENTER
         bigIcon.addView(arrow, FrameLayout.LayoutParams(dp(76f), dp(76f), Gravity.CENTER))
         val bip = LinearLayout.LayoutParams(dp(76f), dp(76f))
@@ -1981,7 +1980,7 @@ class MainActivity : Activity() {
         brandRowLogo!!.layoutParams = FrameLayout.LayoutParams(dp(16f), dp(16f), Gravity.CENTER)
         if (dark) {
             val plate = FrameLayout(this)
-            plate.background = ui.round(0xFFFFFFFF.toInt(), Radius.PLATE)
+            plate.background = ui.round(Colors.WHITE, Radius.PLATE)
             plate.setPadding(dp(3f), dp(3f), dp(3f), dp(3f))
             plate.addView(brandRowLogo)
             brandVal.addView(plate, LinearLayout.LayoutParams(dp(22f), dp(22f)))
@@ -2141,14 +2140,14 @@ class MainActivity : Activity() {
         val rule = draft.optString("rule", "day")
         val rsel = if ("count" == rule) 1 else if ("custom" == rule) 2 else 0
         val ruleSeg = ui.hbox()
-        ruleSeg.background = ui.round(if (dark) 0xFF2A2A2A.toInt() else 0xFFF4F4F4.toInt(), Radius.FIELD )
+        ruleSeg.background = ui.round(if (dark) Colors.NEUTRAL_800 else Colors.NEUTRAL_100, Radius.FIELD )
         ruleSeg.setPadding(dp(Spacing.XS), dp(Spacing.XS), dp(Spacing.XS), dp(Spacing.XS))
         val rules = arrayOf("按天", "按次", "自定义")
         for (i in rules.indices) {
             val on = i == rsel
             val t = ui.text(
                 rules[i], FontSize.META ,
-                if (on) 0xFF1A1A1A.toInt() else ui.gray(),
+                if (on) Colors.NEUTRAL_950 else ui.gray(),
                 if (on) ui.medium else ui.regular
             )
             t.gravity = Gravity.CENTER
@@ -2519,11 +2518,11 @@ class MainActivity : Activity() {
         val bg: Int
         val fg: Int
         if (dark) {
-            bg = if (ok) 0xFFF2F2F2.toInt() else 0xFF333333.toInt()
-            fg = if (ok) 0xFF111111.toInt() else 0xFF9A9A9A.toInt()
+            bg = if (ok) Colors.NEUTRAL_120 else Colors.NEUTRAL_700
+            fg = if (ok) Colors.BLACK else Colors.NEUTRAL_400
         } else {
-            bg = if (ok) 0xFF111111.toInt() else 0xFFBBBBBB.toInt()
-            fg = 0xFFFFFFFF.toInt()
+            bg = if (ok) Colors.BLACK else Colors.NEUTRAL_340
+            fg = Colors.WHITE
         }
         save.background = ui.circle(bg)
         save.alpha = if (ok) 1f else 0.9f
@@ -2766,7 +2765,7 @@ class MainActivity : Activity() {
         body.addView(chartCard)
 
         val rows = ui.vbox()
-        rows.setBackgroundColor(0x00000000)
+        rows.setBackgroundColor(Colors.TRANSPARENT)
         rows.setPadding(dp(16f), dp(0f).toInt(), dp(16f), dp(0f).toInt())
         val rlp = LinearLayout.LayoutParams(-1, -2)
         rlp.setMargins(dp(14f), 0, dp(14f), 0)
@@ -2780,7 +2779,7 @@ class MainActivity : Activity() {
             val blogo = ui.image("brands/" + a.optString("brandId") + ".png", 16)
             if (dark) {
                 val plate = FrameLayout(this)
-                plate.background = ui.round(0xFFFFFFFF.toInt(), Radius.FIELD )
+                plate.background = ui.round(Colors.WHITE, Radius.FIELD )
                 plate.setPadding(dp(2f), dp(2f), dp(2f), dp(2f))
                 plate.addView(blogo, FrameLayout.LayoutParams(dp(16f), dp(16f), Gravity.CENTER))
                 br.addView(plate, LinearLayout.LayoutParams(dp(20f), dp(20f)))
@@ -2849,7 +2848,7 @@ class MainActivity : Activity() {
 
         val del = ui.hbox()
         del.gravity = Gravity.CENTER
-        del.background = ui.round(if (dark) 0xFF3A1F1D.toInt() else 0xFFFFF0EE.toInt(), Radius.ACTION_LG)
+        del.background = ui.round(if (dark) Colors.DANGER_SURFACE_DARK else Colors.DANGER_SURFACE, Radius.ACTION_LG)
         del.setPadding(0, dp(15f), 0, dp(15f))
         val delIcon = ui.icon("ic_delete", 16)
         delIcon.setColorFilter(Ui.RED)

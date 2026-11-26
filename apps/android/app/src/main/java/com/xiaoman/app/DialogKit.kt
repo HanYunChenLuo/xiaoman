@@ -44,10 +44,10 @@ object DialogKit {
         fun onOrder(names: Array<String>)
     }
 
-    private fun cardColor(): Int = if (MainActivity.dark) 0xFF1C1C1C.toInt() else 0xFFFFFFFF.toInt()
-    private fun ink(): Int = if (MainActivity.dark) 0xFFF2F2F2.toInt() else 0xFF1A1A1A.toInt()
-    private fun ink2(): Int = if (MainActivity.dark) 0xFFB8B8B8.toInt() else 0xFF5C5C5C.toInt()
-    private fun gray(): Int = if (MainActivity.dark) 0xFF9A9A9A.toInt() else 0xFFA3A3A3.toInt()
+    private fun cardColor(): Int = if (MainActivity.dark) Colors.NEUTRAL_900 else Colors.WHITE
+    private fun ink(): Int = if (MainActivity.dark) Colors.NEUTRAL_120 else Colors.NEUTRAL_950
+    private fun ink2(): Int = if (MainActivity.dark) Colors.NEUTRAL_360 else Colors.NEUTRAL_600
+    private fun gray(): Int = if (MainActivity.dark) Colors.NEUTRAL_400 else Colors.NEUTRAL_380
 
     private fun dialog(a: Activity, card: View): Dialog {
         val d = Dialog(a)
@@ -90,12 +90,12 @@ object DialogKit {
         t.setTextSize(FontSize.BODY)
         t.gravity = Gravity.CENTER
         t.typeface = Typeface.create("sans-serif-medium", 0)
-        t.setTextColor(if (primary) (if (MainActivity.dark) 0xFF111111.toInt() else 0xFFFFFFFF.toInt()) else ink())
+        t.setTextColor(if (primary) (if (MainActivity.dark) Colors.BLACK else Colors.WHITE) else ink())
         val bg = GradientDrawable()
         bg.cornerRadius = dp(a, Radius.BUTTON).toFloat()
         bg.setColor(
-            if (primary) (if (MainActivity.dark) 0xFFF2F2F2.toInt() else 0xFF111111.toInt())
-            else (if (MainActivity.dark) 0xFF2A2A2A.toInt() else 0xFFF1F1F1.toInt())
+            if (primary) (if (MainActivity.dark) Colors.NEUTRAL_120 else Colors.BLACK)
+            else (if (MainActivity.dark) Colors.NEUTRAL_800 else Colors.NEUTRAL_150)
         )
         t.background = bg
         t.minHeight = dp(a, 46f)
@@ -362,7 +362,7 @@ object DialogKit {
         et.setTextColor(ink())
         et.setHintTextColor(gray())
         val field = GradientDrawable()
-        field.setColor(if (MainActivity.dark) 0xFF2A2A2A.toInt() else 0xFFF4F4F4.toInt())
+        field.setColor(if (MainActivity.dark) Colors.NEUTRAL_800 else Colors.NEUTRAL_100)
         field.cornerRadius = dp(a, Radius.FIELD).toFloat()
         et.background = field
         et.setPadding(dp(a, Spacing.XL), dp(a, Spacing.L), dp(a, Spacing.XL), dp(a, Spacing.L))
@@ -561,7 +561,7 @@ object DialogKit {
             }
             val on = path == current
             val bg = GradientDrawable()
-            bg.setColor(if (on) (if (MainActivity.dark) 0xFF22300C.toInt() else 0xFFF1F8DC.toInt()) else Color.TRANSPARENT)
+            bg.setColor(if (on) (if (MainActivity.dark) Colors.LIME_SURFACE_DARK else Colors.LIME_SOFT) else Color.TRANSPARENT)
             bg.cornerRadius = dp(a, Radius.CELL).toFloat()
             cell.background = bg
             cell.setOnClickListener {
@@ -601,7 +601,7 @@ object DialogKit {
             val check = TextView(a)
             check.text = if (i == selected) "✓" else ""
             check.setTextSize(FontSize.BODY_LG)
-            check.setTextColor(0xFFB6EE25.toInt())
+            check.setTextColor(Colors.LIME_DEEP)
             row.addView(check)
             row.setOnClickListener {
                 d.dismiss()
@@ -779,7 +779,7 @@ object DialogKit {
                 row.gravity = Gravity.CENTER_VERTICAL
                 row.setPadding(dp(a, 12f), dp(a, 14f), dp(a, 12f), dp(a, 14f))
                 val rowBg = GradientDrawable()
-                rowBg.setColor(if (MainActivity.dark) 0xFF242424.toInt() else 0xFFF6F6F6.toInt())
+                rowBg.setColor(if (MainActivity.dark) Colors.NEUTRAL_850 else Colors.NEUTRAL_80)
                 rowBg.cornerRadius = dp(a, Radius.CELL).toFloat()
                 row.background = rowBg
                 row.tag = names[i]
@@ -816,7 +816,7 @@ object DialogKit {
                                 startIdx[0] = container.indexOfChild(row)
                                 finalTarget[0] = startIdx[0]
                                 val sel = GradientDrawable()
-                                sel.setColor(if (MainActivity.dark) 0xFF2A3A10.toInt() else 0xFFEDF8C9.toInt())
+                                sel.setColor(if (MainActivity.dark) Colors.LIME_SURFACE_DARK_ALT else Colors.LIME_SURFACE_LIGHT)
                                 sel.cornerRadius = dp(a, Radius.CELL).toFloat()
                                 row.background = sel
                                 row.elevation = dp(a, 6f).toFloat()
@@ -846,7 +846,7 @@ object DialogKit {
                                 row.translationY = 0f
                                 row.elevation = 0f
                                 val nb = GradientDrawable()
-                                nb.setColor(if (MainActivity.dark) 0xFF242424.toInt() else 0xFFF6F6F6.toInt())
+                                nb.setColor(if (MainActivity.dark) Colors.NEUTRAL_850 else Colors.NEUTRAL_80)
                                 nb.cornerRadius = dp(a, Radius.CELL).toFloat()
                                 row.background = nb
                                 for (k in 0 until container.childCount) container.getChildAt(k).translationY = 0f
@@ -915,7 +915,7 @@ object DialogKit {
         hs.addView(tabs)
         sheet.addView(hs, LinearLayout.LayoutParams(-1, -2))
         val divider = View(a)
-        divider.setBackgroundColor(if (MainActivity.dark) 0xFF2A2A2A.toInt() else 0xFFEDEDED.toInt())
+        divider.setBackgroundColor(if (MainActivity.dark) Colors.NEUTRAL_800 else Colors.NEUTRAL_200)
         sheet.addView(divider, LinearLayout.LayoutParams(-1, Math.max(1, dp(a, 0.7f))))
         val sc = ScrollView(a)
         val grid = GridLayout(a)
@@ -960,9 +960,9 @@ object DialogKit {
                 }
                 val on = path == current
                 val bg = GradientDrawable()
-                bg.setColor(if (on) (if (MainActivity.dark) 0xFF22300C.toInt() else 0xFFEDF8C9.toInt()) else Color.TRANSPARENT)
+                bg.setColor(if (on) (if (MainActivity.dark) Colors.LIME_SURFACE_DARK else Colors.LIME_SURFACE_LIGHT) else Color.TRANSPARENT)
                 bg.cornerRadius = dp(a, Radius.CELL).toFloat()
-                if (on) bg.setStroke(dp(a, 2f), 0xFFB6EE25.toInt())
+                if (on) bg.setStroke(dp(a, 2f), Colors.LIME_DEEP)
                 cell.background = bg
                 cell.setOnClickListener {
                     d.dismiss()
@@ -981,10 +981,10 @@ object DialogKit {
             tab.text = labels[i]
             tab.setTextSize(FontSize.META)
             val on = i == selected[0]
-            tab.setTextColor(if (on) (if (MainActivity.dark) 0xFF111111.toInt() else 0xFFFFFFFF.toInt()) else ink2())
+            tab.setTextColor(if (on) (if (MainActivity.dark) Colors.BLACK else Colors.WHITE) else ink2())
             val tb = GradientDrawable()
             tb.cornerRadius = dp(a, Radius.CHIP).toFloat()
-            tb.setColor(if (on) 0xFFB6EE25.toInt() else (if (MainActivity.dark) 0xFF262626.toInt() else 0xFFF1F1F1.toInt()))
+            tb.setColor(if (on) Colors.LIME_DEEP else (if (MainActivity.dark) Colors.NEUTRAL_830 else Colors.NEUTRAL_150))
             tab.background = tb
             tab.setPadding(dp(a, Spacing.XL), dp(a, Spacing.S), dp(a, Spacing.XL), dp(a, Spacing.S))
             val tp = LinearLayout.LayoutParams(-2, -2)
@@ -994,10 +994,10 @@ object DialogKit {
                 for (k in 0 until tabs.childCount) {
                     val tv = tabs.getChildAt(k) as TextView
                     val sel = k == i
-                    tv.setTextColor(if (sel) (if (MainActivity.dark) 0xFF111111.toInt() else 0xFFFFFFFF.toInt()) else ink2())
+                    tv.setTextColor(if (sel) (if (MainActivity.dark) Colors.BLACK else Colors.WHITE) else ink2())
                     val tbg = GradientDrawable()
                     tbg.cornerRadius = dp(a, Radius.CHIP).toFloat()
-                    tbg.setColor(if (sel) 0xFFB6EE25.toInt() else (if (MainActivity.dark) 0xFF262626.toInt() else 0xFFF1F1F1.toInt()))
+                    tbg.setColor(if (sel) Colors.LIME_DEEP else (if (MainActivity.dark) Colors.NEUTRAL_830 else Colors.NEUTRAL_150))
                     tv.background = tbg
                 }
                 render.run()
@@ -1023,7 +1023,7 @@ object DialogKit {
         hs.addView(tabs)
         sheet.addView(hs, LinearLayout.LayoutParams(-1, -2))
         val divider = View(a)
-        divider.setBackgroundColor(if (MainActivity.dark) 0xFF2A2A2A.toInt() else 0xFFEDEDED.toInt())
+        divider.setBackgroundColor(if (MainActivity.dark) Colors.NEUTRAL_800 else Colors.NEUTRAL_200)
         sheet.addView(divider, LinearLayout.LayoutParams(-1, Math.max(1, dp(a, 0.7f))))
         val sc = ScrollView(a)
         val grid = GridLayout(a)
@@ -1043,7 +1043,7 @@ object DialogKit {
                 val arr = brands.optJSONArray(keys[sel[0]])
                 val availW = dm.widthPixels - dp(a, 28f) - gap * (cols - 1)
                 val cellW = Math.max(dp(a, 86f), availW / cols)
-                val cellBg = if (MainActivity.dark) 0xFF242424.toInt() else 0xFFF6F6F6.toInt()
+                val cellBg = if (MainActivity.dark) Colors.NEUTRAL_850 else Colors.NEUTRAL_80
                 val withClear = currentId != null && currentId.isNotEmpty()
                 if (withClear) {
                     val cell = FrameLayout(a)
@@ -1084,9 +1084,9 @@ object DialogKit {
                     val cell = FrameLayout(a)
                     val on = id == currentId
                     val bg = GradientDrawable()
-                    bg.setColor(if (on) (if (MainActivity.dark) 0xFF22300C.toInt() else 0xFFEDF8C9.toInt()) else cellBg)
+                    bg.setColor(if (on) (if (MainActivity.dark) Colors.LIME_SURFACE_DARK else Colors.LIME_SURFACE_LIGHT) else cellBg)
                     bg.cornerRadius = dp(a, Radius.CELL).toFloat()
-                    if (on) bg.setStroke(dp(a, 2f), 0xFFB6EE25.toInt())
+                    if (on) bg.setStroke(dp(a, 2f), Colors.LIME_DEEP)
                     cell.background = bg
                     val col = LinearLayout(a)
                     col.orientation = LinearLayout.VERTICAL
@@ -1099,7 +1099,7 @@ object DialogKit {
                             if (MainActivity.dark) {
                                 val plate = FrameLayout(a)
                                 val pb = GradientDrawable()
-                                pb.setColor(0xFFFFFFFF.toInt())
+                                pb.setColor(Colors.WHITE)
                                 pb.cornerRadius = dp(a, Radius.FIELD).toFloat()
                                 plate.background = pb
                                 plate.addView(iv, FrameLayout.LayoutParams(dp(a, 54f), dp(a, 54f), Gravity.CENTER))
@@ -1136,10 +1136,10 @@ object DialogKit {
             tab.text = labels[i]
             tab.setTextSize(FontSize.META)
             val on = i == 0
-            tab.setTextColor(if (on) (if (MainActivity.dark) 0xFF111111.toInt() else 0xFFFFFFFF.toInt()) else ink2())
+            tab.setTextColor(if (on) (if (MainActivity.dark) Colors.BLACK else Colors.WHITE) else ink2())
             val tb = GradientDrawable()
             tb.cornerRadius = dp(a, Radius.CHIP).toFloat()
-            tb.setColor(if (on) 0xFFB6EE25.toInt() else (if (MainActivity.dark) 0xFF262626.toInt() else 0xFFF1F1F1.toInt()))
+            tb.setColor(if (on) Colors.LIME_DEEP else (if (MainActivity.dark) Colors.NEUTRAL_830 else Colors.NEUTRAL_150))
             tab.background = tb
             tab.setPadding(dp(a, Spacing.XL), dp(a, Spacing.S), dp(a, Spacing.XL), dp(a, Spacing.S))
             val tp = LinearLayout.LayoutParams(-2, -2)
@@ -1149,10 +1149,10 @@ object DialogKit {
                 for (k in 0 until tabs.childCount) {
                     val tv = tabs.getChildAt(k) as TextView
                     val s = k == i
-                    tv.setTextColor(if (s) (if (MainActivity.dark) 0xFF111111.toInt() else 0xFFFFFFFF.toInt()) else ink2())
+                    tv.setTextColor(if (s) (if (MainActivity.dark) Colors.BLACK else Colors.WHITE) else ink2())
                     val tbg = GradientDrawable()
                     tbg.cornerRadius = dp(a, Radius.CHIP).toFloat()
-                    tbg.setColor(if (s) 0xFFB6EE25.toInt() else (if (MainActivity.dark) 0xFF262626.toInt() else 0xFFF1F1F1.toInt()))
+                    tbg.setColor(if (s) Colors.LIME_DEEP else (if (MainActivity.dark) Colors.NEUTRAL_830 else Colors.NEUTRAL_150))
                     tv.background = tbg
                 }
                 render.run()
@@ -1225,7 +1225,7 @@ object DialogKit {
         val check = TextView(a)
         check.text = if (m == current) "✓" else ""
         check.setTextSize(FontSize.BODY_LG)
-        check.setTextColor(0xFFB6EE25.toInt())
+        check.setTextColor(Colors.LIME_DEEP)
         row.addView(check)
         row.setOnClickListener {
             d.dismiss()

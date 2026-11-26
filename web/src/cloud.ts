@@ -353,9 +353,11 @@ export async function signIn(): Promise<CloudAccount> {
 export async function signOut(): Promise<void> {
   const acc = getAccount()
   saveAccount(null)
-  if (!acc?.accessToken) return
+  // 优先吊销 refresh token：它有效期更长，泄露风险更高
+  const tokenToRevoke = acc?.refreshToken || acc?.accessToken || ''
+  if (!tokenToRevoke) return
   try {
-    await fetch('https://oauth2.googleapis.com/revoke?token=' + encodeURIComponent(acc.accessToken), {
+    await fetch('https://oauth2.googleapis.com/revoke?token=' + encodeURIComponent(tokenToRevoke), {
       method: 'POST',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
     })

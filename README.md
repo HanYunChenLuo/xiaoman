@@ -86,6 +86,37 @@ cd ../desktop/src-tauri && cargo build    # 桌面（需先构建 Web）
 
 也可在 `apps/android/local.properties` 写入 `oauth.github.clientId=...` 与 `oauth.google.clientId=...` 作为默认值。**Google 跳转登录**：构建时写入 `oauth.google.clientId` 会注册 `com.googleusercontent.apps.<client-id>:/oauth2redirect` 回调，授权后浏览器直接跳回 App；应用内临时填写的 Client ID 因无法动态注册 Scheme，会自动使用 127.0.0.1 loopback 方式。GitHub 仍使用设备码（网页授权 + 输入代码），因为其 OAuth App 交换令牌需要 client_secret，不适合内置。云端保存的是加密 `.ias` 备份，三端共用 `core/src/cloud.rs` 的请求构造与解析；桌面端凭据缺失时自动隐藏云同步。
 
+### 凭据轮换
+
+**桌面 OAuth 客户端密钥**
+
+1. Google Cloud → 凭据 → 对应的「桌面应用」客户端 → 添加/重置客户端密钥（保留旧密钥过渡）
+2. 本地重新生成加密凭据：
+   ```bash
+   XIAOMAN_GOOGLE_CLIENT_ID=... XIAOMAN_GOOGLE_CLIENT_SECRET=... \
+     node desktop/scripts/seed-oauth.mjs
+   ```
+3. 验证登录与上传后，更新 CI Secret：
+   ```bash
+   base64 < desktop/src-tauri/oauth.enc | tr -d '\n' | gh secret set XIAOMAN_OAUTH_ENC
+   ```
+4. 提升版本并发布；确认用户升级完成后，再在 Google Cloud 删除旧密钥（旧版本将无法再登录/刷新）
+
+**桌面更新签名密钥（谨慎）**
+
+- 必须先用旧私钥发布一个内嵌新公钥的过渡版本；用户升级后再切换 CI 的 `TAURI_SIGNING_PRIVATE_KEY`
+- 直接替换会让已安装的旧版本无法验证新包，更新链路中断
+
+**Android 签名密钥**
+
+- `apps/android/replica.keystore` 必须妥善备份；私钥丢失后无法覆盖升级，只能更换包名或依赖商店的密钥轮换
+- CI 通过 `ANDROID_KEYSTORE_BASE64`、`ANDROID_KEYSTORE_PASSWORD`、`ANDROID_KEY_PASSWORD`、`ANDROID_KEY_ALIAS` 注入
+
+**Token 撤销**
+
+- Web/桌面退出登录会吊销 refresh token（无 refresh 时吊销 access token）；Android 退出会清除本地 token
+- 需要强制失效时，可在 Google 账号 → 安全性 → 第三方应用访问权限中移除「小满」
+
 ## 目录结构
 
 ```

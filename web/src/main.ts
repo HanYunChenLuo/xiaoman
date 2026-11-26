@@ -104,6 +104,12 @@ async function fileToDataUrl(file: File, maxSize = 1280): Promise<string> {
   return canvas.toDataURL('image/jpeg', 0.82)
 }
 
+function fmtTime(ms: number): string {
+  if (!ms) return '未知'
+  const d = new Date(ms)
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`
+}
+
 function toast(msg: string, duration = 2200): void {
   const el = E('div', {
     text: msg,
@@ -155,6 +161,7 @@ class App {
   }
 
   save(): void {
+    this.state.settings.updatedAt = Date.now()
     saveState(this.state)
   }
 
@@ -1697,6 +1704,41 @@ class App {
     return this.askDialog(title, message, null).then((v) => v !== null)
   }
 
+  /** 多个选项的确认框，返回选项索引；关闭返回 null。 */
+  askChoice(title: string, message: string, options: string[]): Promise<number | null> {
+    return new Promise((resolve) => {
+      let settled = false
+      const finish = (v: number | null) => {
+        if (settled) return
+        settled = true
+        this.modalDismiss = undefined
+        this.closeModal()
+        resolve(v)
+      }
+      const buttons = options.map((label, i) =>
+        E('button', {
+          class: 'btn' + (i === 0 ? ' primary' : ''),
+          text: label,
+          on: { click: () => finish(i) }
+        })
+      )
+      const content = E(
+        'div',
+        {},
+        E('button', { class: 'close', text: '✕', on: { click: () => finish(null) } }),
+        E('h2', { text: title }),
+        E('p', { class: 'muted', text: message, style: { margin: '0 0 14px', whiteSpace: 'pre-line' } }),
+        E(
+          'div',
+          { class: 'form-actions', style: { flexDirection: 'column', alignItems: 'stretch', gap: 'var(--space-3)' } },
+          ...buttons
+        )
+      )
+      this.openModal(content, true)
+      this.modalDismiss = () => finish(null)
+    })
+  }
+
   // ---------------- 备份 ----------------
   exportBackup(): void {
     try {
@@ -1732,26 +1774,38 @@ class App {
 
   /** 解析 .ias 字节并按用户选择覆盖或合并；文件导入与云端恢复共用。 */
   async applyBackup(bytes: Uint8Array, source: string): Promise<void> {
-    const { state, count } = importIas(bytes)
-    const replace = await this.askConfirm(
-      `已读取${source}，共 ${count} 条记录。\n\n确定 = 覆盖本地数据；取消 = 合并到本地。`,
-      '导入设置'
+    const { state, count, exportedAt } = importIas(bytes)
+    const localCount = this.state.assets.length
+    const localTime = this.state.settings.updatedAt ?? 0
+    const backupTime = exportedAt ? exportedAt * 1000 : 0
+    const choice = await this.askChoice(
+      '导入备份',
+      `来源：${source}\n备份：${count} 条，导出于 ${fmtTime(backupTime)}\n本地：${localCount} 条，最后修改 ${fmtTime(localTime)}\n\n覆盖 = 用备份替换本地；合并 = 保留双方，重复条目取较新的一方。`,
+      ['覆盖本地', '合并', '取消']
     )
-    if (replace) {
+    if (choice !== 0 && choice !== 1) return
+
+    if (choice === 0) {
       this.state.assets = state.assets ?? []
+      this.state.categories = state.categories ?? []
+      this.state.tags = state.tags ?? []
+      this.state.incomeCategories = state.incomeCategories ?? []
     } else {
+      const preferCloud = backupTime > localTime
       const byId = new Map(this.state.assets.map((a) => [a.id, a]))
-      for (const a of state.assets ?? []) byId.set(a.id, a)
+      for (const a of state.assets ?? []) {
+        if (!byId.has(a.id) || preferCloud) byId.set(a.id, a)
+      }
       this.state.assets = [...byId.values()]
-    }
-    for (const c of state.categories ?? []) {
-      if (!this.state.categories.some((x) => x.id === c.id)) this.state.categories.push(c)
-    }
-    for (const t of state.tags ?? []) {
-      if (!this.state.tags.some((x) => x.id === t.id)) this.state.tags.push(t)
-    }
-    for (const c of state.incomeCategories ?? []) {
-      if (!this.state.incomeCategories.some((x) => x.id === c.id)) this.state.incomeCategories.push(c)
+      for (const c of state.categories ?? []) {
+        if (!this.state.categories.some((x) => x.id === c.id)) this.state.categories.push(c)
+      }
+      for (const t of state.tags ?? []) {
+        if (!this.state.tags.some((x) => x.id === t.id)) this.state.tags.push(t)
+      }
+      for (const c of state.incomeCategories ?? []) {
+        if (!this.state.incomeCategories.some((x) => x.id === c.id)) this.state.incomeCategories.push(c)
+      }
     }
     // 兼容从其他端导入时没有图标的情况
     for (const a of this.state.assets) {
@@ -1763,7 +1817,7 @@ class App {
     }
     this.save()
     this.render()
-    toast(`成功导入 ${count} 条数据`)
+    toast(choice === 0 ? `已覆盖导入 ${count} 条数据` : `已合并 ${count} 条数据`)
   }
 }
 

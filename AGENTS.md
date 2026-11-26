@@ -59,6 +59,7 @@ Tauri 通过 `frontendDist: ../../web/dist` 加载 Web 端（编译期嵌入）�
 
 - Android：`Updater.kt` 调 `NativeCore.update*` 检查 `HanYunChenLuo/xiaoman` 的 latest release，发现新版本后下载 `*-android.apk`（资产名以 `.apk` 结尾）到 cache，经 FileProvider 拉起系统安装器（同签名覆盖升级；系统要求用户确认，无法静默安装）。设置 → 关于 → 检查更新。
 - 桌面：`tauri-plugin-updater` + GitHub Release 的 `latest.json` + minisign 签名；设置 → 关于 → 检查更新，下载安装后调用 `restart_app`。签名公钥在 `tauri.conf.json`，私钥仅存本机 `~/.tauri/xiaoman-updater.key`（CI secret `TAURI_SIGNING_PRIVATE_KEY`）。
+- 凭据轮换见 README「凭据轮换」：桌面客户端密钥可先加新密钥再删旧；桌面更新签名密钥必须先发过渡版本，不能直接替换。
 - 发布流程：`.github/workflows/release.yml`，推送 `v*` tag 触发；需先提升 `apps/android/app/build.gradle` 的 `versionCode/versionName` 与 `desktop/src-tauri/tauri.conf.json` 的 `version`，并让 tag 与 versionName 一致。桌面 job 用 `npx @tauri-apps/cli build --target aarch64-apple-darwin` 打包，自行生成 `latest.json`（`darwin-aarch64` 条目，签名取 `.sig`），资源统一命名为 `xiaoman-desktop-aarch64.app.tar.gz` / `.dmg` / `latest.json`；Android job 上传 `xiaoman-android.apk`。
 - 桌面打包：`cd web && npm run build` 后 `cd desktop && npx @tauri-apps/cli@2.12.6 build`（需 `TAURI_SIGNING_PRIVATE_KEY`，本地可 `export TAURI_SIGNING_PRIVATE_KEY=$(cat ~/.tauri/xiaoman-updater.key)`）。`bundle.resources` 包含 `oauth.enc`，缺失时先用 seed 脚本生成（可选，缺失则云同步隐藏）。
 

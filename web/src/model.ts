@@ -58,6 +58,8 @@ export interface Settings {
   thousands: boolean
   theme: 'system' | 'light' | 'dark'
   notifyExpiry?: boolean
+  /** 本地最后一次修改时间（毫秒），用于导入时判断哪边更新。 */
+  updatedAt?: number
 }
 
 export interface State {
@@ -113,7 +115,8 @@ export function normalize(s: State): State {
     decimals: s.settings?.decimals ?? 2,
     thousands: s.settings?.thousands ?? false,
     theme: s.settings?.theme ?? 'system',
-    notifyExpiry: s.settings?.notifyExpiry ?? false
+    notifyExpiry: s.settings?.notifyExpiry ?? false,
+    updatedAt: s.settings?.updatedAt ?? 0
   }
   return s
 }
@@ -346,9 +349,15 @@ export function exportIas(state: State): Uint8Array {
   return encodeIas({ data, images })
 }
 
-export function importIas(bytes: Uint8Array): { state: Partial<State>; count: number } {
+export function importIas(bytes: Uint8Array): {
+  state: Partial<State>
+  count: number
+  exportedAt: number
+} {
   const parsed = decodeIas(bytes) as { data: any; images?: Record<string, string> }
-  return fromBackupData(parsed.data, parsed.images ?? {})
+  const result = fromBackupData(parsed.data, parsed.images ?? {})
+  const exportedAt = Number(parsed.data?.exported_at ?? 0)
+  return { ...result, exportedAt }
 }
 
 function dataUrlToBase64(dataUrl: string): string {

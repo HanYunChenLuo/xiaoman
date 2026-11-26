@@ -338,7 +338,7 @@ class MainActivity : Activity() {
         val ip = LinearLayout.LayoutParams(dp(16f), dp(16f))
         ip.leftMargin = dp(Spacing.XL)
         filters.addView(sort, ip)
-        sort.setOnClickListener { cycleSortMode() }
+        sort.setOnClickListener { chooseSortMode() }
         val funnel = ui.icon("ic_funnel", 16)
         funnel.alpha = 0.65f
         if (dark) funnel.setColorFilter(Colors.NEUTRAL_120)
@@ -346,14 +346,14 @@ class MainActivity : Activity() {
         fp.leftMargin = dp(Spacing.XL)
         filters.addView(funnel, fp)
         funnel.setOnClickListener { chooseCategoryFilter() }
-        val view = ui.icon("ic_view", 16)
-        if (dark) view.setColorFilter(Colors.NEUTRAL_120)
-        val vp = LinearLayout.LayoutParams(dp(16f), dp(16f))
-        vp.leftMargin = dp(Spacing.XL)
-        filters.addView(view, vp)
-        view.setOnClickListener {
-            grid = !grid
-            showHome()
+        if (store.setting("homeStyle", "default") != "classic") {
+            val viewBtn = ui.pillButton(if (grid) "网格" else "列表", ui.chipBg(), ui.ink2(), Radius.CHIP)
+            viewBtn.setTextSize(FontSize.SMALL)
+            viewBtn.setPadding(dp(Spacing.XL), dp(Spacing.S), dp(Spacing.XL), dp(Spacing.S))
+            val vp = LinearLayout.LayoutParams(-2, dp(32f))
+            vp.leftMargin = dp(Spacing.XL)
+            filters.addView(viewBtn, vp)
+            viewBtn.setOnClickListener { chooseViewMode() }
         }
         body.addView(filters)
 
@@ -385,22 +385,23 @@ class MainActivity : Activity() {
     }
 
 
-    private fun cycleSortMode() {
-        sortMode = when (sortMode) {
-            "default" -> "price"
-            "price" -> "daily"
-            "daily" -> "days"
-            else -> "default"
-        }
-        store.setSetting("sortMode", sortMode)
-        val label = when (sortMode) {
-            "price" -> "价格从高到低"
-            "daily" -> "日均成本从低到高"
-            "days" -> "使用天数从长到短"
-            else -> "默认排序"
-        }
-        toast("排序：" + label)
-        showHome()
+    private fun chooseSortMode() {
+        val labels = arrayOf("默认排序", "价格从高到低", "日均成本从低到高", "使用天数从长到短")
+        val modes = arrayOf("default", "price", "daily", "days")
+        val selected = modes.indexOf(sortMode).coerceAtLeast(0)
+        DialogKit.sheetSelect(this, "排序方式", labels, selected, IntConsumer { i ->
+            sortMode = modes[i]
+            store.setSetting("sortMode", sortMode)
+            showHome()
+        })
+    }
+
+    private fun chooseViewMode() {
+        val selected = if (grid) 0 else 1
+        DialogKit.sheetSelect(this, "视图样式", arrayOf("网格", "列表"), selected, IntConsumer { i ->
+            grid = i == 0
+            showHome()
+        })
     }
 
     private fun chooseCategoryFilter() {
@@ -1105,10 +1106,12 @@ class MainActivity : Activity() {
             LinearLayout.LayoutParams(-2, -2)
         )
         g3.addView(styleRow)
-        g3.addView(row("ic_display", "视图样式", if (grid) "网格" else "列表", true) {
-            grid = !grid
-            showSettings()
-        })
+                if (store.setting("homeStyle", "default") != "classic") {
+    g3.addView(row("ic_display", "视图样式", if (grid) "网格" else "列表", true) {
+                grid = !grid
+                showSettings()
+            })
+        }
         body.addView(g3)
 
         section(body, "通用设置")

@@ -799,6 +799,11 @@ select {
   color: var(--on-lime);
 }
 
+.icon-preview {
+  width: 56px;
+  height: 56px;
+}
+
 .toast {
   position: fixed;
   left: 50%;

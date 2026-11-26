@@ -278,11 +278,11 @@ class App {
     )
     const card = E(
       'div',
-      { class: 'overview', style: { marginTop: '6px' } },
+      { class: 'overview', style: { marginTop: 'var(--space-2)' } },
       E('div', { class: 'label muted', text: '心愿总值' }),
       E(
         'div',
-        { class: 'value', style: { marginTop: '6px' } },
+        { class: 'value', style: { marginTop: 'var(--space-2)' } },
         E('small', { text: sym(this.state.settings.currency) }),
         this.fmt(totalOfKind(this.state.assets, 'wish'))
       )
@@ -432,7 +432,7 @@ class App {
       E('div', { class: 'page-head' }, E('h1', { text: '趋势' }), E('span', { class: 'pill', text: '统计' })),
       E(
         'div',
-        { class: 'chip-row', style: { paddingTop: '4px' } },
+        { class: 'chip-row', style: { paddingTop: 'var(--space-1)' } },
         ...([
           [7, '最近一周'],
           [90, '最近90天'],
@@ -456,7 +456,7 @@ class App {
     root.append(
       E(
         'div',
-        { class: 'overview', style: { marginTop: '6px' } },
+        { class: 'overview', style: { marginTop: 'var(--space-2)' } },
         E('div', { class: 'label muted', text: '资产总值' }),
         E(
           'div',
@@ -464,7 +464,7 @@ class App {
           E('small', { text: sym(this.state.settings.currency) }),
           this.fmt(totalOfKind(this.state.assets, 'asset'))
         ),
-        E('div', { class: 'muted', style: { marginTop: '6px' } }, `日均成本 ${this.money(dailyOfKind(this.state.assets, 'asset'))}`)
+        E('div', { class: 'muted', style: { marginTop: 'var(--space-2)' } }, `日均成本 ${this.money(dailyOfKind(this.state.assets, 'asset'))}`)
       )
     )
     root.append(E('div', { class: 'chart-wrap' }, this.chart(assets, this.range)))
@@ -656,7 +656,7 @@ class App {
       ]), E('p', {
         class: 'muted',
         text: '数据默认保存在本机（浏览器），可选择备份到云端',
-        style: { margin: '10px 4px 0', fontSize: '12px' }
+        style: { margin: 'var(--space-4) var(--space-1) 0', fontSize: 'var(--font-sm2)' }
       }))
     )
     const wipe = E('button', {
@@ -1053,7 +1053,7 @@ class App {
         ? [
             E(
               'div',
-              { class: 'tag-picker', style: { marginTop: '12px' } },
+              { class: 'tag-picker', style: { marginTop: 'var(--space-5)' } },
               ...a.noteImagesData.map((d) => E('img', { class: 'thumb', attrs: { src: d, alt: '' } }))
             )
           ]
@@ -1260,8 +1260,7 @@ class App {
     modelCustom.value = draft.model ?? ''
 
     const preview = E('img', {
-      class: 'icon',
-      style: { width: '56px', height: '56px' },
+      class: 'icon icon-preview',
       attrs: { src: draft.icon || autoIcon(draft.model || draft.name), alt: '' }
     })
 

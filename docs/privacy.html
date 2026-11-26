@@ -4,8 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="color-scheme" content="light dark">
-<title>隐私政策 · 小满</title>
-<meta name="description" content="小满隐私政策：数据默认保存在本机，Google 云备份为可选功能。">
+<title>隐私政策 · 小满（Xiaoman）</title>
+<meta name="description" content="小满（Xiaoman）隐私政策：说明本应用访问、使用、存储与共享的数据，包括 Google 用户数据与 Limited Use 承诺。">
 <style>
   :root {
     --bg: #f4f4f4; --card: #ffffff; --ink: #1a1a1a; --ink2: #5c5c5c; --gray: #8a8a8a;
@@ -36,6 +36,9 @@
   a { color: var(--ink); }
   .box { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); padding: 16px 20px; margin: 18px 0; }
   .box p:last-child, .box ul:last-child { margin-bottom: 0; }
+  table { width: 100%; border-collapse: collapse; margin: 10px 0 16px; font-size: 14px; }
+  th, td { text-align: left; vertical-align: top; padding: 8px 10px; border-top: 1px solid var(--line); color: var(--ink2); }
+  th { color: var(--ink); font-weight: 600; white-space: nowrap; }
   footer { margin-top: 44px; padding-top: 18px; border-top: 1px solid var(--line); font-size: 13px; color: var(--gray); }
 </style>
 </head>
@@ -46,71 +49,122 @@
     <div class="mark">满</div>
   </div>
 
-  <h1>小满隐私政策</h1>
-  <p class="date">最后更新：2026 年 11 月 26 日 · 生效日期：2026 年 11 月 26 日</p>
+  <h1>小满（Xiaoman）隐私政策</h1>
+  <p class="date">最后更新：2026 年 11 月 26 日 · 生效日期：2026 年 11 月 26 日 · 适用版本：Android、网页与 macOS 桌面版</p>
 
-  <p>小满（Xiaoman，以下简称「本应用」）是一款开源的资产记录工具，提供 Android、网页与 macOS 桌面版本。我们尽量少地接触你的数据：<strong>资产内容默认只保存在你使用的设备上</strong>，云备份是完全可选的。</p>
+  <p>小满（Xiaoman，以下简称「本应用」）是一款开源的资产记录工具。本政策说明本应用如何<strong>访问、使用、存储、删除与共享</strong>用户数据，包括从 Google API 获取的用户数据。我们尽量少地接触你的数据：<strong>资产内容默认只保存在你使用的设备上</strong>，云备份是完全可选的，本应用没有自有后端服务器。</p>
 
   <div class="box">
-    <p><strong>一句话总结：</strong>不注册即可使用；不收集账号、设备标识或使用统计；只有你主动登录 Google 并点击上传时，才会把备份写入你自己的 Google Drive；不向任何第三方出售或共享你的数据。</p>
+    <p><strong>一句话总结：</strong>不注册、不登录即可使用全部本地功能；不收集账号、设备标识或使用统计；只有你主动登录 Google 并点击上传时，才会把备份写入你自己的 Google Drive 应用数据文件夹；不向任何第三方出售或共享你的数据，不将 Google 用户数据用于广告或 AI 训练。</p>
   </div>
 
-  <h2>1. 我们处理哪些数据</h2>
+  <h2>1. 本应用访问、使用、存储与共享的数据</h2>
+
+  <table>
+    <thead>
+      <tr><th>数据类别</th><th>何时访问</th><th>用途</th><th>存储位置与保留</th><th>是否共享</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>资产记录与设置</strong><br>名称、分类、标签、价格、备注、图片、到期时间等</td>
+        <td>你录入、编辑、查看时</td>
+        <td>提供资产记录、统计、提醒与导出功能</td>
+        <td>仅保存在本机（设备存储或浏览器 localStorage），直到你删除记录或清除应用数据</td>
+        <td>不共享</td>
+      </tr>
+      <tr>
+        <td><strong>Google 账号邮箱地址</strong></td>
+        <td>你主动登录 Google 时</td>
+        <td>在应用内显示当前登录账号；不用于其他目的</td>
+        <td>仅保存在本机设置中，退出登录即删除</td>
+        <td>不共享</td>
+      </tr>
+      <tr>
+        <td><strong>Drive 应用数据文件夹中的备份文件</strong><br><code>xiaoman_backup.ias</code></td>
+        <td>你主动点击「上传」或「恢复」时</td>
+        <td>在你自己的 Google Drive 中保存或读取你主动创建的备份</td>
+        <td>保存在<strong>你自己的 Google Drive</strong>（appDataFolder）中，直到你覆盖、撤销授权或联系我们删除</td>
+        <td>仅存储在你的 Google Drive，不共享给任何第三方</td>
+      </tr>
+      <tr>
+        <td><strong>Google OAuth 令牌</strong><br>访问令牌与刷新令牌</td>
+        <td>登录或令牌续期时</td>
+        <td>维持你的登录状态并执行你发起的云备份请求</td>
+        <td>仅保存在本机：Android 使用 Keystore AES-GCM 加密存储，macOS 使用钥匙串，网页使用浏览器 localStorage；退出登录即删除</td>
+        <td>不共享</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <p>此外，本应用会访问 GitHub 的公开 API 与 Release 页面，用于更新品牌/型号数据与检查新版本。这些请求<strong>不携带</strong>你的资产数据或 Google 账号信息；与任何网络请求一样，GitHub 可能记录 IP 地址等常规访问日志。</p>
+
+  <h2>2. Google 用户数据与有限使用（Limited Use）承诺</h2>
+
+  <p>只有在你主动选择「使用 Google 登录」时，本应用才会请求以下 OAuth 范围：</p>
   <ul>
-    <li><strong>资产与设置数据</strong>：你记录的名称、分类、标签、价格、备注、图片与到期时间等。默认仅保存在本机（设备存储或浏览器 localStorage）。</li>
-    <li><strong>Google 账号信息</strong>：仅在你选择登录 Google 时读取你的邮箱地址，用于在应用内显示当前登录账号；不会发送到我们或任何第三方。</li>
-    <li><strong>云备份内容</strong>：你主动上传时，应用会把本地数据打包为 <code>.ias</code> 备份文件，写入 <em>你自己 Google 账号</em>的 Drive 应用数据文件夹（appDataFolder）。我们无法访问该文件。</li>
-    <li><strong>授权令牌</strong>：Google OAuth 的访问令牌与刷新令牌仅保存在本机，并使用系统安全能力加密存储（Android Keystore、macOS 钥匙串；网页版保存在浏览器 localStorage）。</li>
+    <li><code>openid</code>、<code>email</code>、<code>profile</code>：读取你的邮箱地址与基本账号标识，用于在应用内显示当前登录账号；</li>
+    <li><code>https://www.googleapis.com/auth/drive.appdata</code>：仅访问本应用自己在 Google Drive 中创建的应用数据文件夹（appDataFolder），用于保存与读取你主动上传的 <code>.ias</code> 备份。<strong>本应用无法读取你 Drive 中的其他任何文件。</strong></li>
   </ul>
 
-  <h2>2. 我们不收集什么</h2>
+  <p>本应用对从 Google API 获取的信息的访问、使用、存储与共享，均遵守 <a href="https://developers.google.com/terms/api-services-user-data-policy">Google API Services User Data Policy</a>，包括其中的<strong>有限使用（Limited Use）要求</strong>：</p>
   <ul>
-    <li>不收集姓名、电话、地址等身份信息，不要求注册账号。</li>
-    <li>不收集设备标识符、位置信息或使用统计，不集成第三方分析、广告或追踪 SDK。</li>
-    <li>不读取你 Google Drive 中的其他文件；申请的范围仅为 <code>drive.appdata</code>（本应用自己的应用数据文件夹）、<code>openid</code>、<code>email</code> 与 <code>profile</code>。</li>
+    <li>仅将 Google 用户数据用于提供或改进本应用中<strong>显著可见、由你主动使用</strong>的功能，即账号显示与云备份；</li>
+    <li>不将 Google 用户数据出售、出租或转让给任何第三方，也不将其用于广告（含再营销、个性化广告）、信用评估或贷款资格判断；为提供/改进功能、安全目的或遵守法律而必须传输的情形除外；</li>
+    <li>不允许人工读取你的 Google 用户数据；</li>
+    <li>不将 Google 用户数据用于训练或改进任何 AI/机器学习模型，也不用于生成 AI 内容（包括 AI 生成的私密影像）；本应用不包含任何 AI 生成功能；</li>
+    <li>仅在实现上述功能所必需的时间内保留数据（见第 5 节）。</li>
   </ul>
 
-  <h2>3. 数据如何被使用</h2>
+  <h2>3. 我们不收集什么</h2>
+  <ul>
+    <li>不收集姓名、电话、住址等身份信息，不要求注册账号。</li>
+    <li>不收集设备标识符、位置信息、通讯录或使用统计，不集成第三方分析、广告或追踪 SDK。</li>
+    <li>不读取你 Google Drive 中的其他文件，也不访问你的 Gmail、日历或通讯录。</li>
+  </ul>
+
+  <h2>4. 数据如何被使用</h2>
   <p>仅用于向你提供应用功能：展示与计算你的资产记录、生成与恢复备份、显示当前登录账号、检查应用更新与品牌/型号数据更新。我们不会将你的数据用于广告、画像或任何与记录资产无关的用途。</p>
 
-  <h2>4. 数据存储与安全</h2>
+  <h2>5. 数据保留与删除</h2>
   <ul>
-    <li>本地数据保存在你的设备或浏览器中，卸载应用或清除数据会删除本地记录。</li>
-    <li>云备份文件由 Google Drive 存储与保护，适用 Google 的服务条款与隐私政策。</li>
-    <li>OAuth 令牌使用平台提供的加密能力保存（Android Keystore AES-GCM、macOS Keychain）；网页版令牌保存在当前浏览器的 localStorage 中。</li>
+    <li><strong>本地数据</strong>：保留至你删除单条记录、清除应用数据或卸载应用为止。</li>
+    <li><strong>登录信息与令牌</strong>：保留至你在应用内退出登录、令牌过期或被撤销为止；退出登录会立即清除本机令牌。</li>
+    <li><strong>云端备份</strong>：保留在你自己的 Google Drive 应用数据文件夹中，直到你上传新的备份将其覆盖、撤销本应用的访问权限，或联系我们协助删除。撤销授权后，本应用将无法再访问该文件夹。</li>
+    <li><strong>我们不留存副本</strong>：本应用没有服务器，我们不会收到或保留你的任何数据副本。</li>
   </ul>
 
-  <h2>5. 数据共享</h2>
+  <h2>6. 数据共享与第三方</h2>
   <p>我们<strong>不会</strong>出售、出租或向第三方共享你的数据。应用在运行中只会与以下服务通信：</p>
   <ul>
     <li><strong>Google Drive / Google 身份服务</strong>：用于你主动启用的登录与云备份；</li>
-    <li><strong>GitHub</strong>：用于获取公开的品牌/型号数据与检查新版本；这些请求不携带你的资产数据，但和任何网络请求一样，GitHub 可能记录 IP 地址等常规访问日志。</li>
+    <li><strong>GitHub</strong>：用于获取公开的品牌/型号数据与检查新版本，不携带个人数据。</li>
   </ul>
 
-  <h2>6. 数据保留与删除</h2>
+  <h2>7. 数据安全</h2>
   <ul>
-    <li><strong>本地数据</strong>：随时可在应用内删除单条记录，或通过系统设置清除应用数据。</li>
-    <li><strong>云端备份</strong>：可在应用内退出登录，并在 Google 账号的「第三方应用与授权」页面撤销本应用的访问权限；撤销后本应用无法再访问该文件夹。如需删除已上传的备份文件，可提交 <a href="https://github.com/HanYunChenLuo/xiaoman/issues">GitHub Issue</a> 说明情况，我们会协助处理。</li>
-    <li>我们不设服务器，也不再保留你的任何数据副本。</li>
+    <li>本地数据保存在你的设备或浏览器中，卸载应用或清除数据会删除本地记录。</li>
+    <li>所有网络请求均通过 HTTPS 传输；云端备份文件由 Google Drive 存储与保护，适用 Google 的服务条款与隐私政策。</li>
+    <li>OAuth 令牌使用平台提供的加密能力保存（Android Keystore AES-GCM、macOS Keychain）；网页版令牌保存在当前浏览器的 localStorage 中。</li>
   </ul>
 
-  <h2>7. 你的选择</h2>
+  <h2>8. 你的选择与权利</h2>
   <ul>
     <li>不登录 Google 即可使用全部本地功能；</li>
-    <li>可随时在应用内退出登录或撤销授权；</li>
-    <li>可随时导出 <code>.ias</code> 备份文件，数据不被锁定。</li>
+    <li>可随时在应用内退出登录，或在 Google 账号的「第三方应用与授权」页面撤销本应用的访问权限；</li>
+    <li>可随时导出 <code>.ias</code> 备份文件，自行保存或迁移数据；</li>
+    <li>如需查询、更正或删除你的数据，请通过第 10 节的方式联系我们。</li>
   </ul>
 
-  <h2>8. 儿童隐私</h2>
+  <h2>9. 儿童隐私</h2>
   <p>本应用不面向 13 周岁以下的儿童，也不会主动收集儿童的个人信息。</p>
 
-  <h2>9. 政策变更</h2>
-  <p>如本政策发生变更，我们会更新本页面顶部的「最后更新」日期。重大变更会在应用内或项目主页提示。</p>
-
   <h2>10. 联系我们</h2>
-  <p>本应用为开源项目。如对本政策有疑问，请通过 <a href="https://github.com/HanYunChenLuo/xiaoman/issues">GitHub Issues</a> 联系我们，或查阅 <a href="https://github.com/HanYunChenLuo/xiaoman">项目仓库</a>。</p>
+  <p>本应用为开源项目。如对本政策或你的数据有任何疑问、请求或投诉，请通过 <a href="https://github.com/HanYunChenLuo/xiaoman/issues">GitHub Issues</a> 联系我们，或查阅 <a href="https://github.com/HanYunChenLuo/xiaoman">项目仓库</a>。我们会在合理时间内回复并处理相关请求。</p>
 
-  <footer>小满（Xiaoman）· 隐私政策</footer>
+  <h2>11. 政策变更</h2>
+  <p>如本政策发生变更，我们会更新本页面顶部的「最后更新」日期。若数据处理方式发生重大变化，我们会在应用内或项目主页提示，并在必要时重新征求你的同意。</p>
+
+  <footer>小满（Xiaoman）· 隐私政策 · 本页面无需登录即可访问</footer>
 </div>
 </body>
 </html>

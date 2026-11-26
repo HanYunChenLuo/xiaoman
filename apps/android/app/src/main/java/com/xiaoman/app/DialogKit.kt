@@ -7,6 +7,8 @@ import android.graphics.Color
 import android.graphics.Typeface
 import android.graphics.drawable.ColorDrawable
 import android.graphics.drawable.GradientDrawable
+import android.text.method.LinkMovementMethod
+import android.text.util.Linkify
 import android.util.DisplayMetrics
 import android.view.Gravity
 import android.view.MotionEvent
@@ -233,6 +235,10 @@ object DialogKit {
         m.setTextSize(FontSize.META)
         m.setTextColor(gray())
         m.gravity = Gravity.CENTER
+        // 让文档中的网址可点击（隐私政策、Issue 链接等）。
+        m.autoLinkMask = Linkify.WEB_URLS
+        m.movementMethod = LinkMovementMethod.getInstance()
+        m.setLinkTextColor(if (MainActivity.dark) Colors.LIME_INK_SOFT else Colors.LIME_INK)
         val mp = LinearLayout.LayoutParams(-1, -2)
         mp.topMargin = dp(a, Spacing.L)
         card.addView(m, mp)

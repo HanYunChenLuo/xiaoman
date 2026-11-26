@@ -375,16 +375,13 @@ class MainActivity : Activity() {
             } else if (categoryFilter != "all" && categoryFilter != a.optString("categoryId")) continue
             shown.add(a)
         }
-        val comparator: Comparator<JSONObject>? = when (sortKey) {
+        val comparator: Comparator<JSONObject> = when (sortKey) {
             "price" -> compareBy { it.optDouble("price", 0.0) }
             "daily" -> compareBy { store.dailyCost(it) }
-            "days" -> compareBy { store.ageDays(it) }
-            else -> null
+            else -> compareBy { store.ageDays(it) }
         }
-        if (comparator != null) {
-            shown.sortWith(comparator)
-            if (!sortAsc) shown.reverse()
-        }
+        shown.sortWith(comparator)
+        if (!sortAsc) shown.reverse()
         if (shown.isEmpty()) body.addView(emptyState(), LinearLayout.LayoutParams(-1, -2))
         else if (!grid) body.addView(assetClassicList(shown))
         else body.addView(assetGrid(shown))
@@ -393,19 +390,13 @@ class MainActivity : Activity() {
 
 
     private fun chooseSortMode() {
-        val keys = arrayOf("default", "price", "daily", "days")
-        val labels = arrayOf("默认排序", "价格", "日均成本", "使用天数")
+        val keys = arrayOf("price", "daily", "days")
+        val labels = arrayOf("价格", "日均成本", "使用天数")
         val selected = keys.indexOf(sortKey).coerceAtLeast(0)
         DialogKit.sheetSelect(this, "排序参考", labels, selected, IntConsumer { i ->
             sortKey = keys[i]
             store.setSetting("sortKey", sortKey)
-            if (sortKey == "default") {
-                sortAsc = false
-                store.setSetting("sortAsc", false)
-                showHome()
-            } else {
-                chooseSortDirection()
-            }
+            chooseSortDirection()
         })
     }
 
@@ -3080,19 +3071,19 @@ class MainActivity : Activity() {
     override fun onCreate(b: Bundle?) {
         super.onCreate(b)
         store = Store(this)
-        grid = store.bool("viewGrid", true)
+        grid = store.settingBool("viewGrid", true)
         sortKey = store.setting("sortKey", "")
         if (sortKey.isEmpty()) {
             when (store.setting("sortMode", "default")) {
                 "price" -> { sortKey = "price"; sortAsc = false }
                 "daily" -> { sortKey = "daily"; sortAsc = true }
-                "days" -> { sortKey = "days"; sortAsc = false }
-                else -> sortKey = "default"
+                else -> { sortKey = "days"; sortAsc = false }
             }
             store.setSetting("sortKey", sortKey)
             store.setSetting("sortAsc", sortAsc)
         } else {
-            sortAsc = store.bool("sortAsc", false)
+            if (sortKey == "default") sortKey = "days"
+            sortAsc = store.settingBool("sortAsc", false)
         }
         store.setSystemDark(
             (resources.configuration.uiMode and android.content.res.Configuration.UI_MODE_NIGHT_MASK) ==

@@ -18,6 +18,7 @@ import android.view.Gravity
 import android.view.View
 import android.view.ViewGroup
 import android.view.Window
+import android.view.inputmethod.InputMethodManager
 import android.widget.EditText
 import android.widget.FrameLayout
 import android.widget.GridLayout
@@ -75,6 +76,9 @@ class MainActivity : Activity() {
     private var obPage = 0
     private var grid = true
     private var returnTab = "home"
+    private var favoriteOnly = false
+    private var sortMode = "default"
+    private var searchQuery = ""
 
     private fun interface Click {
         fun on()
@@ -335,12 +339,14 @@ class MainActivity : Activity() {
         val ip = LinearLayout.LayoutParams(dp(16f), dp(16f))
         ip.leftMargin = dp(Spacing.XL)
         filters.addView(sort, ip)
+        sort.setOnClickListener { cycleSortMode() }
         val funnel = ui.icon("ic_funnel", 16)
         funnel.alpha = 0.65f
         if (dark) funnel.setColorFilter(Colors.NEUTRAL_120)
         val fp = LinearLayout.LayoutParams(dp(16f), dp(16f))
         fp.leftMargin = dp(Spacing.XL)
         filters.addView(funnel, fp)
+        funnel.setOnClickListener { chooseCategoryFilter() }
         val view = ui.icon("ic_view", 16)
         if (dark) view.setColorFilter(Colors.NEUTRAL_120)
         val vp = LinearLayout.LayoutParams(dp(16f), dp(16f))
@@ -360,15 +366,199 @@ class MainActivity : Activity() {
         val list = store.ofKind("asset")
         val shown = ArrayList<JSONObject>()
         for (a in list) {
+            if (favoriteOnly && !a.optBoolean("favorite", false)) continue
             if (filter != "all" && filter != a.optString("status", "serving")) continue
             if (categoryFilter == "__none__") {
                 if (a.optString("categoryId").isNotEmpty()) continue
             } else if (categoryFilter != "all" && categoryFilter != a.optString("categoryId")) continue
             shown.add(a)
         }
+        when (sortMode) {
+            "price" -> shown.sortByDescending { it.optDouble("price", 0.0) }
+            "daily" -> shown.sortBy { store.dailyCost(it) }
+            "days" -> shown.sortByDescending { store.ageDays(it) }
+        }
+        val classic = store.setting("homeStyle", "default") == "classic"
         if (shown.isEmpty()) body.addView(emptyState(), LinearLayout.LayoutParams(-1, -2))
+        else if (classic) body.addView(assetClassicList(shown))
         else body.addView(assetGrid(shown))
         setScreen(scrollPage(body), true, "home")
+    }
+
+
+    private fun cycleSortMode() {
+        sortMode = when (sortMode) {
+            "default" -> "price"
+            "price" -> "daily"
+            "daily" -> "days"
+            else -> "default"
+        }
+        store.setSetting("sortMode", sortMode)
+        val label = when (sortMode) {
+            "price" -> "价格从高到低"
+            "daily" -> "日均成本从低到高"
+            "days" -> "使用天数从长到短"
+            else -> "默认排序"
+        }
+        toast("排序：" + label)
+        showHome()
+    }
+
+    private fun chooseCategoryFilter() {
+        val cats = store.objs("categories")
+        val names = ArrayList<String>()
+        names.add("全部")
+        for (c in cats) names.add(c.optString("name"))
+        names.add("未分类")
+        var selected = 0
+        if (categoryFilter == "__none__") {
+            selected = names.size - 1
+        } else if (categoryFilter != "all") {
+            for (i in cats.indices) if (cats[i].optString("id") == categoryFilter) selected = i + 1
+        }
+        DialogKit.sheetSelect(this, "筛选分类", names.toTypedArray(), selected, IntConsumer { i ->
+            categoryFilter = when {
+                i == 0 -> "all"
+                i == names.size - 1 -> "__none__"
+                else -> cats[i - 1].optString("id")
+            }
+            showHome()
+        })
+    }
+
+    private fun showSearchPage(query: String) {
+        screen = "search"
+        val body = ui.vbox()
+        body.setPadding(0, 0, 0, dp(28f))
+
+        val head = ui.hbox()
+        head.gravity = Gravity.CENTER_VERTICAL
+        head.setPadding(dp(Spacing.XXXL), dp(Spacing.XL), dp(Spacing.XXXL), dp(Spacing.M))
+        val back = ui.pillButton("‹", ui.card(), ui.ink(), Radius.PILL)
+        back.setTextSize(FontSize.HEADLINE)
+        back.setPadding(dp(12f), dp(2f), dp(14f), dp(4f))
+        ui.clipRound(back, Radius.PILL)
+        back.elevation = dp(2f).toFloat()
+        back.setOnClickListener { showHome() }
+        head.addView(back)
+
+        val input = EditText(this)
+        input.hint = "搜索名称、型号或品牌"
+        input.isSingleLine = true
+        input.setTextSize(FontSize.BODY)
+        input.setTextColor(ui.ink())
+        input.setHintTextColor(ui.gray())
+        input.background = ui.round(if (dark) Colors.NEUTRAL_800 else Colors.NEUTRAL_120, Radius.CARD_LG)
+        input.setPadding(dp(14f), dp(10f), dp(14f), dp(10f))
+        val ip = LinearLayout.LayoutParams(0, -2, 1f)
+        ip.leftMargin = dp(Spacing.M)
+        head.addView(input, ip)
+        body.addView(head)
+
+        val results = ui.vbox()
+        body.addView(results)
+
+        val render = { q: String ->
+            results.removeAllViews()
+            val key = q.trim().lowercase(Locale.getDefault())
+            val hits = store.objs("assets").filter { a ->
+                key.isEmpty() ||
+                    a.optString("name").lowercase(Locale.getDefault()).contains(key) ||
+                    a.optString("model").lowercase(Locale.getDefault()).contains(key) ||
+                    a.optString("brandName").lowercase(Locale.getDefault()).contains(key)
+            }
+            if (hits.isEmpty()) {
+                val hint = ui.text(
+                    if (key.isEmpty()) "输入关键词开始搜索" else "没有找到匹配的资产",
+                    FontSize.BODY_SM, ui.gray()
+                )
+                hint.gravity = Gravity.CENTER
+                hint.setPadding(0, dp(48f), 0, 0)
+                results.addView(hint, LinearLayout.LayoutParams(-1, -2))
+            } else if (store.setting("homeStyle", "default") == "classic") {
+                results.addView(assetClassicList(hits))
+            } else {
+                results.addView(assetGrid(hits))
+            }
+        }
+        input.addTextChangedListener(object : TextWatcher {
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
+            override fun afterTextChanged(s: Editable?) {
+                searchQuery = s?.toString() ?: ""
+                render(searchQuery)
+            }
+        })
+        searchQuery = query
+        input.setText(query)
+        render(query)
+        setScreen(scrollPage(body), false, null)
+        screen = "search"
+        input.requestFocus()
+        input.post {
+            val imm = getSystemService(INPUT_METHOD_SERVICE) as InputMethodManager
+            imm.showSoftInput(input, InputMethodManager.SHOW_IMPLICIT)
+        }
+    }
+
+    private fun assetClassicList(list: List<JSONObject>): View {
+        val wrap = ui.vbox()
+        wrap.setPadding(dp(Spacing.XXL), dp(Spacing.M), dp(Spacing.XXL), 0)
+        val group = ui.vbox()
+        group.background = ui.round(ui.card(), Radius.CARD)
+        ui.clipRound(group, Radius.CARD)
+        group.elevation = dp(2f).toFloat()
+        list.forEachIndexed { index, a ->
+            val row = ui.hbox()
+            row.gravity = Gravity.CENTER_VERTICAL
+            row.setPadding(dp(Spacing.XL), dp(Spacing.XL), dp(Spacing.XL), dp(Spacing.XL))
+            val cv = a.optString("coverPath")
+            val icon = if (cv.isNotEmpty() && java.io.File(cv).exists()) ui.fileImage(cv, 44)
+            else ui.image(a.optString("icon", "emoji/icon_default_object.png"), 44)
+            row.addView(icon)
+
+            val mid = ui.vbox()
+            mid.setPadding(dp(Spacing.XL), 0, 0, 0)
+            val nameRow = ui.hbox()
+            nameRow.gravity = Gravity.CENTER_VERTICAL
+            val dot = View(this)
+            dot.background = ui.circle(badgeInk(a.optString("status", "serving")))
+            nameRow.addView(dot, LinearLayout.LayoutParams(dp(6f), dp(6f)))
+            val nm = ui.text(displayName(a), FontSize.BODY, ui.ink(), ui.medium)
+            val np = LinearLayout.LayoutParams(-2, -2)
+            np.leftMargin = dp(Spacing.M)
+            nameRow.addView(nm, np)
+            if (a.optBoolean("favorite", false)) {
+                val star = ui.text("★", FontSize.SMALL, Ui.LIME_DEEP)
+                val sp = LinearLayout.LayoutParams(-2, -2)
+                sp.leftMargin = dp(Spacing.XS)
+                nameRow.addView(star, sp)
+            }
+            mid.addView(nameRow)
+            val brand = a.optString("brandName")
+            val sub = (if (brand.isEmpty()) "" else brand + " ｜ ") +
+                store.money(a.optDouble("price")) + " ｜ " + store.ageDays(a) + " 天"
+            val st = ui.text(sub, FontSize.SMALL, ui.gray())
+            st.setPadding(0, dp(4f), 0, 0)
+            mid.addView(st)
+            row.addView(mid, lpw(1f, -2))
+
+            val costBox = ui.vbox()
+            costBox.gravity = Gravity.END
+            val c = ui.text(store.money(store.dailyCost(a)), FontSize.BODY_SM, ui.ink(), ui.bold)
+            c.gravity = Gravity.END
+            costBox.addView(c)
+            val per = ui.text("/天", FontSize.CAPTION, ui.gray())
+            per.gravity = Gravity.END
+            costBox.addView(per)
+            row.addView(costBox)
+
+            row.setOnClickListener { showDetail(a.optString("id")) }
+            group.addView(row)
+            if (index < list.size - 1) group.addView(ui.hline())
+        }
+        wrap.addView(group)
+        return wrap
     }
 
     private fun header(): View {
@@ -387,7 +577,12 @@ class MainActivity : Activity() {
         row.addView(View(this), lpw(1f, 1))
         val search = ui.icon("ic_search", 22)
         row.addView(search)
-        val fav = BookmarkView(this, ui.ink())
+        search.setOnClickListener { showSearchPage("") }
+        val fav = BookmarkView(this, if (favoriteOnly) Ui.LIME_DEEP else ui.ink())
+        fav.setOnClickListener {
+            favoriteOnly = !favoriteOnly
+            showHome()
+        }
         val f = LinearLayout.LayoutParams(dp(20f), dp(22f))
         f.leftMargin = dp(Spacing.XXL)
         row.addView(fav, f)
@@ -953,10 +1148,27 @@ class MainActivity : Activity() {
         val g6 = group()
         g6.addView(row("ic_restore", "检查更新", "v${BuildConfig.VERSION_NAME}", true) { checkUpdate() })
         g6.addView(row("ic_terms", "用户协议", null, true) {
-            doc("用户协议", "这里是《用户协议》的示例内容。\n\n小满仅将资产数据保存在本机，不会上传任何内容。")
+            doc(
+                "用户协议",
+                "欢迎使用小满。\n\n" +
+                    "1. 小满是一款本地资产记录工具，按「现状」提供，作者不对数据丢失或使用后果作担保。\n" +
+                    "2. 请自行定期导出 .ias 备份；卸载应用或清除数据会删除本地记录。\n" +
+                    "3. 云同步为可选功能，使用你自己的 Google 账号与应用数据文件夹，需遵守 Google 服务条款。\n" +
+                    "4. 本项目为开源软件，许可条款以仓库 LICENSE 为准。\n" +
+                    "5. 继续使用即表示你理解并同意以上内容。"
+            )
         })
         g6.addView(row("ic_privacy", "隐私政策", null, true) {
-            doc("隐私政策", "这里是《隐私政策》的示例内容。\n\n小满不收集任何个人信息，全部数据仅保存在本机。")
+            doc(
+                "隐私政策",
+                "小满重视你的隐私：\n\n" +
+                    "1. 资产、图片等数据默认仅保存在本机；不收集账号、设备标识或使用统计，无第三方分析/广告 SDK。\n" +
+                    "2. 只有你主动登录 Google 并点击上传时，才会把加密 .ias 备份写入你 Google Drive 的应用数据文件夹（appDataFolder）。\n" +
+                    "3. OAuth token 仅保存在本机，并使用系统安全能力加密存储。\n" +
+                    "4. 品牌数据更新与检查更新会访问 GitHub 公共 API/Release，不携带个人数据。\n" +
+                    "5. 可随时在应用内退出登录，或在 Google 账号第三方授权页撤销访问。\n" +
+                    "6. 问题反馈请通过项目主页 Issue。"
+            )
         })
         body.addView(g6)
 
@@ -968,7 +1180,7 @@ class MainActivity : Activity() {
             vc = if (Build.VERSION.SDK_INT >= 28) pi.longVersionCode else pi.versionCode.toLong()
         } catch (_: Exception) {
         }
-        val ver = ui.text("版本 $vn($vc)\n全部数据仅保存在本机", FontSize.TINY , ui.gray())
+        val ver = ui.text("版本 $vn($vc)\n数据默认保存在本机，可选云备份", FontSize.TINY , ui.gray())
         ver.gravity = Gravity.CENTER
         ver.setPadding(0, dp(14f), 0, dp(20f))
         body.addView(ver)
@@ -2637,6 +2849,26 @@ class MainActivity : Activity() {
         val back = circleIconButton("ic_close", Runnable { restoreTab() })
         top.addView(back, LinearLayout.LayoutParams(dp(36f), dp(36f)))
         top.addView(View(this), lpw(1f, 1))
+        val favorite = a.optBoolean("favorite", false)
+        val favBtn = FrameLayout(this)
+        favBtn.background = ui.circle(if (dark) Colors.NEUTRAL_800 else ui.card())
+        ui.clipCircle(favBtn)
+        favBtn.elevation = dp(2f).toFloat()
+        val star = ui.text(if (favorite) "★" else "☆", FontSize.TITLE_LG, if (favorite) Ui.LIME_DEEP else ui.ink())
+        star.gravity = Gravity.CENTER
+        favBtn.addView(star, FrameLayout.LayoutParams(-1, -1))
+        favBtn.setOnClickListener {
+            try {
+                a.put("favorite", !favorite)
+                store.save()
+            } catch (_: Exception) {
+            }
+            toast(if (!favorite) "已收藏" else "已取消收藏")
+            showDetail(id)
+        }
+        val fp = LinearLayout.LayoutParams(dp(36f), dp(36f))
+        fp.rightMargin = dp(Spacing.L)
+        top.addView(favBtn, fp)
         val edit = circleIconButton("ic_edit", Runnable { openAdd(a.optString("id"), "asset") })
         top.addView(edit, LinearLayout.LayoutParams(dp(36f), dp(36f)))
         body.addView(top, LinearLayout.LayoutParams(-1, -2))
@@ -2848,6 +3080,7 @@ class MainActivity : Activity() {
     override fun onCreate(b: Bundle?) {
         super.onCreate(b)
         store = Store(this)
+        sortMode = store.setting("sortMode", "default")
         store.setSystemDark(
             (resources.configuration.uiMode and android.content.res.Configuration.UI_MODE_NIGHT_MASK) ==
                 android.content.res.Configuration.UI_MODE_NIGHT_YES

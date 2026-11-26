@@ -55,7 +55,6 @@ type View = 'home' | 'wishes' | 'trends' | 'settings'
 const appEl = document.getElementById('app')!
 
 // 图表与提示色（与 style.css 的 --lime/--lime-deep 一致）
-const COLOR_ON_DARK = '#ffffff'
 const COLOR_LIME = '#c9f44f'
 const COLOR_LIME_DEEP = '#b6ee25'
 const media = window.matchMedia('(prefers-color-scheme: dark)')
@@ -111,21 +110,7 @@ function fmtTime(ms: number): string {
 }
 
 function toast(msg: string, duration = 2200): void {
-  const el = E('div', {
-    text: msg,
-    style: {
-      position: 'fixed',
-      left: '50%',
-      bottom: '110px',
-      transform: 'translateX(-50%)',
-      background: 'rgba(20,20,20,0.9)',
-      color: COLOR_ON_DARK,
-      padding: '10px 18px',
-      borderRadius: '12px',
-      fontSize: '13px',
-      zIndex: '100'
-    }
-  })
+  const el = E('div', { class: 'toast', text: msg })
   document.body.append(el)
   setTimeout(() => el.remove(), duration)
 }
@@ -1079,6 +1064,17 @@ class App {
         'div',
         { class: 'form-actions' },
         E('button', {
+          class: 'btn',
+          text: a.favorite ? '取消收藏' : '收藏',
+          on: {
+            click: () => {
+              a.favorite = !a.favorite
+              this.save()
+              this.refreshDetail(a)
+            }
+          }
+        }),
+        E('button', {
           class: 'btn danger',
           text: '删除',
           on: {
@@ -1676,7 +1672,7 @@ class App {
         {},
         E('button', { class: 'close', text: '✕', on: { click: () => finish(null) } }),
         E('h2', { text: title }),
-        message ? E('p', { class: 'muted', text: message, style: { margin: '0 0 12px', whiteSpace: 'pre-line' } }) : null,
+        message ? E('p', { class: 'muted', text: message, style: { margin: '0 0 var(--space-5)', whiteSpace: 'pre-line' } }) : null,
         input ? E('label', { class: 'field full' }, input) : null,
         E(
           'div',

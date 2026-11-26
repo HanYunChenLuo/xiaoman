@@ -32,6 +32,10 @@ jobs:
           node-version: 22
           cache: npm
           cache-dependency-path: web/package-lock.json
+      - name: Check version consistency
+        if: startsWith(github.ref, 'refs/tags/v')
+        run: node scripts/check-versions.mjs "${{ github.ref_name }}"
+
 
       - uses: dtolnay/rust-toolchain@stable
         with:

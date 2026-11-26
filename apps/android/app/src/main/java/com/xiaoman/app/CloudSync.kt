@@ -24,6 +24,20 @@ import java.util.Locale
 class CloudSync(private val ctx: Context) {
     private val prefs = ctx.getSharedPreferences("xiaoman_cloud", Context.MODE_PRIVATE)
 
+    private fun getSecret(key: String): String {
+        val legacy = prefs.getString(key, "") ?: ""
+        if (legacy.isNotEmpty()) {
+            if (SecretStore.put(prefs, key, legacy)) prefs.edit().remove(key).apply()
+            return legacy
+        }
+        return SecretStore.get(prefs, key)
+    }
+
+    private fun putSecret(key: String, value: String) {
+        if (SecretStore.put(prefs, key, value)) prefs.edit().remove(key).apply()
+        else prefs.edit().putString(key, value).apply()
+    }
+
     companion object {
         private const val REDIRECT = "http://127.0.0.1"
     }
@@ -41,11 +55,13 @@ class CloudSync(private val ctx: Context) {
     fun googleEmail(): String = prefs.getString("g_email", "") ?: ""
 
     fun googleLoggedIn(): Boolean =
-        prefs.getString("g_refresh", "")?.isNotEmpty() == true || prefs.getString("g_token", "")?.isNotEmpty() == true
+        getSecret("g_refresh").isNotEmpty() || getSecret("g_token").isNotEmpty()
 
     fun logoutGoogle() {
         clearPending()
-        prefs.edit().remove("g_token").remove("g_refresh").remove("g_expiry").remove("g_email").remove("g_file").apply()
+        SecretStore.clear(prefs, "g_token")
+        SecretStore.clear(prefs, "g_refresh")
+        prefs.edit().remove("g_expiry").remove("g_email").remove("g_file").apply()
     }
 
     fun lastSync(provider: String): String = prefs.getString("last_$provider", "") ?: ""
@@ -55,7 +71,6 @@ class CloudSync(private val ctx: Context) {
         prefs.edit().putString("last_$provider", t).apply()
     }
 
-    fun hasGoogleBackup(): Boolean = prefs.getString("g_file", "")?.isNotEmpty() == true
 
     // ---------- Google 登录（PKCE + loopback） ----------
     private var pendingVerifier: String? = null
@@ -201,9 +216,9 @@ class CloudSync(private val ctx: Context) {
         } catch (_: Exception) {
             ""
         }
+        putSecret("g_token", access)
+        putSecret("g_refresh", refresh)
         prefs.edit()
-            .putString("g_token", access)
-            .putString("g_refresh", refresh)
             .putLong("g_expiry", expires)
             .putString("g_email", email)
             .apply()
@@ -319,10 +334,10 @@ class CloudSync(private val ctx: Context) {
     }
 
     private fun googleToken(): String {
-        val access = prefs.getString("g_token", "") ?: ""
+        val access = getSecret("g_token")
         val expiry = prefs.getLong("g_expiry", 0)
         if (access.isNotEmpty() && System.currentTimeMillis() < expiry - 60_000) return access
-        val refresh = prefs.getString("g_refresh", "") ?: ""
+        val refresh = getSecret("g_refresh")
         if (refresh.isEmpty()) throw Exception("请先登录 Google")
         val res = postFormJson(
             "https://oauth2.googleapis.com/token",
@@ -334,8 +349,8 @@ class CloudSync(private val ctx: Context) {
         )
         val token = res.optString("access_token")
         if (token.isEmpty()) throw Exception(res.optString("error_description", "刷新令牌失败"))
+        putSecret("g_token", token)
         prefs.edit()
-            .putString("g_token", token)
             .putLong("g_expiry", System.currentTimeMillis() + res.optLong("expires_in", 3600) * 1000)
             .apply()
         return token

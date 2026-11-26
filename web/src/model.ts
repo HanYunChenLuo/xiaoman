@@ -48,6 +48,7 @@ export interface Asset {
   coverData?: string
   noteImagesData?: string[]
   expireAt?: string
+  favorite?: boolean
   incomeRecords?: IncomeRecord[]
   priceRecords?: PriceRecord[]
 }
@@ -456,7 +457,7 @@ function toBackupData(state: State): { data: unknown; images: BackupImage[] } {
       additional_calculation_mode: 0,
       note: a.note ?? '',
       note_images: noteNames,
-      is_top: false,
+      is_top: !!a.favorite,
       is_retirement: a.status === 'retired',
       retirement_date: epoch(a.retireDate ?? ''),
       is_sell: a.status === 'sold',
@@ -661,6 +662,7 @@ function fromBackupData(data: any, imageMap: Record<string, string>): { state: P
       brandId: String(a.brand_id ?? ''),
       brandName: String(a.brand_name ?? ''),
       brandAuto: false,
+      favorite: !!a.is_top,
       targetCost: Number(a.target_cost ?? 0),
       targetDate: a.target_date ? dateFromEpoch(Number(a.target_date)) : ''
     }

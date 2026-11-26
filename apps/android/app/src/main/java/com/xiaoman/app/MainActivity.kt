@@ -30,7 +30,9 @@ import android.widget.TextView
 import android.widget.Toast
 import org.json.JSONArray
 import org.json.JSONObject
+import java.text.SimpleDateFormat
 import java.util.ArrayList
+import java.util.Date
 import java.util.Calendar
 import java.util.HashMap
 import java.util.LinkedHashMap
@@ -1406,7 +1408,11 @@ class MainActivity : Activity() {
     private fun chooseImportMode(root: JSONObject) {
         val assets = root.optJSONArray("assets")
         val count = assets?.length() ?: 0
-        DialogKit.list(this, "导入设置（$count 条记录）",
+        val exported = root.optLong("exported_at", 0)
+        val whenText = if (exported > 0) {
+            " · " + SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.getDefault()).format(Date(exported * 1000))
+        } else ""
+        DialogKit.list(this, "导入设置（$count 条记录$whenText）",
             arrayOf("跳过重复（保留本地数据）", "覆盖旧数据（清空后导入）"), IntConsumer { i ->
                 val replace = i == 1
                 try {

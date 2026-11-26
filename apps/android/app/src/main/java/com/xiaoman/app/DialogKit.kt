@@ -392,6 +392,59 @@ object DialogKit {
         d.show()
     }
 
+    /** 下载进度卡片（自绘圆角进度条，跟随明暗主题）。 */
+    class ProgressHandle(
+        private val dialog: Dialog,
+        private val label: TextView,
+        private val bar: BarView
+    ) {
+        fun update(text: String, percent: Int) {
+            label.text = text
+            bar.frac = (percent.coerceIn(0, 100)) / 100f
+            bar.invalidate()
+        }
+
+        fun dismiss() {
+            dialog.dismiss()
+        }
+    }
+
+    @JvmStatic
+    fun downloadProgress(a: Activity, title: String, message: String): ProgressHandle {
+        val w = (a.resources.displayMetrics.widthPixels * 0.78f).toInt()
+        val card = cardView(a, w)
+        val t = TextView(a)
+        t.text = title
+        t.setTextSize(FontSize.BODY_LG)
+        t.setTextColor(ink())
+        t.gravity = Gravity.CENTER
+        t.typeface = Typeface.create("sans-serif-medium", 0)
+        card.addView(t, LinearLayout.LayoutParams(-1, -2))
+
+        val m = TextView(a)
+        m.text = message
+        m.setTextSize(FontSize.META)
+        m.setTextColor(gray())
+        m.gravity = Gravity.CENTER
+        val mp = LinearLayout.LayoutParams(-1, -2)
+        mp.topMargin = dp(a, Spacing.M)
+        card.addView(m, mp)
+
+        val bar = BarView(a)
+        bar.bgColor = if (MainActivity.dark) Colors.NEUTRAL_700 else Colors.NEUTRAL_250
+        bar.fgColor = Colors.LIME_DEEP
+        bar.frac = 0f
+        val bp = LinearLayout.LayoutParams(-1, dp(a, 6f))
+        bp.topMargin = dp(a, Spacing.XL)
+        bp.bottomMargin = dp(a, 1f)
+        card.addView(bar, bp)
+
+        val d = dialog(a, card)
+        d.setCancelable(false)
+        d.show()
+        return ProgressHandle(d, m, bar)
+    }
+
     // ---------------- 底部弹层（对齐原 App） ----------------
     private fun sheet(a: Activity, heightRatio: Float): Dialog {
         val d = Dialog(a)

@@ -3,7 +3,6 @@ package com.xiaoman.app
 import android.app.Activity
 import android.app.DatePickerDialog
 import android.app.Dialog
-import android.app.ProgressDialog
 import android.content.Intent
 import android.content.res.ColorStateList
 import android.graphics.Bitmap
@@ -1208,13 +1207,12 @@ class MainActivity : Activity() {
     }
 
     private fun downloadUpdate(info: Updater.Info) {
-        val progress = ProgressDialog(this).apply {
-            setMessage("正在下载… 0%")
-            setCancelable(false)
-            show()
-        }
+        val sizeText = if (info.size > 0) {
+            " · " + store.fmt(info.size / 1024.0 / 1024.0, 1) + " MB"
+        } else ""
+        val progress = DialogKit.downloadProgress(this, "下载更新", "小满 v${info.version}$sizeText")
         Updater(this).download(info, { pct ->
-            progress.setMessage("正在下载… $pct%")
+            progress.update("正在下载… $pct%", pct)
         }, { apk ->
             progress.dismiss()
             Updater(this).install(apk)

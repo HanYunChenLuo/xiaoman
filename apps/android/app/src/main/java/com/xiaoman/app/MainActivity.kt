@@ -1701,10 +1701,14 @@ class MainActivity : Activity() {
         g2.addView(row("ic_restore", "从云端恢复", null, true) { chooseCloudProvider(false) })
         body.addView(g2)
 
-        section(body, "开发者配置")
-        val g3 = group()
-        g3.addView(row("ic_cloud", "Google Client ID", maskId(cloud.googleClientId()), true) { inputClientId() })
-        body.addView(g3)
+        // 仅当构建时未内置 Client ID，或用户已填写过自定义 ID 时，才显示开发者配置入口。
+        val customId = cloud.customGoogleClientId()
+        if (BuildConfig.GOOGLE_CLIENT_ID.isEmpty() || customId.isNotEmpty()) {
+            section(body, "开发者配置")
+            val g3 = group()
+            g3.addView(row("ic_cloud", "Google Client ID", maskId(customId), true) { inputClientId() })
+            body.addView(g3)
+        }
 
         val hint = ui.text(
             "云端保存的是加密的 .ias 备份，仅支持 Google 账号。", FontSize.SMALL , ui.gray()
@@ -1725,7 +1729,7 @@ class MainActivity : Activity() {
         if (id.isEmpty()) "未配置" else id.take(6) + "…" + id.takeLast(4)
 
     private fun inputClientId() {
-        DialogKit.input(this, "Google Client ID", "粘贴 OAuth Client ID", cloud.googleClientId(), "保存") { id ->
+        DialogKit.input(this, "Google Client ID", "粘贴 OAuth Client ID", cloud.customGoogleClientId(), "保存") { id ->
             cloud.setGoogleClientId(id)
             toast("已保存")
             showCloudPage()

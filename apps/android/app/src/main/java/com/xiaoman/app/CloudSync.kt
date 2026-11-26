@@ -43,8 +43,14 @@ class CloudSync(private val ctx: Context) {
     }
 
     // ---------- 配置 ----------
-    fun googleClientId(): String {
+    /** 仅返回真正区别于构建内置值的自定义 Client ID；与内置值相同视为未自定义。 */
+    fun customGoogleClientId(): String {
         val custom = prefs.getString("g_client_id", "") ?: ""
+        return if (custom.isEmpty() || custom == BuildConfig.GOOGLE_CLIENT_ID) "" else custom
+    }
+
+    fun googleClientId(): String {
+        val custom = customGoogleClientId()
         return if (custom.isNotEmpty()) custom else BuildConfig.GOOGLE_CLIENT_ID
     }
 

@@ -512,6 +512,40 @@ fn hide_to_tray(window: &tauri::Window) {
     let _ = window.hide();
 }
 
+/// 云备份账户（access/refresh token）存 macOS 钥匙串，不落 localStorage。
+const KEYCHAIN_SERVICE: &str = "com.xiaoman.desktop";
+const KEYCHAIN_ACCOUNT: &str = "google-cloud";
+
+fn keychain_entry() -> Result<keyring::Entry, String> {
+    keyring::Entry::new(KEYCHAIN_SERVICE, KEYCHAIN_ACCOUNT)
+        .map_err(|e| format!("打开钥匙串失败：{e}"))
+}
+
+#[tauri::command]
+fn cloud_account_load() -> Result<String, String> {
+    match keychain_entry()?.get_password() {
+        Ok(value) => Ok(value),
+        Err(keyring::Error::NoEntry) => Ok(String::new()),
+        Err(e) => Err(format!("读取钥匙串失败：{e}")),
+    }
+}
+
+#[tauri::command]
+fn cloud_account_save(json: String) -> Result<(), String> {
+    keychain_entry()?
+        .set_password(&json)
+        .map_err(|e| format!("写入钥匙串失败：{e}"))
+}
+
+#[tauri::command]
+fn cloud_account_clear() -> Result<(), String> {
+    match keychain_entry()?.delete_credential() {
+        Ok(()) => Ok(()),
+        Err(keyring::Error::NoEntry) => Ok(()),
+        Err(e) => Err(format!("清除钥匙串失败：{e}")),
+    }
+}
+
 /// 下载安装完成后重启应用（由 updater 前端流程调用）。
 #[tauri::command]
 fn restart_app(app: tauri::AppHandle) {
@@ -557,6 +591,9 @@ fn main() {
         })
         .invoke_handler(tauri::generate_handler![
             restart_app,
+            cloud_account_load,
+            cloud_account_save,
+            cloud_account_clear,
             oauth_defaults,
             google_login,
             google_refresh,

@@ -64,11 +64,38 @@ let desktopCreds: { clientId: string; clientSecret: string } | null = null
 
 export async function initDesktopCloud(): Promise<void> {
   if (!isTauri()) return
+  await loadDesktopAccount()
   try {
     const v = await invoke<{ clientId?: string; clientSecret?: string }>('oauth_defaults')
     desktopCreds = v?.clientId ? { clientId: v.clientId, clientSecret: v.clientSecret ?? '' } : null
   } catch {
     desktopCreds = null
+  }
+}
+
+/** 桌面端账户（含 token）存 macOS 钥匙串，内存中保留同步副本供 UI 使用。 */
+let desktopAccount: CloudAccount | null = null
+
+async function loadDesktopAccount(): Promise<void> {
+  if (!isTauri()) return
+  try {
+    const raw = await invoke<string>('cloud_account_load')
+    if (raw) {
+      desktopAccount = JSON.parse(raw) as CloudAccount
+      return
+    }
+  } catch {
+    /* 钥匙串不可用时继续尝试迁移 */
+  }
+  // 迁移旧版本存在 localStorage 的账户
+  try {
+    const legacy = localStorage.getItem(STORE_KEY)
+    if (!legacy) return
+    desktopAccount = JSON.parse(legacy) as CloudAccount
+    await invoke('cloud_account_save', { json: legacy })
+    localStorage.removeItem(STORE_KEY)
+  } catch {
+    /* 迁移失败则保持原样 */
   }
 }
 
@@ -97,6 +124,7 @@ export function cloudUnsupportedReason(): string {
 }
 
 export function getAccount(): CloudAccount | null {
+  if (isTauri()) return desktopAccount
   try {
     const raw = localStorage.getItem(STORE_KEY)
     if (!raw) return null
@@ -109,6 +137,19 @@ export function getAccount(): CloudAccount | null {
 }
 
 function saveAccount(a: CloudAccount | null): void {
+  if (isTauri()) {
+    desktopAccount = a
+    if (a) {
+      invoke('cloud_account_save', { json: JSON.stringify(a) }).catch(() => {
+        /* 钥匙串写入失败时仅保留内存副本 */
+      })
+    } else {
+      invoke('cloud_account_clear').catch(() => {
+        /* ignore */
+      })
+    }
+    return
+  }
   if (a) localStorage.setItem(STORE_KEY, JSON.stringify(a))
   else localStorage.removeItem(STORE_KEY)
 }

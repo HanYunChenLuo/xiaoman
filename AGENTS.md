@@ -61,7 +61,7 @@ Tauri 通过 `frontendDist: ../../web/dist` 加载 Web 端（编译期嵌入）�
 - 桌面：`tauri-plugin-updater` + GitHub Release 的 `latest.json` + minisign 签名；设置 → 关于 → 检查更新，下载安装后调用 `restart_app`。签名公钥在 `tauri.conf.json`，私钥仅存本机 `~/.tauri/xiaoman-updater.key`（CI secret `TAURI_SIGNING_PRIVATE_KEY`）。
 - 凭据轮换见 README「凭据轮换」：桌面客户端密钥可先加新密钥再删旧；桌面更新签名密钥必须先发过渡版本，不能直接替换。
 - 发版前先运行 `node scripts/check-versions.mjs vX.Y.Z` 校验三端版本一致；release 工作流也会检查。
-- 发布流程：`.github/workflows/release.yml`，推送 `v*` tag 触发；需先提升 `apps/android/app/build.gradle` 的 `versionCode/versionName` 与 `desktop/src-tauri/tauri.conf.json` 的 `version`，并让 tag 与 versionName 一致。桌面 job 用 `npx @tauri-apps/cli build --target aarch64-apple-darwin` 打包，自行生成 `latest.json`（`darwin-aarch64` 条目，签名取 `.sig`），资源统一命名为 `xiaoman-desktop-aarch64.app.tar.gz` / `.dmg` / `latest.json`；Android job 上传 `xiaoman-android.apk`。
+- 发布流程：`.github/workflows/release.yml`，推送 `v*` tag 触发；版本只在根目录 `version.json` 维护，Android versionCode 自动推导为 major×10000+minor×100+patch；打 tag 时与 `version.json` 一致即可（`node scripts/check-versions.mjs vX.Y.Z` 校验）。桌面 job 用 `npx @tauri-apps/cli build --target aarch64-apple-darwin` 打包，自行生成 `latest.json`（`darwin-aarch64` 条目，签名取 `.sig`），资源统一命名为 `xiaoman-desktop-aarch64.app.tar.gz` / `.dmg` / `latest.json`；Android job 上传 `xiaoman-android.apk`。
 - 桌面打包：`cd web && npm run build` 后 `cd desktop && npx @tauri-apps/cli@2.12.6 build`（需 `TAURI_SIGNING_PRIVATE_KEY`，本地可 `export TAURI_SIGNING_PRIVATE_KEY=$(cat ~/.tauri/xiaoman-updater.key)`）。`bundle.resources` 包含 `oauth.enc`，缺失时先用 seed 脚本生成（可选，缺失则云同步隐藏）。
 
 ## 品牌/型号数据
@@ -94,6 +94,6 @@ Tauri 通过 `frontendDist: ../../web/dist` 加载 Web 端（编译期嵌入）�
 - 应用图标/Logo：`apps/android/app/src/main/res/drawable/appicon.png`（浅色版，启动器图标）；`apps/android/app/src/main/assets/img/logo_light.png` 与 `logo_dark.png` 用于 Android 首页顶栏随主题切换；Web 端 `web/public/logo_light.png`/`logo_dark.png`（由 sync-data 从 Android assets 复制，gitignore）用于页面 Logo，favicon/PWA 图标使用浅色版。
 - 暗色模式：Android 表单图标用 `themedIcon()`，品牌 Logo 需白色底板；Web 使用 CSS 变量。
 - Android UI 尺寸统一引用 `app/src/main/java/com/xiaoman/app/Design.kt` 的 `Radius` / `FontSize` / `Size` / `Spacing` 令牌，颜色引用 `Colors` 调色板；不要在布局里新增 `16f`、`20f` 或十六进制色值。
-- 升级版本：`apps/android/app/build.gradle` 的 `versionCode/versionName`；Android 的 `APP_VERSION_CODE` 取自 `BuildConfig`。
+- 升级版本：只改根目录 `version.json`；Android 从该文件读取 versionName 并推导 versionCode，桌面 `tauri.conf.json` 的 `version` 指向该文件，Web 由 `vite.config.ts` 注入 `__APP_VERSION__`。
 - 测试设备时先导出 `.ias` 备份，避免破坏数据。
 - 本机 github.com HTTPS 不通，`origin` 使用 SSH：`git@github.com:HanYunChenLuo/xiaoman.git`；cargo 走 rsproxy 镜像。

@@ -1,35 +1,46 @@
 #!/usr/bin/env node
 /**
- * 校验发版时各端版本号一致，并可对照 tag。
- * 用法：node scripts/check-versions.mjs v1.0.2
+ * 版本单一来源校验：根目录 version.json 是唯一需要维护的版本号。
+ * 用法：node scripts/check-versions.mjs v1.0.3
  */
 import fs from 'node:fs'
 
 const read = (path) => fs.readFileSync(new URL(path, import.meta.url), 'utf8')
-const android = read('../apps/android/app/build.gradle')
-const androidVersion = /versionName\s+'([^']+)'/.exec(android)?.[1] ?? ''
-const androidCode = /versionCode\s+(\d+)/.exec(android)?.[1] ?? ''
-const desktopVersion = JSON.parse(read('../desktop/src-tauri/tauri.conf.json')).version ?? ''
-const webVersion = /APP_VERSION\s*=\s*'([^']+)'/.exec(read('../web/src/update.ts'))?.[1] ?? ''
+const versionJson = JSON.parse(read('../version.json'))
+const version = String(versionJson.version ?? '')
 const tag = (process.argv[2] ?? '').replace(/^v/, '')
 
 const errors = []
-if (!androidVersion) errors.push('无法读取 Android versionName')
-if (!desktopVersion) errors.push('无法读取桌面 version')
-if (!webVersion) errors.push('无法读取 Web APP_VERSION')
-if (androidVersion && desktopVersion && androidVersion !== desktopVersion) {
-  errors.push(`Android ${androidVersion} ≠ 桌面 ${desktopVersion}`)
+if (!/^\d+\.\d+\.\d+$/.test(version)) errors.push(`version.json 版本号无效：${version || '(空)'}`)
+
+const tauri = JSON.parse(read('../desktop/src-tauri/tauri.conf.json'))
+if (tauri.version !== '../../version.json') {
+  errors.push('tauri.conf.json > version 必须指向 ../../version.json')
 }
-if (androidVersion && webVersion && androidVersion !== webVersion) {
-  errors.push(`Android ${androidVersion} ≠ Web ${webVersion}`)
+
+const android = read('../apps/android/app/build.gradle')
+if (!android.includes("../../version.json") || !android.includes('versionName appVersion')) {
+  errors.push('Android build.gradle 未从 version.json 读取版本')
 }
-if (tag && androidVersion && tag !== androidVersion) {
-  errors.push(`tag v${tag} ≠ versionName ${androidVersion}`)
+if (/versionCode\s+\d+/.test(android) || /versionName\s+'/.test(android)) {
+  errors.push('Android build.gradle 仍包含硬编码 versionCode/versionName')
 }
-if (!androidCode) errors.push('无法读取 Android versionCode')
+
+const updateTs = read('../web/src/update.ts')
+if (!updateTs.includes('__APP_VERSION__')) errors.push('web/src/update.ts 未使用 __APP_VERSION__')
+
+const viteConfig = read('../web/vite.config.ts')
+if (!viteConfig.includes("'../version.json'") && !viteConfig.includes('"../version.json"')) {
+  errors.push('web/vite.config.ts 未读取根目录 version.json')
+}
+
+if (tag && tag !== version) errors.push(`tag v${tag} ≠ version.json ${version}`)
 
 if (errors.length) {
   console.error('版本校验失败：\n- ' + errors.join('\n- '))
   process.exit(1)
 }
-console.log(`版本一致：${androidVersion}（versionCode ${androidCode}）`)
+
+const parts = version.split('.').map((x) => parseInt(x, 10))
+const versionCode = parts[0] * 10000 + parts[1] * 100 + parts[2]
+console.log(`版本唯一来源：${version}（Android versionCode ${versionCode}）`)

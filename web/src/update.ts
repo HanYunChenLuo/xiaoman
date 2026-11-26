@@ -1,6 +1,6 @@
 import { isTauri } from './cloud'
 
-export const APP_VERSION = '1.0.2'
+export const APP_VERSION = __APP_VERSION__
 
 export interface AvailableUpdate {
   version: string

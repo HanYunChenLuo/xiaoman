@@ -10,6 +10,11 @@ def storePass = localProps.getProperty('signing.storePassword')
 def keyPass = localProps.getProperty('signing.keyPassword')
 def keyAliasName = localProps.getProperty('signing.keyAlias', 'replica')
 def signingReady = keystore.exists() && storePass && keyPass
+def appVersion = new groovy.json.JsonSlurper().parse(rootProject.file('../../version.json')).version as String
+def versionParts = appVersion.tokenize('.')
+def appVersionCode = (versionParts.size() > 0 ? versionParts[0] as int : 0) * 10000 +
+        (versionParts.size() > 1 ? versionParts[1] as int : 0) * 100 +
+        (versionParts.size() > 2 ? versionParts[2] as int : 0)
 
 android {
     namespace 'com.xiaoman.app'
@@ -19,8 +24,8 @@ android {
         applicationId 'com.xiaoman.app'
         minSdk 24
         targetSdk 34
-        versionCode 3
-        versionName '1.0.2'
+        versionCode appVersionCode
+        versionName appVersion
 
         def googleId = localProps.getProperty('oauth.google.clientId', '')
         buildConfigField 'String', 'GOOGLE_CLIENT_ID', "\"${googleId}\""

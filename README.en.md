@@ -4,7 +4,7 @@
 
 **Xiaoman** is a **local-first** multi-platform app (Android / Web / Desktop) for tracking the things you own. It records assets, wishlists and daily cost, so the value of every item stays visible. All features are available, with no membership screens or paywalls; data stays on your device by default.
 
-- Package: `com.xiaoman.app` — Version 1.0.0 (versionCode 1)
+- Package: `com.xiaoman.app` — version comes from the root `version.json` (currently 1.0.2)
 - Minimum OS: Android 7.0 (API 24), portrait UI for tablets and phones
 - Stack: Kotlin UI + Rust core; Web uses Vite/TypeScript + WASM; Desktop uses Tauri
 

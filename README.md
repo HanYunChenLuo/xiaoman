@@ -4,7 +4,7 @@
 
 「小满」是一款**本地优先**的多端资产记录应用（Android / Web / 桌面）：记录你拥有的物品、心愿单与日均成本，让每一件物品的价值清晰可见。功能完整，无会员页与付费锁；数据默认保存在本机。
 
-- 包名：`com.xiaoman.app`　版本：1.0.0（versionCode 1）
+- 包名：`com.xiaoman.app`　版本：以根目录 `version.json` 为准（当前 1.0.2）
 - 最低系统：Android 7.0（API 24），适配平板 / 手机竖屏
 - 技术栈：Kotlin UI + Rust 核心；Web 用 Vite/TypeScript + WASM，桌面用 Tauri
 

@@ -45,7 +45,6 @@ class Store(c: Context) {
         if (!s.has("thousands")) setSetting("thousands", true)
         if (!s.has("duration")) setSetting("duration", "days")
         if (!s.has("theme")) setSetting("theme", "system")
-        if (!s.has("homeStyle")) setSetting("homeStyle", "default")
         if (!s.has("view")) setSetting("view", "grid")
         for (a in objs("assets")) {
             val icon = a.optString("icon")

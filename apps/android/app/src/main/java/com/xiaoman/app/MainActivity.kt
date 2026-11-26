@@ -346,15 +346,13 @@ class MainActivity : Activity() {
         fp.leftMargin = dp(Spacing.XL)
         filters.addView(funnel, fp)
         funnel.setOnClickListener { chooseCategoryFilter() }
-        if (store.setting("homeStyle", "default") != "classic") {
-            val viewBtn = ui.pillButton(if (grid) "网格" else "列表", ui.chipBg(), ui.ink2(), Radius.CHIP)
-            viewBtn.setTextSize(FontSize.SMALL)
-            viewBtn.setPadding(dp(Spacing.XL), dp(Spacing.S), dp(Spacing.XL), dp(Spacing.S))
-            val vp = LinearLayout.LayoutParams(-2, dp(32f))
-            vp.leftMargin = dp(Spacing.XL)
-            filters.addView(viewBtn, vp)
-            viewBtn.setOnClickListener { chooseViewMode() }
-        }
+        val viewBtn = ui.pillButton(if (grid) "网格" else "列表", ui.chipBg(), ui.ink2(), Radius.CHIP)
+        viewBtn.setTextSize(FontSize.SMALL)
+        viewBtn.setPadding(dp(Spacing.XL), dp(Spacing.S), dp(Spacing.XL), dp(Spacing.S))
+        val vp = LinearLayout.LayoutParams(-2, dp(32f))
+        vp.leftMargin = dp(Spacing.XL)
+        filters.addView(viewBtn, vp)
+        viewBtn.setOnClickListener { chooseViewMode() }
         body.addView(filters)
 
         if (categoryFilter != "all" && categoryFilter != "__none__") {
@@ -377,9 +375,8 @@ class MainActivity : Activity() {
             "daily" -> shown.sortBy { store.dailyCost(it) }
             "days" -> shown.sortByDescending { store.ageDays(it) }
         }
-        val classic = store.setting("homeStyle", "default") == "classic"
         if (shown.isEmpty()) body.addView(emptyState(), LinearLayout.LayoutParams(-1, -2))
-        else if (classic) body.addView(assetClassicList(shown))
+        else if (!grid) body.addView(assetClassicList(shown))
         else body.addView(assetGrid(shown))
         setScreen(scrollPage(body), true, "home")
     }
@@ -475,7 +472,7 @@ class MainActivity : Activity() {
                 hint.gravity = Gravity.CENTER
                 hint.setPadding(0, dp(48f), 0, 0)
                 results.addView(hint, LinearLayout.LayoutParams(-1, -2))
-            } else if (store.setting("homeStyle", "default") == "classic") {
+            } else if (!grid) {
                 results.addView(assetClassicList(hits))
             } else {
                 results.addView(assetGrid(hits))
@@ -1093,25 +1090,6 @@ class MainActivity : Activity() {
         }
         themeRow.addView(dots)
         g3.addView(themeRow)
-        val styleRow = row("ic_homestyle", "首页风格", null, false, null)
-        styleRow.addView(
-            segment(
-                arrayOf("默认", "经典"),
-                if ("classic" == store.setting("homeStyle", "default")) 1 else 0,
-                11f
-            ) { i ->
-                store.setSetting("homeStyle", if (i == 0) "default" else "classic")
-                showSettings()
-            },
-            LinearLayout.LayoutParams(-2, -2)
-        )
-        g3.addView(styleRow)
-                if (store.setting("homeStyle", "default") != "classic") {
-    g3.addView(row("ic_display", "视图样式", if (grid) "网格" else "列表", true) {
-                grid = !grid
-                showSettings()
-            })
-        }
         body.addView(g3)
 
         section(body, "通用设置")

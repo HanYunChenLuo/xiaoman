@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<title>小满 · 资产记录</title>
+<meta name="description" content="小满：隐私优先的多端资产记录应用。Android、Web 与 macOS 桌面，数据默认保存在本机，可选 Google Drive 云备份。">
+<style>
+  :root {
+    --bg: #f4f4f4; --card: #ffffff; --ink: #1a1a1a; --ink2: #5c5c5c;
+    --line: #ececec; --lime: #c9f44f; --lime-soft: #f1f8dc;
+    --radius: 18px; --max: 760px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg: #101010; --card: #1c1c1c; --ink: #f2f2f2; --ink2: #b8b8b8; --line: #2a2a2a; --lime: #c9f44f; --lime-soft: #26300f; }
+  }
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    margin: 0; background: var(--bg); color: var(--ink);
+    font: 16px/1.65 -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+  }
+  .wrap { max-width: var(--max); margin: 0 auto; padding: 40px 20px 64px; }
+  header { display: flex; align-items: center; gap: 12px; margin-bottom: 40px; }
+  .mark {
+    width: 44px; height: 44px; border-radius: 13px; background: var(--lime);
+    display: grid; place-items: center; font-weight: 700; font-size: 20px; color: #111;
+  }
+  .brand { font-size: 22px; font-weight: 700; letter-spacing: .02em; }
+  .brand small { display: block; font-size: 12px; font-weight: 500; color: var(--ink2); letter-spacing: .08em; }
+  h1 { font-size: clamp(30px, 6vw, 44px); line-height: 1.15; margin: 0 0 16px; letter-spacing: -.01em; }
+  h1 em { font-style: normal; background: linear-gradient(transparent 62%, var(--lime) 62%); }
+  .lead { font-size: 17px; color: var(--ink2); margin: 0 0 32px; max-width: 36em; }
+  .actions { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 48px; }
+  .btn {
+    display: inline-block; padding: 11px 20px; border-radius: 999px;
+    text-decoration: none; font-weight: 600; font-size: 15px;
+    background: var(--ink); color: var(--bg); border: 1px solid transparent;
+  }
+  .btn.ghost { background: transparent; color: var(--ink); border-color: var(--line); }
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; margin: 28px 0 48px; }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); padding: 18px 20px; }
+  .card h3 { margin: 0 0 6px; font-size: 15px; }
+  .card p { margin: 0; font-size: 14px; color: var(--ink2); }
+  h2 { font-size: 18px; margin: 0 0 14px; }
+  ul.links { list-style: none; padding: 0; margin: 0; }
+  ul.links li { border-top: 1px solid var(--line); }
+  ul.links a { display: flex; justify-content: space-between; align-items: center; padding: 14px 2px; color: var(--ink); text-decoration: none; font-size: 15px; }
+  ul.links a span:last-child { color: var(--ink2); }
+  footer { margin-top: 56px; padding-top: 20px; border-top: 1px solid var(--line); font-size: 13px; color: var(--ink2); }
+  footer a { color: inherit; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="mark">满</div>
+    <div class="brand">小满<small>XIAOMAN</small></div>
+  </header>
+
+  <h1>记录你拥有的，<em>每一件东西</em>。</h1>
+  <p class="lead">小满是一款隐私优先的多端资产记录应用：数码、汽车与单车的心愿与持有记录，二手估值、到期提醒、图片备注一应俱全。Android、网页与 macOS 桌面共用同一套数据格式。</p>
+
+  <div class="actions">
+    <a class="btn" href="https://github.com/HanYunChenLuo/xiaoman/releases">下载应用</a>
+    <a class="btn ghost" href="https://github.com/HanYunChenLuo/xiaoman">查看源码</a>
+  </div>
+
+  <div class="grid">
+    <div class="card"><h3>数据默认在本机</h3><p>资产、图片与设置保存在你的设备上，不注册账号也能使用，无广告与分析 SDK。</p></div>
+    <div class="card"><h3>可选云备份</h3><p>登录你自己的 Google 账号后，可把加密的 .ias 备份写入 Google Drive 应用数据文件夹，三端互通。</p></div>
+    <div class="card"><h3>品牌与型号库</h3><p>内置 71 个品牌、2000+ 型号，按产品线分组，并可按型号自动匹配图标。</p></div>
+    <div class="card"><h3>开源</h3><p>代码与数据格式公开，备份文件可以随时导出，不被锁定在某个平台。</p></div>
+  </div>
+
+  <h2>相关信息</h2>
+  <ul class="links">
+    <li><a href="./privacy.html"><span>隐私政策</span><span>→</span></a></li>
+    <li><a href="./terms.html"><span>用户协议</span><span>→</span></a></li>
+    <li><a href="https://github.com/HanYunChenLuo/xiaoman"><span>GitHub 仓库</span><span>→</span></a></li>
+    <li><a href="https://github.com/HanYunChenLuo/xiaoman/issues"><span>问题反馈</span><span>→</span></a></li>
+  </ul>
+
+  <footer>
+    <p>小满（Xiaoman）· 开源资产记录应用 · 本页最后更新于 2026 年 11 月 26 日</p>
+  </footer>
+</div>
+</body>
+</html>

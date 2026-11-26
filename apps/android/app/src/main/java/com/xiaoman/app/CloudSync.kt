@@ -348,7 +348,16 @@ class CloudSync(private val ctx: Context) {
             )
         )
         val token = res.optString("access_token")
-        if (token.isEmpty()) throw Exception(res.optString("error_description", "刷新令牌失败"))
+        if (token.isEmpty()) {
+            val desc = res.optString("error_description", "刷新令牌失败")
+            val expired = res.optString("error") == "invalid_grant" ||
+                desc.contains("expired", true) || desc.contains("revoked", true)
+            if (expired) {
+                logoutGoogle()
+                throw Exception("Google 登录已过期，请在「设置 → 数据同步」重新登录")
+            }
+            throw Exception(desc)
+        }
         putSecret("g_token", token)
         prefs.edit()
             .putLong("g_expiry", System.currentTimeMillis() + res.optLong("expires_in", 3600) * 1000)

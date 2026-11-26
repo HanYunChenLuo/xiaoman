@@ -313,7 +313,13 @@ async function ensureDesktopToken(interactive: boolean): Promise<string> {
       saveAccount({ ...acc, accessToken: r.accessToken, expiresAt: r.expiresAt })
       return r.accessToken
     } catch (e) {
-      if (!interactive) throw new Error((e as Error)?.message || '登录已过期，请重新登录')
+      const msg = (e as Error)?.message ?? ''
+      const expired = /expired|revoked|invalid_grant/i.test(msg)
+      if (expired) {
+        const cur = getAccount()
+        if (cur) saveAccount({ ...cur, accessToken: '', refreshToken: '', expiresAt: 0 })
+      }
+      if (!interactive) throw expired ? new Error('登录已过期，请重新登录') : e
     }
   }
   if (!interactive) throw new Error('请先登录 Google')

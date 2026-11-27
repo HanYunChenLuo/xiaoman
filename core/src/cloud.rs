@@ -115,6 +115,27 @@ pub fn download_request(token: &str, file_id: &str) -> CloudRequest {
     request("GET", url, token)
 }
 
+/// Drive 返回的 ISO 8601 时间（UTC）→ 毫秒；空串或格式异常返回 0。
+pub fn time_ms(iso: &str) -> i64 {
+    let iso = iso.trim();
+    if iso.is_empty() {
+        return 0;
+    }
+    chrono::DateTime::parse_from_rfc3339(iso)
+        .map(|dt| dt.timestamp_millis())
+        .unwrap_or(0)
+}
+
+/// 上传前冲突判断：云端比本地新、且不等于我们上次上传后看到的那份时才算“云端较新”。
+/// 返回 `{newer, remoteMs}`，`remoteMs` 供提示文案显示。
+pub fn conflict(remote_iso: &str, local_ms: i64, last_remote_ms: i64) -> Value {
+    let remote_ms = time_ms(remote_iso);
+    json!({
+        "newer": remote_ms > 0 && remote_ms > local_ms && remote_ms > last_remote_ms,
+        "remoteMs": remote_ms,
+    })
+}
+
 fn error_json(status: i32, body: &str) -> Value {
     let message = match status {
         401 => "Google 登录已过期，请重新登录".to_string(),
@@ -256,5 +277,40 @@ mod tests {
         let v = parse_file(200, "not json");
         assert_eq!(v["ok"], false);
         assert_eq!(v["error"], "云端响应格式异常");
+    }
+
+    #[test]
+    fn parses_drive_time() {
+        assert_eq!(time_ms("2026-11-19T08:00:00Z"), 1_795_075_200_000);
+        assert_eq!(time_ms("2026-11-19T08:00:00.123Z"), 1_795_075_200_123);
+        assert_eq!(time_ms("2026-11-19T16:00:00+08:00"), 1_795_075_200_000);
+        assert_eq!(time_ms(""), 0);
+        assert_eq!(time_ms("not a time"), 0);
+    }
+
+    #[test]
+    fn conflict_only_when_remote_is_newer() {
+        let remote = "2026-11-19T08:00:00Z";
+        let remote_ms = 1_795_075_200_000;
+
+        let same = conflict(remote, remote_ms, 0);
+        assert_eq!(same["newer"], false);
+        assert_eq!(same["remoteMs"], remote_ms);
+
+        let newer = conflict(remote, remote_ms - 1000, 0);
+        assert_eq!(newer["newer"], true);
+
+        // 我们上次已经见过这个云端时间：不再提示。
+        let seen = conflict(remote, remote_ms - 1000, remote_ms);
+        assert_eq!(seen["newer"], false);
+
+        // 本地比云端新：不提示。
+        let local_newer = conflict(remote, remote_ms + 1000, 0);
+        assert_eq!(local_newer["newer"], false);
+
+        // 拿不到云端时间：不提示。
+        let unknown = conflict("", 0, 0);
+        assert_eq!(unknown["newer"], false);
+        assert_eq!(unknown["remoteMs"], 0);
     }
 }

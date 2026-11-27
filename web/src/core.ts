@@ -28,6 +28,67 @@ export function countOfKind(assets: unknown[], kind: string, status: string): nu
   return wasm.count_of_kind(JSON.stringify(assets), kind, status)
 }
 
+// ---------------- 品牌/型号/图标（core/src/brands.rs） ----------------
+
+/** 品牌数据 → book JSON：`{brands, categories, byId, models, aliases, versionName}`。 */
+export function brandsParse(json: string): string {
+  return wasm.brands_parse(json)
+}
+
+/** 别名匹配；`aliasesJson` 为 book.aliases 的 JSON。返回 `{name,id}` 或 `null`。 */
+export function brandsMatch(text: string, aliasesJson: string): string {
+  return wasm.brands_match(text, aliasesJson)
+}
+
+/** 型号/名称 → 图标 key（`phone` / `laptop` / … / `default`）。 */
+export function brandIconKey(text: string): string {
+  return wasm.brand_icon_key(text)
+}
+
+/** 校验品牌数据兼容性；返回 `{ok, version, versionName, error}`。 */
+export function brandsValidate(json: string, appVersionCode: number): string {
+  return wasm.brands_validate(json, appVersionCode)
+}
+
+export function brandsApiUrl(): string {
+  return wasm.brands_api_url()
+}
+
+export function brandsRawUrl(): string {
+  return wasm.brands_raw_url()
+}
+
+export function todayString(nowMs: number, tzOffset: number): string {
+  return wasm.today_string(nowMs, tzOffset)
+}
+
+/** 最近 `days` 天的资产总值序列（末尾为今天）。 */
+export function trendSeries(assets: unknown[], days: number): number[] {
+  return JSON.parse(wasm.trend_series(JSON.stringify(assets), days, Date.now(), tzOffsetMs()))
+}
+
+export function categoryDistribution(
+  assets: unknown[],
+  categories: unknown[]
+): Array<{ name: string; count: number }> {
+  return JSON.parse(
+    wasm.category_distribution(JSON.stringify(assets), JSON.stringify(categories))
+  )
+}
+
+export function incomeTotalState(asset: unknown): number {
+  return wasm.income_total(JSON.stringify(asset))
+}
+
+export function latestPriceState(asset: unknown): unknown {
+  return JSON.parse(wasm.latest_price(JSON.stringify(asset)))
+}
+
+/** 本地状态规范化；defaults 是各端特有的设置默认值。 */
+export function stateNormalize(state: unknown, defaults: Record<string, unknown>): string {
+  return wasm.state_normalize(JSON.stringify(state), JSON.stringify(defaults))
+}
+
 export function ageDays(asset: unknown, today: string): number {
   return wasm.age_days(JSON.stringify(asset), today)
 }
@@ -126,6 +187,25 @@ export function cloudParseFileList(status: number, body: string): CloudParseResu
 
 export function cloudParseFile(status: number, body: string): CloudParseResult {
   return JSON.parse(wasm.cloud_parse_file(status, body))
+}
+
+/** Drive 的 ISO 8601 时间 → 毫秒；失败返回 0。 */
+export function cloudTimeMs(iso: string): number {
+  return wasm.cloud_time_ms(iso)
+}
+
+export interface CloudConflict {
+  newer: boolean
+  remoteMs: number
+}
+
+/** 云端是否比本地新（且不是我们上次上传后见过的那份）。 */
+export function cloudConflict(
+  remoteIso: string,
+  localMs: number,
+  lastRemoteMs: number
+): CloudConflict {
+  return JSON.parse(wasm.cloud_conflict(remoteIso, localMs, lastRemoteMs))
 }
 
 export function tzOffsetMs(): number {

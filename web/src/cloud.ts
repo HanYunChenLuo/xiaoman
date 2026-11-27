@@ -16,6 +16,7 @@ import {
   cloudFindRequest,
   cloudParseFile,
   cloudParseFileList,
+  cloudTimeMs,
   cloudUploadRequest,
   type CloudFile,
   type CloudParseResult,
@@ -183,8 +184,8 @@ export function lastRemoteAt(): number {
 }
 
 function markRemote(file?: CloudFile | null): void {
-  const ms = file?.modifiedTime ? new Date(file.modifiedTime).getTime() : 0
-  if (!ms || !Number.isFinite(ms)) return
+  const ms = cloudTimeMs(file?.modifiedTime ?? '')
+  if (!ms) return
   const acc = getAccount()
   if (acc) saveAccount({ ...acc, lastRemoteAt: ms })
 }

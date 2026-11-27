@@ -1,9 +1,11 @@
-//! 小满核心库：数据计算、备份编解码，后续加入品牌匹配与云同步。
+//! 小满核心库：计算/趋势、备份编解码、状态规范化、云备份协议与 Google OAuth。
 //! Android 通过 JNI，Web 通过 wasm-bindgen，桌面端直接链接。
 
 pub mod backup;
+pub mod brands;
 pub mod calc;
 pub mod cloud;
+pub mod oauth;
 pub mod state;
 pub mod update;
 
@@ -190,6 +192,89 @@ mod android {
             }
         };
         crate::state::backup_time_ms(&payload)
+    }
+
+    #[no_mangle]
+    pub extern "system" fn Java_com_xiaoman_app_NativeCore_stateNormalize(
+        mut env: JNIEnv,
+        _class: JClass,
+        state: JString,
+        defaults: JString,
+    ) -> jstring {
+        let state = match json_arg(&mut env, &state) {
+            Ok(v) => v,
+            Err(e) => return ret_err(&mut env, &e),
+        };
+        let defaults = match json_arg(&mut env, &defaults) {
+            Ok(v) => v,
+            Err(e) => return ret_err(&mut env, &e),
+        };
+        ret_string(&mut env, crate::state::normalize(&state, &defaults).to_string())
+    }
+
+    #[no_mangle]
+    pub extern "system" fn Java_com_xiaoman_app_NativeCore_todayString(
+        mut env: JNIEnv,
+        _class: JClass,
+        now_ms: jni::sys::jlong,
+        tz_offset_ms: jni::sys::jlong,
+    ) -> jstring {
+        ret_string(&mut env, calc::today_string(now_ms, tz_offset_ms))
+    }
+
+    #[no_mangle]
+    pub extern "system" fn Java_com_xiaoman_app_NativeCore_trendSeries(
+        mut env: JNIEnv,
+        _class: JClass,
+        assets: JString,
+        days: jni::sys::jint,
+        now_ms: jni::sys::jlong,
+        tz_offset_ms: jni::sys::jlong,
+    ) -> jstring {
+        let Ok(assets) = take_string(&mut env, &assets) else {
+            return std::ptr::null_mut();
+        };
+        let values = calc::trend_series(&parse(&assets), days, now_ms, tz_offset_ms);
+        ret_string(&mut env, to_json_string(&values))
+    }
+
+    #[no_mangle]
+    pub extern "system" fn Java_com_xiaoman_app_NativeCore_categoryDistribution(
+        mut env: JNIEnv,
+        _class: JClass,
+        assets: JString,
+        categories: JString,
+    ) -> jstring {
+        let Ok(assets) = take_string(&mut env, &assets) else {
+            return std::ptr::null_mut();
+        };
+        let Ok(categories) = take_string(&mut env, &categories) else {
+            return std::ptr::null_mut();
+        };
+        let out = calc::category_distribution(&parse(&assets), &parse(&categories));
+        ret_string(&mut env, out.to_string())
+    }
+
+    #[no_mangle]
+    pub extern "system" fn Java_com_xiaoman_app_NativeCore_incomeTotal(
+        mut env: JNIEnv,
+        _class: JClass,
+        asset: JString,
+    ) -> jdouble {
+        let Ok(asset) = take_string(&mut env, &asset) else { return 0.0 };
+        calc::income_total(&parse(&asset))
+    }
+
+    #[no_mangle]
+    pub extern "system" fn Java_com_xiaoman_app_NativeCore_latestPrice(
+        mut env: JNIEnv,
+        _class: JClass,
+        asset: JString,
+    ) -> jstring {
+        let Ok(asset) = take_string(&mut env, &asset) else {
+            return std::ptr::null_mut();
+        };
+        ret_string(&mut env, calc::latest_price(&parse(&asset)).to_string())
     }
 
     #[no_mangle]
@@ -384,6 +469,225 @@ mod android {
         ret_string(&mut env, out.to_string())
     }
 
+    #[no_mangle]
+    pub extern "system" fn Java_com_xiaoman_app_NativeCore_cloudTimeMs(
+        mut env: JNIEnv,
+        _class: JClass,
+        iso: JString,
+    ) -> jni::sys::jlong {
+        let Ok(iso) = take_string(&mut env, &iso) else { return 0 };
+        crate::cloud::time_ms(&iso)
+    }
+
+    #[no_mangle]
+    pub extern "system" fn Java_com_xiaoman_app_NativeCore_cloudConflict(
+        mut env: JNIEnv,
+        _class: JClass,
+        remote_iso: JString,
+        local_ms: jni::sys::jlong,
+        last_remote_ms: jni::sys::jlong,
+    ) -> jstring {
+        let Ok(iso) = take_string(&mut env, &remote_iso) else {
+            return std::ptr::null_mut();
+        };
+        let out = crate::cloud::conflict(&iso, local_ms, last_remote_ms);
+        ret_string(&mut env, out.to_string())
+    }
+
+    // ---------- 品牌/型号/图标（core/src/brands.rs） ----------
+
+    #[no_mangle]
+    pub extern "system" fn Java_com_xiaoman_app_NativeCore_brandsParse(
+        mut env: JNIEnv,
+        _class: JClass,
+        json: JString,
+    ) -> jstring {
+        let Ok(json) = take_string(&mut env, &json) else {
+            return std::ptr::null_mut();
+        };
+        ret_string(&mut env, crate::brands::parse(&parse(&json)).to_string())
+    }
+
+    #[no_mangle]
+    pub extern "system" fn Java_com_xiaoman_app_NativeCore_brandsMatch(
+        mut env: JNIEnv,
+        _class: JClass,
+        text: JString,
+        aliases: JString,
+    ) -> jstring {
+        let Ok(text) = take_string(&mut env, &text) else {
+            return std::ptr::null_mut();
+        };
+        let Ok(aliases) = take_string(&mut env, &aliases) else {
+            return std::ptr::null_mut();
+        };
+        let out = crate::brands::match_brand(&text, &parse(&aliases));
+        ret_string(&mut env, out.to_string())
+    }
+
+    #[no_mangle]
+    pub extern "system" fn Java_com_xiaoman_app_NativeCore_brandIconKey(
+        mut env: JNIEnv,
+        _class: JClass,
+        text: JString,
+    ) -> jstring {
+        let Ok(text) = take_string(&mut env, &text) else {
+            return std::ptr::null_mut();
+        };
+        ret_string(&mut env, crate::brands::icon_key(&text).to_string())
+    }
+
+    #[no_mangle]
+    pub extern "system" fn Java_com_xiaoman_app_NativeCore_brandsValidate(
+        mut env: JNIEnv,
+        _class: JClass,
+        json: JString,
+        app_version_code: jint,
+    ) -> jstring {
+        let Ok(json) = take_string(&mut env, &json) else {
+            return std::ptr::null_mut();
+        };
+        let out = crate::brands::validate(&parse(&json), app_version_code as i64);
+        ret_string(&mut env, out.to_string())
+    }
+
+    #[no_mangle]
+    pub extern "system" fn Java_com_xiaoman_app_NativeCore_brandsApiUrl(
+        mut env: JNIEnv,
+        _class: JClass,
+    ) -> jstring {
+        ret_string(&mut env, crate::brands::api_url().to_string())
+    }
+
+    #[no_mangle]
+    pub extern "system" fn Java_com_xiaoman_app_NativeCore_brandsRawUrl(
+        mut env: JNIEnv,
+        _class: JClass,
+    ) -> jstring {
+        ret_string(&mut env, crate::brands::raw_url().to_string())
+    }
+
+    // ---------- Google OAuth（core/src/oauth.rs） ----------
+
+    #[no_mangle]
+    pub extern "system" fn Java_com_xiaoman_app_NativeCore_oauthPkceChallenge(
+        mut env: JNIEnv,
+        _class: JClass,
+        verifier: JString,
+    ) -> jstring {
+        let Ok(verifier) = take_string(&mut env, &verifier) else {
+            return std::ptr::null_mut();
+        };
+        ret_string(&mut env, crate::oauth::pkce_challenge(&verifier))
+    }
+
+    #[no_mangle]
+    pub extern "system" fn Java_com_xiaoman_app_NativeCore_oauthAuthUrl(
+        mut env: JNIEnv,
+        _class: JClass,
+        client_id: JString,
+        redirect_uri: JString,
+        challenge: JString,
+        state: JString,
+        scope: JString,
+        prompt: JString,
+    ) -> jstring {
+        let (Ok(client_id), Ok(redirect_uri), Ok(challenge), Ok(state), Ok(scope), Ok(prompt)) = (
+            take_string(&mut env, &client_id),
+            take_string(&mut env, &redirect_uri),
+            take_string(&mut env, &challenge),
+            take_string(&mut env, &state),
+            take_string(&mut env, &scope),
+            take_string(&mut env, &prompt),
+        ) else {
+            return std::ptr::null_mut();
+        };
+        ret_string(
+            &mut env,
+            crate::oauth::auth_url(&client_id, &redirect_uri, &challenge, &state, &scope, &prompt),
+        )
+    }
+
+    #[no_mangle]
+    pub extern "system" fn Java_com_xiaoman_app_NativeCore_oauthTokenRequest(
+        mut env: JNIEnv,
+        _class: JClass,
+        client_id: JString,
+        client_secret: JString,
+        code: JString,
+        verifier: JString,
+        redirect_uri: JString,
+    ) -> jstring {
+        let (Ok(client_id), Ok(client_secret), Ok(code), Ok(verifier), Ok(redirect_uri)) = (
+            take_string(&mut env, &client_id),
+            take_string(&mut env, &client_secret),
+            take_string(&mut env, &code),
+            take_string(&mut env, &verifier),
+            take_string(&mut env, &redirect_uri),
+        ) else {
+            return std::ptr::null_mut();
+        };
+        let req = crate::oauth::token_request(&client_id, &client_secret, &code, &verifier, &redirect_uri);
+        ret_string(&mut env, to_json_string(&req))
+    }
+
+    #[no_mangle]
+    pub extern "system" fn Java_com_xiaoman_app_NativeCore_oauthRefreshRequest(
+        mut env: JNIEnv,
+        _class: JClass,
+        client_id: JString,
+        client_secret: JString,
+        refresh_token: JString,
+    ) -> jstring {
+        let (Ok(client_id), Ok(client_secret), Ok(refresh_token)) = (
+            take_string(&mut env, &client_id),
+            take_string(&mut env, &client_secret),
+            take_string(&mut env, &refresh_token),
+        ) else {
+            return std::ptr::null_mut();
+        };
+        let req = crate::oauth::refresh_request(&client_id, &client_secret, &refresh_token);
+        ret_string(&mut env, to_json_string(&req))
+    }
+
+    #[no_mangle]
+    pub extern "system" fn Java_com_xiaoman_app_NativeCore_oauthParseToken(
+        mut env: JNIEnv,
+        _class: JClass,
+        status: jint,
+        body: JString,
+    ) -> jstring {
+        let Ok(body) = take_string(&mut env, &body) else {
+            return std::ptr::null_mut();
+        };
+        ret_string(&mut env, crate::oauth::parse_token(status, &body).to_string())
+    }
+
+    #[no_mangle]
+    pub extern "system" fn Java_com_xiaoman_app_NativeCore_oauthUserinfoRequest(
+        mut env: JNIEnv,
+        _class: JClass,
+        token: JString,
+    ) -> jstring {
+        let Ok(token) = take_string(&mut env, &token) else {
+            return std::ptr::null_mut();
+        };
+        ret_string(&mut env, to_json_string(&crate::oauth::userinfo_request(&token)))
+    }
+
+    #[no_mangle]
+    pub extern "system" fn Java_com_xiaoman_app_NativeCore_oauthParseEmail(
+        mut env: JNIEnv,
+        _class: JClass,
+        status: jint,
+        body: JString,
+    ) -> jstring {
+        let Ok(body) = take_string(&mut env, &body) else {
+            return std::ptr::null_mut();
+        };
+        ret_string(&mut env, crate::oauth::parse_email(status, &body))
+    }
+
     // ---------- 更新检查协议 ----------
 
     #[no_mangle]
@@ -552,6 +856,44 @@ mod wasm {
         crate::calc::count(&parse(assets_json), kind, status)
     }
 
+    #[wasm_bindgen]
+    pub fn today_string(now_ms: f64, tz_offset_ms: f64) -> String {
+        crate::calc::today_string(now_ms as i64, tz_offset_ms as i64)
+    }
+
+    #[wasm_bindgen]
+    pub fn trend_series(assets_json: &str, days: i32, now_ms: f64, tz_offset_ms: f64) -> String {
+        let values = crate::calc::trend_series(
+            &parse(assets_json),
+            days,
+            now_ms as i64,
+            tz_offset_ms as i64,
+        );
+        serde_json::to_string(&values).unwrap_or_else(|_| "[]".to_string())
+    }
+
+    #[wasm_bindgen]
+    pub fn category_distribution(assets_json: &str, categories_json: &str) -> String {
+        crate::calc::category_distribution(&parse(assets_json), &parse(categories_json)).to_string()
+    }
+
+    #[wasm_bindgen]
+    pub fn income_total(asset_json: &str) -> f64 {
+        crate::calc::income_total(&parse(asset_json))
+    }
+
+    #[wasm_bindgen]
+    pub fn latest_price(asset_json: &str) -> String {
+        crate::calc::latest_price(&parse(asset_json)).to_string()
+    }
+
+    #[wasm_bindgen]
+    pub fn state_normalize(state_json: &str, defaults_json: &str) -> Result<String, JsValue> {
+        let state = js_json(state_json)?;
+        let defaults = js_json(defaults_json)?;
+        Ok(crate::state::normalize(&state, &defaults).to_string())
+    }
+
     // ---------- 云备份协议 ----------
 
     fn json_of<T: serde::Serialize>(value: &T) -> String {
@@ -591,6 +933,108 @@ mod wasm {
     #[wasm_bindgen]
     pub fn cloud_parse_file(status: i32, body: &str) -> String {
         crate::cloud::parse_file(status, body).to_string()
+    }
+
+    #[wasm_bindgen]
+    pub fn cloud_time_ms(iso: &str) -> f64 {
+        crate::cloud::time_ms(iso) as f64
+    }
+
+    #[wasm_bindgen]
+    pub fn cloud_conflict(remote_iso: &str, local_ms: f64, last_remote_ms: f64) -> String {
+        crate::cloud::conflict(remote_iso, local_ms as i64, last_remote_ms as i64).to_string()
+    }
+
+    // ---------- 品牌/型号/图标 ----------
+
+    #[wasm_bindgen]
+    pub fn brands_parse(json: &str) -> String {
+        crate::brands::parse(&parse(json)).to_string()
+    }
+
+    #[wasm_bindgen]
+    pub fn brands_match(text: &str, aliases_json: &str) -> String {
+        crate::brands::match_brand(text, &parse(aliases_json)).to_string()
+    }
+
+    #[wasm_bindgen]
+    pub fn brand_icon_key(text: &str) -> String {
+        crate::brands::icon_key(text).to_string()
+    }
+
+    #[wasm_bindgen]
+    pub fn brands_validate(json: &str, app_version_code: i32) -> String {
+        crate::brands::validate(&parse(json), app_version_code as i64).to_string()
+    }
+
+    #[wasm_bindgen]
+    pub fn brands_api_url() -> String {
+        crate::brands::api_url().to_string()
+    }
+
+    #[wasm_bindgen]
+    pub fn brands_raw_url() -> String {
+        crate::brands::raw_url().to_string()
+    }
+
+    // ---------- Google OAuth ----------
+
+    #[wasm_bindgen]
+    pub fn oauth_pkce_challenge(verifier: &str) -> String {
+        crate::oauth::pkce_challenge(verifier)
+    }
+
+    #[wasm_bindgen]
+    pub fn oauth_auth_url(
+        client_id: &str,
+        redirect_uri: &str,
+        challenge: &str,
+        state: &str,
+        scope: &str,
+        prompt: &str,
+    ) -> String {
+        crate::oauth::auth_url(client_id, redirect_uri, challenge, state, scope, prompt)
+    }
+
+    #[wasm_bindgen]
+    pub fn oauth_token_request(
+        client_id: &str,
+        client_secret: &str,
+        code: &str,
+        verifier: &str,
+        redirect_uri: &str,
+    ) -> String {
+        json_of(&crate::oauth::token_request(
+            client_id,
+            client_secret,
+            code,
+            verifier,
+            redirect_uri,
+        ))
+    }
+
+    #[wasm_bindgen]
+    pub fn oauth_refresh_request(
+        client_id: &str,
+        client_secret: &str,
+        refresh_token: &str,
+    ) -> String {
+        json_of(&crate::oauth::refresh_request(client_id, client_secret, refresh_token))
+    }
+
+    #[wasm_bindgen]
+    pub fn oauth_parse_token(status: i32, body: &str) -> String {
+        crate::oauth::parse_token(status, body).to_string()
+    }
+
+    #[wasm_bindgen]
+    pub fn oauth_userinfo_request(token: &str) -> String {
+        json_of(&crate::oauth::userinfo_request(token))
+    }
+
+    #[wasm_bindgen]
+    pub fn oauth_parse_email(status: i32, body: &str) -> String {
+        crate::oauth::parse_email(status, body)
     }
 
     // ---------- 更新检查协议 ----------

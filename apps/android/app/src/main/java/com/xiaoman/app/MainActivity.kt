@@ -35,7 +35,6 @@ import java.util.ArrayList
 import java.util.Date
 import java.util.Calendar
 import java.util.HashMap
-import java.util.LinkedHashMap
 import java.util.Locale
 import java.util.function.IntConsumer
 
@@ -63,7 +62,8 @@ class MainActivity : Activity() {
     private lateinit var brandPrefs: android.content.SharedPreferences
     private var brandDataVersion = 0
     private var brandDataVersionName = "内置"
-    private val brandAliases = ArrayList<Array<String>>()
+    /** core 解析出的别名表（按长度倒序，JSON 数组）。 */
+    private var brandAliasesJson = "[]"
     private var brandAuto = false
     private var brandRowLogo: ImageView? = null
     private var brandRowText: TextView? = null
@@ -71,7 +71,8 @@ class MainActivity : Activity() {
     private var modelInput: EditText? = null
     private var saveButtonRef: View? = null
     private var saveCheckRef: ImageView? = null
-    private val brandModels: MutableMap<String, JSONArray> = HashMap()
+    /** 品牌 id → 型号分组（core 解析结果）。 */
+    private var brandModels: JSONObject? = null
     private var obPage = 0
     private var grid = true
     private var returnTab = "home"
@@ -914,11 +915,9 @@ class MainActivity : Activity() {
         big.setPadding(0, dp(6f), 0, 0)
         t2.addView(big)
         val chart = ChartView(this)
-        chart.setData(
-            trendSeries(rangeDays()),
-            store.fmt(chartMax(trendSeries(rangeDays())), 0),
-            store.fmt(chartMax(trendSeries(rangeDays())) / 2, 0), "0", "", ""
-        )
+        val series = trendSeries(rangeDays())
+        val peak = chartMax(series)
+        chart.setData(series, store.fmt(peak, 0), store.fmt(peak / 2, 0), "0", "", "")
         val chp = LinearLayout.LayoutParams(-1, dp(150f))
         chp.topMargin = dp(Spacing.M)
         t2.addView(chart, chp)
@@ -930,26 +929,21 @@ class MainActivity : Activity() {
         if (assets.isEmpty()) t3.addView(ui.text("暂无数据", FontSize.SMALL , ui.gray()))
         else {
             val colors = intArrayOf(Ui.LIME, Ui.TEAL, Ui.ORANGE, Colors.BLUE, Colors.AMBER)
-            val names = ArrayList<String>()
-            val counts = ArrayList<Int>()
-            for (a in assets) {
-                var cat = "未分类"
-                val cid = a.optString("categoryId")
-                for (c in store.objs("categories")) if (c.optString("id") == cid) cat = c.optString("name")
-                val idx = names.indexOf(cat)
-                if (idx < 0) {
-                    names.add(cat)
-                    counts.add(1)
-                } else counts[idx] = counts[idx] + 1
-            }
-            for (i in names.indices) {
+            val dist = JSONArray(
+                NativeCore.categoryDistribution(
+                    store.arr("assets").toString(), store.arr("categories").toString()
+                )
+            )
+            for (i in 0 until dist.length()) {
+                val item = dist.optJSONObject(i) ?: continue
+                val count = item.optInt("count")
                 val row = ui.hbox()
                 val rp = LinearLayout.LayoutParams(-1, -2)
                 rp.topMargin = dp(Spacing.M)
-                row.addView(ui.text(names[i], FontSize.SMALL , ui.ink2()), lpw(1f, -2))
-                row.addView(ui.text(counts[i].toString() + " 件", FontSize.SMALL , ui.ink2()))
+                row.addView(ui.text(item.optString("name"), FontSize.SMALL , ui.ink2()), lpw(1f, -2))
+                row.addView(ui.text(count.toString() + " 件", FontSize.SMALL , ui.ink2()))
                 t3.addView(row, rp)
-                val bar = ui.bar(counts[i] / assets.size.toFloat(), colors[i % colors.size])
+                val bar = ui.bar(count / assets.size.toFloat(), colors[i % colors.size])
                 val bp = LinearLayout.LayoutParams(-1, dp(5f))
                 bp.topMargin = dp(5f)
                 t3.addView(bar, bp)
@@ -992,24 +986,16 @@ class MainActivity : Activity() {
     }
 
     private fun trendSeries(days: Int): DoubleArray {
-        val out = DoubleArray(days)
-        val assets = store.ofKind("asset")
-        val cal = Calendar.getInstance()
-        cal.add(Calendar.DAY_OF_MONTH, -(days - 1))
-        val f = java.text.SimpleDateFormat("yyyy-MM-dd", Locale.US)
-        for (i in 0 until days) {
-            val date = f.format(cal.time)
-            var v = 0.0
-            for (a in assets) {
-                val buy = a.optString("buyDate")
-                val sold = a.optString("soldDate")
-                if (buy.compareTo(date) <= 0 && (sold.isEmpty() || sold.compareTo(date) >= 0)) v += a.optDouble("price")
-            }
-            out[i] = v
-            cal.add(Calendar.DAY_OF_MONTH, 1)
-        }
-        return out
+        val json = JSONArray(
+            NativeCore.trendSeries(
+                store.arr("assets").toString(), days, System.currentTimeMillis(), tzOffsetMs()
+            )
+        )
+        return DoubleArray(json.length()) { json.optDouble(it, 0.0) }
     }
+
+    private fun tzOffsetMs(): Long =
+        java.util.TimeZone.getDefault().getOffset(System.currentTimeMillis()).toLong()
 
     private fun chartMax(data: DoubleArray): Double {
         var m = 0.0
@@ -1792,10 +1778,15 @@ class MainActivity : Activity() {
         cloud.googleFileInfo({ file ->
             runOnUiThread {
                 progress.dismiss()
-                val remoteMs = CloudSync.driveTimeMs(file?.optString("modifiedTime").orEmpty())
                 val localMs = store.updatedAt()
                 // 云端有别人更新过（晚于本地最后修改、也晚于我们上次见到的时间）时提醒。
-                if (remoteMs > 0 && remoteMs > localMs && remoteMs > cloud.lastRemoteMs()) {
+                val conflict = JSONObject(
+                    NativeCore.cloudConflict(
+                        file?.optString("modifiedTime").orEmpty(), localMs, cloud.lastRemoteMs()
+                    )
+                )
+                val remoteMs = conflict.optLong("remoteMs", 0L)
+                if (conflict.optBoolean("newer")) {
                     DialogKit.choice(
                         this, "云端备份较新",
                         "云端：最后修改 ${timeText(remoteMs)}\n本地：最后修改 ${timeText(localMs)}\n\n上传会用本地数据覆盖云端备份。",
@@ -2454,23 +2445,10 @@ class MainActivity : Activity() {
 
     private fun matchModelIcon(name: String?): Array<String>? {
         if (name == null || name.trim().isEmpty()) return null
-        val lower = name.lowercase(Locale.US)
-        val pairs = ArrayList<Array<String>>()
-        for ((key, value) in MODEL_ICONS) {
-            for (k in value) pairs.add(arrayOf(k.lowercase(Locale.US), key))
-        }
-        pairs.sortByDescending { it[0].length }
-        for (p in pairs) {
-            val k = p[0]
-            val latin = k.contains(Regex("[a-z]"))
-            val hit = if (latin) {
-                java.util.regex.Pattern.compile("(?<![a-z0-9])" + java.util.regex.Pattern.quote(k) + "(?![a-z0-9])").matcher(lower).find()
-            } else {
-                k.length >= 2 && lower.contains(k)
-            }
-            if (hit) return arrayOf(p[1])
-        }
-        return null
+        val key = NativeCore.brandIconKey(name)
+        if (key == "default") return null
+        val path = ICON_PATHS[key] ?: return null
+        return arrayOf(path)
     }
 
     private fun autoDetectIcon(name: String?) {
@@ -2511,18 +2489,15 @@ class MainActivity : Activity() {
 
     private fun matchBrand(name: String?): Array<String>? {
         if (name == null || name.trim().isEmpty()) return null
-        val lower = name.lowercase(Locale.US)
-        for (a in brandAliases) {
-            val alias = a[0]
-            val latin = "1" == a[3]
-            val hit = if (latin) {
-                java.util.regex.Pattern.compile("(?<![a-z0-9])" + java.util.regex.Pattern.quote(alias) + "(?![a-z0-9])").matcher(lower).find()
-            } else {
-                alias.length >= 2 && lower.contains(alias)
-            }
-            if (hit) return arrayOf(a[1], a[2])
+        val json = NativeCore.brandsMatch(name, brandAliasesJson)
+        if (json.isEmpty() || "null" == json) return null
+        return try {
+            val m = JSONObject(json)
+            val id = m.optString("id")
+            if (id.isEmpty()) null else arrayOf(m.optString("name"), id)
+        } catch (_: Exception) {
+            null
         }
-        return null
     }
 
     private fun fillMissingModels(): Int {
@@ -2577,7 +2552,7 @@ class MainActivity : Activity() {
             return
         }
         val brandName = draft.optString("brandName")
-        val groups = brandModels[brandId] ?: JSONArray()
+        val groups = brandModels?.optJSONArray(brandId) ?: JSONArray()
         DialogKit.modelPicker(this, brandName, current, groups) { m ->
             draft.put("model", m)
             autoDetectBrand(m)
@@ -3216,41 +3191,15 @@ class MainActivity : Activity() {
 
     private fun applyBrandRoot(root: JSONObject?): Boolean {
         if (root == null) return false
-        val schema = root.optInt("schema", 1)
-        if (schema > BRAND_SCHEMA) return false
-        val sup = root.optJSONObject("supportedApp")
-        if (sup != null) {
-            val lo = sup.optInt("minVersionCode", 0)
-            val hi = sup.optInt("maxVersionCode", 0)
-            if (APP_VERSION_CODE < lo || (hi > 0 && APP_VERSION_CODE > hi)) return false
-        }
-        var brands = root.optJSONObject("brands")
-        if (brands == null) brands = root
-        brandData = brands
-        brandModels.clear()
-        brandAliases.clear()
-        val it = brands.keys()
-        while (it.hasNext()) {
-            val cat = it.next()
-            val arr = brands.optJSONArray(cat)
-            for (i in 0 until (arr?.length() ?: 0)) {
-                val item = arr!!.optJSONArray(i) ?: continue
-                val name = item.optString(0)
-                val id = item.optString(1)
-                val modelsArr = item.optJSONArray(3)
-                if (modelsArr != null) brandModels[id] = modelsArr
-                val als = item.optJSONArray(2)
-                if (als != null) for (k in 0 until als.length()) {
-                    val alias = als.optString(k)
-                    if (alias.isEmpty()) continue
-                    val latin = alias.contains(Regex("[A-Za-z]"))
-                    brandAliases.add(arrayOf(alias.lowercase(Locale.US), name, id, if (latin) "1" else "0"))
-                }
-            }
-        }
-        brandAliases.sortByDescending { it[0].length }
-        brandDataVersion = root.optInt("dataVersion", 0)
-        brandDataVersionName = root.optString("dataVersionName", brandDataVersion.toString())
+        val json = root.toString()
+        val check = JSONObject(NativeCore.brandsValidate(json, APP_VERSION_CODE))
+        if (!check.optBoolean("ok")) return false
+        val book = JSONObject(NativeCore.brandsParse(json))
+        brandData = book.optJSONObject("brands")
+        brandModels = book.optJSONObject("models")
+        brandAliasesJson = book.optJSONArray("aliases")?.toString() ?: "[]"
+        brandDataVersion = book.optInt("version", 0)
+        brandDataVersionName = book.optString("versionName", brandDataVersion.toString())
         return true
     }
 
@@ -3284,31 +3233,31 @@ class MainActivity : Activity() {
             try {
                 var text: String? = null
                 try {
-                    text = fetchBrandJson(BRAND_DATA_API_URL, "application/vnd.github.raw")
+                    text = fetchBrandJson(NativeCore.brandsApiUrl(), "application/vnd.github.raw")
                 } catch (e: Exception) {
                     android.util.Log.w(BRAND_DATA_TAG, "api fetch failed: $e")
                 }
                 if (text == null) {
-                    text = fetchBrandJson(BRAND_DATA_URL + "?t=" + System.currentTimeMillis(), "application/json")
+                    text = fetchBrandJson(
+                        NativeCore.brandsRawUrl() + "?t=" + System.currentTimeMillis(),
+                        "application/json"
+                    )
                 }
-                val remote = JSONObject(text)
-                val schema = remote.optInt("schema", 1)
-                val sup = remote.optJSONObject("supportedApp")
-                val lo = sup?.optInt("minVersionCode", 0) ?: 0
-                val hi = sup?.optInt("maxVersionCode", 0) ?: 0
+                val remoteText = text ?: return@Thread
+                val check = JSONObject(NativeCore.brandsValidate(remoteText, APP_VERSION_CODE))
                 android.util.Log.i(
                     BRAND_DATA_TAG,
-                    "remote schema=$schema ver=${remote.optInt("dataVersion", 0)} app=$APP_VERSION_CODE supported=$lo-$hi"
+                    "remote ver=${check.optInt("version", 0)} app=$APP_VERSION_CODE ok=${check.optBoolean("ok")}"
                 )
-                if (schema > BRAND_SCHEMA || APP_VERSION_CODE < lo || (hi > 0 && APP_VERSION_CODE > hi)) {
-                    if (manual) runOnUiThread { toast("当前版本不支持该数据") }
+                if (!check.optBoolean("ok")) {
+                    if (manual) runOnUiThread { toast(check.optString("error", "当前版本不支持该数据")) }
                     return@Thread
                 }
-                val ver = remote.optInt("dataVersion", 0)
+                val ver = check.optInt("version", 0)
                 if (ver > brandDataVersion) {
-                    brandPrefs.edit().putString("json", text).apply()
+                    brandPrefs.edit().putString("json", remoteText).apply()
                     runOnUiThread {
-                        if (applyBrandRoot(remote)) {
+                        if (applyBrandRoot(JSONObject(remoteText))) {
                             toast("品牌与型号已更新至 " + brandDataVersionName)
                             if (screen == "settings") showSettings()
                         }
@@ -3341,57 +3290,34 @@ class MainActivity : Activity() {
         @JvmField var dark = false
 
         private val APP_VERSION_CODE = BuildConfig.VERSION_CODE
-        private const val BRAND_SCHEMA = 1
-        private const val BRAND_DATA_API_URL =
-            "https://api.github.com/repos/HanYunChenLuo/xiaoman/contents/data/brands.json"
-        private const val BRAND_DATA_URL =
-            "https://raw.githubusercontent.com/HanYunChenLuo/xiaoman/main/data/brands.json"
         private const val BRAND_DATA_TAG = "XiaomanBrandData"
         private const val REQ_RESTORE = 1001
         private const val REQ_EXPORT = 1002
         private const val REQ_COVER = 1003
         private const val REQ_NOTE = 1004
 
-        @JvmField
-        val MODEL_ICONS: MutableMap<String, Array<String>> = LinkedHashMap()
+        /** core 的图标 key → Android 资源路径（只有路径是平台相关的）。 */
+        private val ICON_PATHS: Map<String, String> = mapOf(
+            "phone" to "apple/digital/Mobile-phone.png",
+            "laptop" to "apple/digital/Laptop.png",
+            "desktop" to "apple/digital/Desktop-computer.png",
+            "game" to "apple/digital/Video-game.png",
+            "drone" to "apple/digital/Movie-camera.png",
+            "camera" to "apple/digital/Camera.png",
+            "headphone" to "apple/digital/Headphone.png",
+            "watch" to "apple/digital/Watch.png",
+            "tv" to "apple/digital/Television.png",
+            "car" to "apple/vehicle/Automobile.png",
+            "bike" to "apple/vehicle/Bicycle.png",
+            "moto" to "apple/vehicle/Motorcycle.png",
+            "scooter" to "apple/vehicle/Kick-scooter.png",
+            "plane" to "apple/vehicle/Airplane.png"
+        )
 
         private val OB = arrayOf(
             arrayOf("资产账户", "财务状况一目了然", "img/onboard1.png"),
             arrayOf("每日成本", "价值、成本、状态，一键分析", "img/onboard2.png"),
             arrayOf("数据统计", "多种统计图表", "img/onboard3.png")
         )
-
-        init {
-            MODEL_ICONS["apple/digital/Mobile-phone.png"] = arrayOf(
-                "iphone", "galaxy", "pixel", "mate", "redmi", "ipad", "平板", "matepad", "手机", "小米",
-                "oppo", "vivo", "一加", "oneplus", "荣耀", "honor", "magic"
-            )
-            MODEL_ICONS["apple/digital/Laptop.png"] = arrayOf(
-                "macbook", "笔记本", "thinkpad", "小新", "matebook", "rog", "拯救者", "天选", "xps", "轻薄本", "游戏本"
-            )
-            MODEL_ICONS["apple/digital/Desktop-computer.png"] = arrayOf(
-                "mac mini", "mac studio", "imac", "台式机", "台式", "主机", "组装机", "一体机"
-            )
-            MODEL_ICONS["apple/digital/Video-game.png"] = arrayOf(
-                "switch", "ns2", "ns", "ps5", "ps4", "playstation", "xbox", "游戏机"
-            )
-            MODEL_ICONS["apple/digital/Movie-camera.png"] = arrayOf(
-                "dji", "pocket", "osmo", "动作相机", "运动相机", "摄像机", "mavic", "无人机", "drone"
-            )
-            MODEL_ICONS["apple/digital/Camera.png"] = arrayOf("相机", "camera", "单反", "微单", "镜头", "gopro")
-            MODEL_ICONS["apple/digital/Headphone.png"] = arrayOf("airpods", "耳机", "headphone", "音箱", "音响", "speaker")
-            MODEL_ICONS["apple/digital/Watch.png"] = arrayOf("apple watch", "手表", "手环", "watch")
-            MODEL_ICONS["apple/digital/Television.png"] = arrayOf("电视", "tv", "显示器", "monitor")
-            MODEL_ICONS["apple/vehicle/Automobile.png"] = arrayOf(
-                "汽车", "理想", "特斯拉", "比亚迪", "蔚来", "小鹏", "宝马", "奔驰", "奥迪", "大众",
-                "丰田", "本田", "日产", "保时捷", "沃尔沃", "极星", "马自达"
-            )
-            MODEL_ICONS["apple/vehicle/Bicycle.png"] = arrayOf(
-                "自行车", "公路车", "山地车", "单车", "bike", "giant", "捷安特", "trek"
-            )
-            MODEL_ICONS["apple/vehicle/Motorcycle.png"] = arrayOf("摩托", "motorcycle")
-            MODEL_ICONS["apple/vehicle/Kick-scooter.png"] = arrayOf("滑板车", "电动滑板", "scooter")
-            MODEL_ICONS["apple/vehicle/Airplane.png"] = arrayOf("飞机", "airplane")
-        }
     }
 }

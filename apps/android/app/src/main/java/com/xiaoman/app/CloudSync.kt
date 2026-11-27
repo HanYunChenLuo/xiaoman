@@ -10,8 +10,6 @@ import java.net.HttpURLConnection
 import java.net.InetAddress
 import java.net.ServerSocket
 import java.net.URL
-import java.net.URLEncoder
-import java.security.MessageDigest
 import java.security.SecureRandom
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -40,21 +38,11 @@ class CloudSync(private val ctx: Context) {
 
     companion object {
         private const val REDIRECT = "http://127.0.0.1"
+        private const val SCOPE = "openid email https://www.googleapis.com/auth/drive.appdata"
 
         /** Drive 返回的 ISO 8601 时间（UTC）转换为毫秒；失败返回 0。 */
         @JvmStatic
-        fun driveTimeMs(iso: String): Long {
-            if (iso.isEmpty()) return 0L
-            for (pattern in arrayOf("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", "yyyy-MM-dd'T'HH:mm:ss'Z'")) {
-                try {
-                    val f = SimpleDateFormat(pattern, Locale.US)
-                    f.timeZone = java.util.TimeZone.getTimeZone("UTC")
-                    return f.parse(iso)?.time ?: 0L
-                } catch (_: Exception) {
-                }
-            }
-            return 0L
-        }
+        fun driveTimeMs(iso: String): Long = NativeCore.cloudTimeMs(iso)
     }
 
     // ---------- 配置 ----------
@@ -154,7 +142,7 @@ class CloudSync(private val ctx: Context) {
         Thread {
             try {
                 val verifier = randomPkce()
-                val challenge = base64Url(sha256(verifier.toByteArray(Charsets.US_ASCII)))
+                val challenge = NativeCore.oauthPkceChallenge(verifier)
 
                 // 构建时配置了 Google Client ID 时使用自定义 Scheme 直接跳回 App。
                 if (BuildConfig.GOOGLE_CLIENT_ID.isNotEmpty() && clientId == BuildConfig.GOOGLE_CLIENT_ID) {
@@ -212,40 +200,19 @@ class CloudSync(private val ctx: Context) {
     }
 
     private fun authUrl(clientId: String, redirect: String, challenge: String): String =
-        "https://accounts.google.com/o/oauth2/v2/auth?" + form(mapOf(
-            "client_id" to clientId,
-            "redirect_uri" to redirect,
-            "response_type" to "code",
-            "scope" to "openid email https://www.googleapis.com/auth/drive.appdata",
-            "code_challenge" to challenge,
-            "code_challenge_method" to "S256",
-            "access_type" to "offline",
-            "include_granted_scopes" to "true",
-            "prompt" to "consent"
-        ))
+        NativeCore.oauthAuthUrl(clientId, redirect, challenge, "", SCOPE, "consent")
 
     private fun exchangeGoogleCode(clientId: String, code: String, verifier: String, redirect: String): String {
-        val tokenRes = postFormJson(
-            "https://oauth2.googleapis.com/token",
-            mapOf(
-                "client_id" to clientId,
-                "code" to code,
-                "code_verifier" to verifier,
-                "redirect_uri" to redirect,
-                "grant_type" to "authorization_code"
-            )
-        )
-        android.util.Log.i("XiaomanCloud", "google token scopes=" + tokenRes.optString("scope"))
-        val access = tokenRes.optString("access_token")
-        val refresh = tokenRes.optString("refresh_token")
-        val expires = System.currentTimeMillis() + tokenRes.optLong("expires_in", 3600) * 1000
-        if (access.isEmpty()) throw Exception(tokenRes.optString("error_description", "获取令牌失败"))
+        val tokenRes = execute(cloudReq(NativeCore.oauthTokenRequest(clientId, "", code, verifier, redirect)))
+        val token = JSONObject(NativeCore.oauthParseToken(tokenRes.code, tokenRes.text))
+        android.util.Log.i("XiaomanCloud", "google token scopes=" + token.optString("scope"))
+        if (!token.optBoolean("ok")) throw Exception(token.optString("error", "获取令牌失败"))
+        val access = token.optString("accessToken")
+        val refresh = token.optString("refreshToken")
+        val expires = System.currentTimeMillis() + token.optLong("expiresIn", 3600) * 1000
         val email = try {
-            val ui = httpJson(
-                "https://openidconnect.googleapis.com/v1/userinfo", "GET", null,
-                mapOf("Authorization" to "Bearer $access")
-            )
-            ui.optString("email")
+            val ui = execute(cloudReq(NativeCore.oauthUserinfoRequest(access)))
+            NativeCore.oauthParseEmail(ui.code, ui.text)
         } catch (_: Exception) {
             ""
         }
@@ -390,91 +357,24 @@ class CloudSync(private val ctx: Context) {
         if (access.isNotEmpty() && System.currentTimeMillis() < expiry - 60_000) return access
         val refresh = getSecret("g_refresh")
         if (refresh.isEmpty()) throw Exception("请先登录 Google")
-        val res = postFormJson(
-            "https://oauth2.googleapis.com/token",
-            mapOf(
-                "client_id" to googleClientId(),
-                "refresh_token" to refresh,
-                "grant_type" to "refresh_token"
-            )
-        )
-        val token = res.optString("access_token")
-        if (token.isEmpty()) {
-            val desc = res.optString("error_description", "刷新令牌失败")
-            val expired = res.optString("error") == "invalid_grant" ||
-                desc.contains("expired", true) || desc.contains("revoked", true)
-            if (expired) {
+        val res = execute(cloudReq(NativeCore.oauthRefreshRequest(googleClientId(), "", refresh)))
+        val parsed = JSONObject(NativeCore.oauthParseToken(res.code, res.text))
+        val token = parsed.optString("accessToken")
+        if (!parsed.optBoolean("ok") || token.isEmpty()) {
+            if (parsed.optBoolean("relogin")) {
                 logoutGoogle()
                 throw Exception("Google 登录已过期，请在「设置 → 数据同步」重新登录")
             }
-            throw Exception(desc)
+            throw Exception(parsed.optString("error", "刷新令牌失败"))
         }
         putSecret("g_token", token)
         prefs.edit()
-            .putLong("g_expiry", System.currentTimeMillis() + res.optLong("expires_in", 3600) * 1000)
+            .putLong("g_expiry", System.currentTimeMillis() + parsed.optLong("expiresIn", 3600) * 1000)
             .apply()
         return token
     }
 
     // ---------- 网络工具 ----------
-    private fun postForm(url: String, params: Map<String, String>, json: Boolean): JSONObject {
-        val conn = URL(url).openConnection() as HttpURLConnection
-        conn.requestMethod = "POST"
-        conn.connectTimeout = 15000
-        conn.readTimeout = 15000
-        conn.doOutput = true
-        conn.setRequestProperty("Content-Type", "application/x-www-form-urlencoded")
-        conn.setRequestProperty("Accept", if (json) "application/json" else "text/plain")
-        conn.setRequestProperty("User-Agent", "Xiaoman/1.0")
-        val body = form(params).toByteArray(Charsets.UTF_8)
-        conn.outputStream.use { it.write(body) }
-        val code = conn.responseCode
-        val text = readText(if (code in 200..299) conn.inputStream else conn.errorStream)
-        if (code !in 200..299 && text.isEmpty()) throw Exception("HTTP $code")
-        return if (text.trimStart().startsWith("{")) JSONObject(text)
-        else JSONObject(formToJson(text))
-    }
-
-    private fun postFormJson(url: String, params: Map<String, String>): JSONObject = postForm(url, params, true)
-
-    private fun formToJson(text: String): String {
-        val obj = JSONObject()
-        for (pair in text.split("&")) {
-            val idx = pair.indexOf('=')
-            if (idx <= 0) continue
-            obj.put(
-                java.net.URLDecoder.decode(pair.substring(0, idx), "UTF-8"),
-                java.net.URLDecoder.decode(pair.substring(idx + 1), "UTF-8")
-            )
-        }
-        return obj.toString()
-    }
-
-    private fun httpJson(url: String, method: String, body: String?, headers: Map<String, String>): JSONObject {
-        val bytes = httpBytes(url, headers, method, body?.toByteArray(Charsets.UTF_8), "application/json")
-        return JSONObject(String(bytes, Charsets.UTF_8))
-    }
-
-    private fun httpBytes(url: String, headers: Map<String, String>, method: String = "GET", body: ByteArray? = null, contentType: String? = null): ByteArray {
-        val conn = URL(url).openConnection() as HttpURLConnection
-        conn.requestMethod = method
-        conn.connectTimeout = 15000
-        conn.readTimeout = 20000
-        conn.instanceFollowRedirects = true
-        for ((k, v) in headers) conn.setRequestProperty(k, v)
-        if (body != null) {
-            conn.doOutput = true
-            contentType?.let { conn.setRequestProperty("Content-Type", it) }
-            conn.outputStream.use { it.write(body) }
-        }
-        val code = conn.responseCode
-        val data = readBytes(if (code in 200..299) conn.inputStream else conn.errorStream)
-        if (code !in 200..299) {
-            throw Exception("HTTP $code " + String(data, Charsets.UTF_8).take(200))
-        }
-        return data
-    }
-
     private fun readBytes(input: java.io.InputStream?): ByteArray {
         if (input == null) return ByteArray(0)
         input.use {
@@ -486,22 +386,9 @@ class CloudSync(private val ctx: Context) {
         }
     }
 
-    private fun readText(input: java.io.InputStream?): String = String(readBytes(input), Charsets.UTF_8)
-
-    private fun form(params: Map<String, String>): String =
-        params.entries.joinToString("&") { (k, v) ->
-            URLEncoder.encode(k, "UTF-8") + "=" + URLEncoder.encode(v, "UTF-8")
-        }
-
     private fun randomPkce(): String {
         val chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~"
         val rnd = SecureRandom()
         return (1..64).map { chars[rnd.nextInt(chars.length)] }.joinToString("")
     }
-
-    private fun sha256(data: ByteArray): ByteArray =
-        MessageDigest.getInstance("SHA-256").digest(data)
-
-    private fun base64Url(data: ByteArray): String =
-        android.util.Base64.encodeToString(data, android.util.Base64.URL_SAFE or android.util.Base64.NO_WRAP or android.util.Base64.NO_PADDING)
 }

@@ -2,8 +2,18 @@ import {
   backupExport,
   backupImport,
   backupMerge,
+  brandIconKey,
+  brandsApiUrl,
+  brandsMatch,
+  brandsParse,
+  brandsRawUrl,
+  brandsValidate,
   decodeIas,
   encodeIas,
+  incomeTotalState,
+  latestPriceState,
+  stateNormalize,
+  todayString,
   tzOffsetMs
 } from './core'
 
@@ -119,28 +129,11 @@ export function saveState(s: State): void {
   localStorage.setItem(KEY, JSON.stringify(s))
 }
 
+/** 数组、收入分类与默认设置由 core 统一补齐（与 Android 共用一份实现）。 */
 export function normalize(s: State): State {
-  s.assets ??= []
-  s.categories ??= []
-  s.tags ??= []
-  if (!Array.isArray(s.incomeCategories) || s.incomeCategories.length === 0) {
-    s.incomeCategories = defaultIncomeCategories()
-  }
-  if (!Array.isArray(s.saveMoney)) s.saveMoney = []
-  for (const a of s.assets) {
-    if (!Array.isArray(a.incomeRecords)) a.incomeRecords = []
-    if (!Array.isArray(a.priceRecords)) a.priceRecords = []
-    if (!Array.isArray(a.usages)) a.usages = []
-  }
-  s.settings = {
-    currency: s.settings?.currency ?? 'CNY',
-    decimals: s.settings?.decimals ?? 2,
-    thousands: s.settings?.thousands ?? false,
-    theme: s.settings?.theme ?? 'system',
-    notifyExpiry: s.settings?.notifyExpiry ?? false,
-    updatedAt: s.settings?.updatedAt ?? 0
-  }
-  return s
+  return JSON.parse(
+    stateNormalize(s, { thousands: false, notifyExpiry: false })
+  ) as State
 }
 
 export function uid(prefix: string): string {
@@ -148,8 +141,7 @@ export function uid(prefix: string): string {
 }
 
 export function todayStr(): string {
-  const d = new Date()
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`
+  return todayString(Date.now(), tzOffsetMs())
 }
 
 export function pad(n: number): string {
@@ -195,16 +187,14 @@ export function displayName(a: Asset): string {
   return a.name?.trim() ? a.name : a.model ?? ''
 }
 
-/** 某件资产的累计收入。 */
+/** 某件资产的累计收入（core 计算）。 */
 export function incomeTotal(a: Asset): number {
-  return (a.incomeRecords ?? []).reduce((sum, r) => sum + (Number(r.amount) || 0), 0)
+  return incomeTotalState(a)
 }
 
-/** 最近一条价格记录（按日期倒序）。 */
+/** 最近一条价格记录（按日期最大；core 计算）。 */
 export function latestPrice(a: Asset): PriceRecord | null {
-  const list = a.priceRecords ?? []
-  if (!list.length) return null
-  return [...list].sort((x, y) => (x.date < y.date ? 1 : -1))[0]
+  return (latestPriceState(a) as PriceRecord | null) ?? null
 }
 
 // ---------------- 品牌与型号 ----------------
@@ -218,7 +208,8 @@ export interface Brand {
 export interface BrandBook {
   categories: Record<string, Brand[]>
   byId: Map<string, Brand>
-  aliases: Array<{ alias: string; name: string; id: string; latin: boolean }>
+  /** core 输出的别名表：`[aliasLower, name, id, latin(1/0)]`，按长度倒序。 */
+  aliases: Array<[string, string, string, number]>
   versionName: string
 }
 
@@ -247,36 +238,19 @@ function emptyBrandBook(): BrandBook {
   return { categories: {}, byId: new Map(), aliases: [], versionName: '' }
 }
 
-function parseBrandBook(json: any): BrandBook {
-  const book: BrandBook = emptyBrandBook()
-  const source = json.brands ?? json
-  book.versionName = json.dataVersionName ?? ''
-  for (const cat of Object.keys(source)) {
-    const list: Brand[] = []
-    for (const item of source[cat] as unknown[]) {
-      const arr = item as [string, string, string[], Array<[string, string[]]>]
-      const brand: Brand = {
-        name: arr[0],
-        id: arr[1],
-        aliases: arr[2] ?? [],
-        groups: arr[3] ?? []
-      }
-      list.push(brand)
-      book.byId.set(brand.id, brand)
-      for (const alias of brand.aliases) {
-        if (!alias) continue
-        book.aliases.push({
-          alias: alias.toLowerCase(),
-          name: brand.name,
-          id: brand.id,
-          latin: /[A-Za-z]/.test(alias)
-        })
-      }
-    }
-    book.categories[cat] = list
+function parseBrandBook(json: unknown): BrandBook {
+  const parsed = JSON.parse(brandsParse(JSON.stringify(json))) as {
+    categories?: Record<string, Brand[]>
+    byId?: Record<string, Brand>
+    aliases?: Array<[string, string, string, number]>
+    versionName?: string
   }
-  book.aliases.sort((a, b) => b.alias.length - a.alias.length)
-  return book
+  return {
+    categories: parsed.categories ?? {},
+    byId: new Map(Object.entries(parsed.byId ?? {})),
+    aliases: parsed.aliases ?? [],
+    versionName: parsed.versionName ?? ''
+  }
 }
 
 async function fetchBrandText(url: string, accept?: string): Promise<string> {
@@ -292,72 +266,31 @@ async function fetchBrandText(url: string, accept?: string): Promise<string> {
 export async function fetchRemoteBrands(): Promise<string> {
   let text: string
   try {
-    text = await fetchBrandText(
-      'https://api.github.com/repos/HanYunChenLuo/xiaoman/contents/data/brands.json',
-      'application/vnd.github.raw'
-    )
+    text = await fetchBrandText(brandsApiUrl(), 'application/vnd.github.raw')
   } catch {
-    text = await fetchBrandText(
-      'https://raw.githubusercontent.com/HanYunChenLuo/xiaoman/main/data/brands.json?t=' + Date.now()
-    )
+    text = await fetchBrandText(brandsRawUrl() + '?t=' + Date.now())
   }
-  const json = JSON.parse(text)
-  const schema = Number(json.schema ?? 1)
-  if (schema > 1) throw new Error('数据格式版本过高')
-  const sup = json.supportedApp
-  if (sup) {
-    const min = Number(sup.minVersionCode ?? 0)
-    const max = Number(sup.maxVersionCode ?? 0)
-    if (1 < min || (max > 0 && 1 > max)) throw new Error('当前版本不支持该数据')
+  const check = JSON.parse(brandsValidate(text, 1)) as {
+    ok: boolean
+    versionName: string
+    error: string
   }
-  localStorage.setItem(BRANDS_CACHE, JSON.stringify(json))
-  return String(json.dataVersionName ?? '')
+  if (!check.ok) throw new Error(check.error)
+  localStorage.setItem(BRANDS_CACHE, text)
+  return String(check.versionName ?? '')
 }
+
 export function matchBrand(text: string, book: BrandBook): Brand | null {
-  const lower = text.trim().toLowerCase()
-  if (!lower) return null
-  for (const a of book.aliases) {
-    const hit = a.latin
-      ? new RegExp(`(?<![a-z0-9])${escapeRe(a.alias)}(?![a-z0-9])`).test(lower)
-      : a.alias.length >= 2 && lower.includes(a.alias)
-    if (hit) return book.byId.get(a.id) ?? null
-  }
-  return null
+  const out = brandsMatch(text, JSON.stringify(book.aliases))
+  if (!out || out === 'null') return null
+  const hit = JSON.parse(out) as { name: string; id: string }
+  return book.byId.get(hit.id) ?? null
 }
 
-function escapeRe(s: string): string {
-  return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
-}
-
-const ICON_RULES: Array<[string, string[]]> = [
-  ['phone', ['iphone', 'galaxy', 'pixel', 'mate', 'redmi', 'ipad', '平板', 'matepad', '手机', '小米', 'oppo', 'vivo', '一加', 'oneplus', '荣耀', 'honor', 'magic']],
-  ['laptop', ['macbook', '笔记本', 'thinkpad', '小新', 'matebook', 'rog', '拯救者', '天选', 'xps', '轻薄本', '游戏本']],
-  ['desktop', ['mac mini', 'mac studio', 'imac', '台式机', '台式', '主机', '组装机', '一体机']],
-  ['game', ['switch', 'ns2', 'ns', 'ps5', 'ps4', 'playstation', 'xbox', '游戏机']],
-  ['drone', ['dji', 'pocket', 'osmo', '动作相机', '运动相机', '摄像机', 'mavic', '无人机', 'drone']],
-  ['camera', ['相机', 'camera', '单反', '微单', '镜头', 'gopro']],
-  ['headphone', ['airpods', '耳机', 'headphone', '音箱', '音响', 'speaker']],
-  ['watch', ['apple watch', '手表', '手环', 'watch']],
-  ['tv', ['电视', 'tv', '显示器', 'monitor']],
-  ['car', ['汽车', '理想', '特斯拉', '比亚迪', '蔚来', '小鹏', '宝马', '奔驰', '奥迪', '大众', '丰田', '本田', '日产', '保时捷', '沃尔沃', '极星', '马自达']],
-  ['bike', ['自行车', '公路车', '山地车', '单车', 'bike', 'giant', '捷安特', 'trek']],
-  ['moto', ['摩托', 'motorcycle']],
-  ['scooter', ['滑板车', '电动滑板', 'scooter']],
-  ['plane', ['飞机', 'airplane']]
-]
-
+/** 型号/名称 → 本地图标路径（推断规则在 core）。 */
 export function autoIcon(text: string): string {
-  const lower = text.toLowerCase()
-  for (const [icon, keys] of ICON_RULES) {
-    for (const k of keys) {
-      const latin = /[a-z]/.test(k)
-      const hit = latin
-        ? new RegExp(`(?<![a-z0-9])${escapeRe(k)}(?![a-z0-9])`).test(lower)
-        : k.length >= 2 && lower.includes(k)
-      if (hit) return `/icons/${icon}.png`
-    }
-  }
-  return '/icons/default.png'
+  const key = brandIconKey(text)
+  return key === 'default' ? '/icons/default.png' : `/icons/${key}.png`
 }
 
 // ---------------- .ias 备份 ----------------

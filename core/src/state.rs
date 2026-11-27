@@ -828,6 +828,74 @@ pub fn merge(
     Ok(Value::Object(out))
 }
 
+// ---------------- 本地状态规范化 ----------------
+
+/// 规范化本地状态：补齐数组/记录数组、默认收入分类与设置项。
+///
+/// `defaults` 是各端特有的设置默认值（例如 Android 的 `thousands=true`、
+/// `duration`/`view`，Web 的 `notifyExpiry=false`），已有设置优先于默认值；
+/// 核心只补跨端一致的键（currency/decimals/theme/updatedAt）。
+/// 未知的根字段原样保留，因此 SharedPreferences 里的其他状态不会丢失。
+pub fn normalize(state: &Value, defaults: &Value) -> Value {
+    let mut out = state.as_object().cloned().unwrap_or_default();
+
+    for key in ["assets", "categories", "tags", "saveMoney"] {
+        if !out.get(key).map(Value::is_array).unwrap_or(false) {
+            out.insert(key.to_string(), json!([]));
+        }
+    }
+
+    // 收入分类为空时使用内置默认（与导入/旧端行为一致）。
+    let empty_income = out
+        .get("incomeCategories")
+        .and_then(Value::as_array)
+        .map(|a| a.is_empty())
+        .unwrap_or(true);
+    if empty_income {
+        out.insert(
+            "incomeCategories".to_string(),
+            json!([
+                { "id": "inc_cat_0", "name": "出租" },
+                { "id": "inc_cat_1", "name": "工资" },
+                { "id": "inc_cat_2", "name": "理财" },
+                { "id": "inc_cat_3", "name": "其他" },
+            ]),
+        );
+    }
+
+    // 每条资产记录都要有可追加的记录数组。
+    if let Some(assets) = out.get_mut("assets").and_then(Value::as_array_mut) {
+        for asset in assets {
+            if let Some(obj) = asset.as_object_mut() {
+                for key in ["incomeRecords", "priceRecords", "usages"] {
+                    if !obj.get(key).map(Value::is_array).unwrap_or(false) {
+                        obj.insert(key.to_string(), json!([]));
+                    }
+                }
+            }
+        }
+    }
+
+    // 设置：平台默认值打底，已有值优先，再补跨端一致的键。
+    let mut settings = defaults.as_object().cloned().unwrap_or_default();
+    if let Some(existing) = out.get("settings").and_then(Value::as_object) {
+        for (key, value) in existing {
+            settings.insert(key.clone(), value.clone());
+        }
+    }
+    for (key, value) in [
+        ("currency", json!("CNY")),
+        ("decimals", json!(2)),
+        ("theme", json!("system")),
+        ("updatedAt", json!(0)),
+    ] {
+        settings.entry(key.to_string()).or_insert(value);
+    }
+    out.insert("settings".to_string(), Value::Object(settings));
+
+    Value::Object(out)
+}
+
 /// 备份本身的数据修改时间（毫秒）：优先 `settings.updatedAt`，旧备份回退 `exported_at`。
 pub fn backup_time_ms(payload: &Value) -> i64 {
     let updated = payload
@@ -980,5 +1048,40 @@ mod tests {
         assert_eq!(backup_time_ms(&payload), 123000);
         let payload = json!({"data":{"exported_at": 123,"settings":{"updatedAt":456}}});
         assert_eq!(backup_time_ms(&payload), 456);
+    }
+
+    #[test]
+    fn normalize_fills_defaults_and_keeps_platform_values() {
+        let state = json!({
+            "assets":[{"id":"a_1","name":"x","usages":[{"id":"u"}]}],
+            "categories":[],
+            "settings":{"thousands":false,"currency":"USD"},
+            "pro":true
+        });
+        let defaults = json!({"thousands":true,"duration":"days","view":"grid"});
+        let out = normalize(&state, &defaults);
+
+        // 数组与记录数组
+        assert!(out["tags"].is_array());
+        assert!(out["saveMoney"].is_array());
+        assert_eq!(out["assets"][0]["incomeRecords"], json!([]));
+        assert_eq!(out["assets"][0]["priceRecords"], json!([]));
+        assert_eq!(out["assets"][0]["usages"][0]["id"], "u");
+
+        // 收入分类种子
+        assert_eq!(out["incomeCategories"].as_array().unwrap().len(), 4);
+        assert_eq!(out["incomeCategories"][0]["name"], "出租");
+
+        // 已有设置优先；平台默认值补齐；核心默认值补齐
+        assert_eq!(out["settings"]["currency"], "USD");
+        assert_eq!(out["settings"]["thousands"], false);
+        assert_eq!(out["settings"]["duration"], "days");
+        assert_eq!(out["settings"]["view"], "grid");
+        assert_eq!(out["settings"]["decimals"], 2);
+        assert_eq!(out["settings"]["theme"], "system");
+        assert_eq!(out["settings"]["updatedAt"], 0);
+
+        // 未知根字段保留
+        assert_eq!(out["pro"], true);
     }
 }

@@ -1,13 +1,16 @@
 import './style.css'
 import {
   ageDays,
+  categoryDistribution,
+  cloudConflict,
   countOfKind,
   coreVersion,
   dailyCost,
   dailyOfKind,
   initCore,
   netCost,
-  totalOfKind
+  totalOfKind,
+  trendSeries
 } from './core'
 import {
   Asset,
@@ -118,7 +121,8 @@ function toast(msg: string, duration = 2200): void {
 }
 
 class App {
-  state: State = loadState()
+  /** 在 `boot()` 里等 WASM 初始化后再读取（normalize 由 core 实现）。 */
+  state!: State
   brands: BrandBook = emptyBook()
   view: View = 'home'
   filter = 'all'
@@ -128,6 +132,7 @@ class App {
 
   async boot(): Promise<void> {
     await initCore()
+    this.state = loadState()
     await initDesktopCloud()
     this.brands = await loadBrands()
     this.applyTheme()
@@ -474,20 +479,10 @@ class App {
   }
 
   chart(assets: Asset[], days: number): SVGSVGElement {
-    const values: number[] = []
+    const values = trendSeries(assets, days)
     const start = new Date()
     start.setHours(0, 0, 0, 0)
     start.setDate(start.getDate() - (days - 1))
-    for (let i = 0; i < days; i++) {
-      const d = new Date(start)
-      d.setDate(start.getDate() + i)
-      const key = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`
-      let v = 0
-      for (const a of assets) {
-        if (a.buyDate <= key && (!a.soldDate || a.soldDate >= key)) v += a.price
-      }
-      values.push(v)
-    }
     const max = Math.max(100, ...values)
     const w = 800
     const h = 200
@@ -563,15 +558,11 @@ class App {
   }
 
   distribution(assets: Asset[]): HTMLElement {
-    const map = new Map<string, number>()
-    for (const a of assets) {
-      const cat = this.state.categories.find((c) => c.id === a.categoryId)?.name ?? '未分类'
-      map.set(cat, (map.get(cat) ?? 0) + 1)
-    }
+    const rows = categoryDistribution(assets, this.state.categories)
     const total = Math.max(1, assets.length)
     const box = E('div', { class: 'group', style: { padding: '4px 16px 12px' } })
-    if (!map.size) box.append(E('div', { class: 'empty', text: '暂无数据' }))
-    for (const [name, n] of [...map.entries()].sort((a, b) => b[1] - a[1])) {
+    if (!rows.length) box.append(E('div', { class: 'empty', text: '暂无数据' }))
+    for (const { name, count: n } of rows) {
       box.append(
         E(
           'div',
@@ -798,10 +789,11 @@ class App {
       if (!skipCheck) {
         toast('正在检查云端备份…')
         const info = await remoteInfo()
-        const remoteMs = info?.modifiedTime ? new Date(info.modifiedTime).getTime() : 0
         const localMs = this.state.settings.updatedAt ?? 0
         // 云端有别人更新过（晚于本地最后修改、也晚于我们上次见到的时间）时提醒。
-        if (remoteMs > 0 && remoteMs > localMs && remoteMs > lastRemoteAt()) {
+        const conflict = cloudConflict(info?.modifiedTime ?? '', localMs, lastRemoteAt())
+        const remoteMs = conflict.remoteMs
+        if (conflict.newer) {
           this.cloudBusy = false
           const choice = await this.askChoice(
             '云端备份较新',

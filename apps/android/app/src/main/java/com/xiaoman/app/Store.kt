@@ -5,10 +5,7 @@ import android.content.SharedPreferences
 import org.json.JSONArray
 import org.json.JSONObject
 import java.text.DecimalFormat
-import java.text.SimpleDateFormat
 import java.util.ArrayList
-import java.util.Date
-import java.util.Locale
 
 /** 本地数据：资产、分类、标签、设置，SharedPreferences 里存一份 JSON。 */
 class Store(c: Context) {
@@ -35,31 +32,22 @@ class Store(c: Context) {
     }
 
     private fun load() = quiet {
-        root = try {
-            JSONObject(sp.getString("data", "{}"))
+        val raw = try {
+            JSONObject(sp.getString("data", "{}") ?: "{}")
         } catch (_: Exception) {
             JSONObject()
         }
-        if (!root.has("assets")) put("assets", JSONArray())
-        if (!root.has("categories")) put("categories", JSONArray())
-        if (!root.has("tags")) put("tags", JSONArray())
-        if (!root.has("settings")) put("settings", JSONObject())
-        if (arr("incomeCategories").length() == 0) {
-            try {
-                val seed = arrayOf("出租", "工资", "理财", "其他")
-                for (i in seed.indices) {
-                    arr("incomeCategories").put(JSONObject().put("id", "inc_cat_$i").put("name", seed[i]))
-                }
-            } catch (_: Exception) {
-            }
+        // 数组、收入分类与默认设置由 core 统一补齐；Android 特有的默认值由这里传入。
+        val defaults = JSONObject()
+            .put("thousands", true)
+            .put("duration", "days")
+            .put("view", "grid")
+        root = try {
+            JSONObject(NativeCore.stateNormalize(raw.toString(), defaults.toString()))
+        } catch (_: Exception) {
+            raw
         }
-        val s = settings()
-        if (!s.has("currency")) setSetting("currency", "CNY")
-        if (!s.has("decimals")) setSetting("decimals", 2)
-        if (!s.has("thousands")) setSetting("thousands", true)
-        if (!s.has("duration")) setSetting("duration", "days")
-        if (!s.has("theme")) setSetting("theme", "system")
-        if (!s.has("view")) setSetting("view", "grid")
+        // 旧版本内置图标名迁移（各端资源路径不同，留在平台侧）。
         for (a in objs("assets")) {
             val icon = a.optString("icon")
             if (icon.isEmpty() || "emoji/app_icon_v1.png" == icon || "img/asset_default.png" == icon) {
@@ -324,7 +312,8 @@ class Store(c: Context) {
             java.util.TimeZone.getDefault().getOffset(System.currentTimeMillis()).toLong()
 
         @JvmStatic
-        fun today(): String = SimpleDateFormat("yyyy-MM-dd", Locale.US).format(Date())
+        fun today(): String =
+            NativeCore.todayString(System.currentTimeMillis(), tzOffsetMs())
 
         @JvmStatic
         fun daysBetween(from: String, to: String): Int = NativeCore.daysBetween(from, to)

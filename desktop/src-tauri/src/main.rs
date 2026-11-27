@@ -13,8 +13,6 @@ use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
 use aes_gcm::aead::{Aead, KeyInit};
 use aes_gcm::{Aes256Gcm, Nonce};
-use base64::Engine;
-use serde::Deserialize;
 use serde_json::{json, Value};
 use sha2::{Digest, Sha256};
 use tauri::ipc::Response;
@@ -23,9 +21,8 @@ use tauri::tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent}
 use tauri::{Manager, WindowEvent};
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::net::TcpListener;
-use xiaoman_core::cloud;
+use xiaoman_core::{cloud, oauth};
 
-const SCOPES: &str = "openid email profile https://www.googleapis.com/auth/drive.appdata";
 const LOOPBACK_PORT: u16 = 41888;
 const LOGIN_TIMEOUT: Duration = Duration::from_secs(180);
 /// 仅用于混淆内置凭据文件；密钥随程序分发，不构成机密性保证。
@@ -109,17 +106,6 @@ fn now_ms() -> u64 {
         .unwrap_or(0)
 }
 
-fn enc(s: &str) -> String {
-    let mut out = String::with_capacity(s.len());
-    for b in s.bytes() {
-        match b {
-            b'A'..=b'Z' | b'a'..=b'z' | b'0'..=b'9' | b'-' | b'_' | b'.' | b'~' => out.push(b as char),
-            _ => out.push_str(&format!("%{b:02X}")),
-        }
-    }
-    out
-}
-
 fn dec(s: &str) -> String {
     let bytes = s.as_bytes();
     let mut out = Vec::with_capacity(bytes.len());
@@ -157,27 +143,6 @@ fn random_string(len: usize) -> String {
     const CHARS: &[u8] = b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~";
     let mut rng = rand::thread_rng();
     (0..len).map(|_| CHARS[rng.gen_range(0..CHARS.len())] as char).collect()
-}
-
-fn base64_url(bytes: &[u8]) -> String {
-    base64::engine::general_purpose::URL_SAFE_NO_PAD.encode(bytes)
-}
-
-#[derive(Deserialize)]
-struct TokenResponse {
-    access_token: Option<String>,
-    expires_in: Option<i64>,
-    refresh_token: Option<String>,
-    scope: Option<String>,
-    error: Option<String>,
-    error_description: Option<String>,
-}
-
-fn token_error(resp: &TokenResponse, fallback: &str) -> String {
-    resp.error_description
-        .clone()
-        .or_else(|| resp.error.clone())
-        .unwrap_or_else(|| fallback.to_string())
 }
 
 /// 等待 loopback 回调，返回 (code, state)。
@@ -228,41 +193,39 @@ async fn wait_for_code(listener: TcpListener) -> Result<(String, String), String
     Ok((code, state))
 }
 
+/// 执行 `core/src/oauth.rs` 描述的 OAuth 请求。
+async fn send_oauth(req: &oauth::OAuthRequest) -> Result<(i32, String), String> {
+    let method = reqwest::Method::from_bytes(req.method.as_bytes())
+        .map_err(|e| format!("请求方法无效：{e}"))?;
+    let mut builder = http_client().request(method, &req.url);
+    for (key, value) in &req.headers {
+        builder = builder.header(key, value);
+    }
+    if let Some(body) = &req.body {
+        builder = builder.body(body.clone());
+    }
+    let res = builder.send().await.map_err(|e| format!("网络请求失败：{e}"))?;
+    let status = res.status().as_u16() as i32;
+    let text = res.text().await.map_err(|e| format!("读取响应失败：{e}"))?;
+    Ok((status, text))
+}
+
 async fn exchange_code(
     client_id: &str,
     client_secret: &str,
     code: &str,
     verifier: &str,
     redirect: &str,
-) -> Result<TokenResponse, String> {
-    let http = reqwest::Client::new();
-    let mut form = vec![
-        ("client_id", client_id),
-        ("code", code),
-        ("code_verifier", verifier),
-        ("redirect_uri", redirect),
-        ("grant_type", "authorization_code"),
-    ];
-    if !client_secret.is_empty() {
-        form.push(("client_secret", client_secret));
-    }
-    let res = http
-        .post("https://oauth2.googleapis.com/token")
-        .form(&form)
-        .send()
-        .await
-        .map_err(|e| {
-            eprintln!("[xiaoman-desktop] token request failed: {e}");
-            format!("换取令牌请求失败：{e}")
-        })?;
-    let status = res.status();
-    let ok = status.is_success();
-    let resp: TokenResponse = res.json().await.map_err(|e| {
-        eprintln!("[xiaoman-desktop] token parse failed: {e}");
-        format!("解析令牌失败：{e}")
-    })?;
-    if !ok {
-        let msg = token_error(&resp, "换取令牌失败");
+) -> Result<Value, String> {
+    let req = oauth::token_request(client_id, client_secret, code, verifier, redirect);
+    let (status, body) = send_oauth(&req).await?;
+    let token = oauth::parse_token(status, &body);
+    if !token.get("ok").and_then(Value::as_bool).unwrap_or(false) {
+        let msg = token
+            .get("error")
+            .and_then(Value::as_str)
+            .unwrap_or("换取令牌失败")
+            .to_string();
         eprintln!("[xiaoman-desktop] token error {status}: {msg}");
         if msg.contains("client_secret is missing") {
             return Err(
@@ -272,24 +235,14 @@ async fn exchange_code(
         }
         return Err(msg);
     }
-    Ok(resp)
+    Ok(token)
 }
 
 async fn fetch_email(access_token: &str) -> String {
-    let http = reqwest::Client::new();
-    let res = http
-        .get("https://openidconnect.googleapis.com/v1/userinfo")
-        .bearer_auth(access_token)
-        .send()
-        .await;
-    match res {
-        Ok(res) if res.status().is_success() => res
-            .json::<Value>()
-            .await
-            .ok()
-            .and_then(|v| v.get("email").and_then(|e| e.as_str()).map(str::to_string))
-            .unwrap_or_default(),
-        _ => String::new(),
+    let req = oauth::userinfo_request(access_token);
+    match send_oauth(&req).await {
+        Ok((status, body)) => oauth::parse_email(status, &body),
+        Err(_) => String::new(),
     }
 }
 
@@ -310,15 +263,15 @@ async fn google_login(
     }
     let redirect = format!("http://127.0.0.1:{LOOPBACK_PORT}");
     let verifier = random_string(64);
-    let challenge = base64_url(&Sha256::digest(verifier.as_bytes()));
+    let challenge = oauth::pkce_challenge(&verifier);
     let state = random_string(24);
-    let auth_url = format!(
-        "https://accounts.google.com/o/oauth2/v2/auth?client_id={}&redirect_uri={}&response_type=code&scope={}&code_challenge={}&code_challenge_method=S256&access_type=offline&prompt=select_account&include_granted_scopes=true&state={}",
-        enc(&client_id),
-        enc(&redirect),
-        enc(SCOPES),
-        enc(&challenge),
-        enc(&state)
+    let auth_url = oauth::auth_url(
+        &client_id,
+        &redirect,
+        &challenge,
+        &state,
+        oauth::SCOPE,
+        "select_account",
     );
 
     let listener = TcpListener::bind(("127.0.0.1", LOOPBACK_PORT))
@@ -342,23 +295,28 @@ async fn google_login(
     }
     let token = exchange_code(&client_id, client_secret.trim(), &code, &verifier, &redirect).await?;
     eprintln!("[xiaoman-desktop] token exchange ok");
-    if let Some(scope) = token.scope.as_deref() {
+    if let Some(scope) = token.get("scope").and_then(Value::as_str) {
         if !scope.contains("drive.appdata") {
             return Err(
                 "未授予 Drive 权限：Google 授权页的 Drive 权限需要手动勾选后才能继续".to_string(),
             );
         }
     }
-    let access = token.access_token.clone().unwrap_or_default();
+    let access = token
+        .get("accessToken")
+        .and_then(Value::as_str)
+        .unwrap_or("")
+        .to_string();
     if access.is_empty() {
         return Err("Google 未返回访问令牌".to_string());
     }
     let email = fetch_email(&access).await;
+    let expires_in = token.get("expiresIn").and_then(Value::as_i64).unwrap_or(3600);
     Ok(json!({
         "email": email,
         "accessToken": access,
-        "refreshToken": token.refresh_token.unwrap_or_default(),
-        "expiresAt": now_ms() + token.expires_in.unwrap_or(3600).max(0) as u64 * 1000
+        "refreshToken": token.get("refreshToken").and_then(Value::as_str).unwrap_or(""),
+        "expiresAt": now_ms() + expires_in.max(0) as u64 * 1000
     }))
 }
 
@@ -380,33 +338,28 @@ async fn google_refresh(
             client_secret = secret;
         }
     }
-    let http = reqwest::Client::new();
-    let mut form = vec![
-        ("client_id", client_id.as_str()),
-        ("refresh_token", refresh_token.as_str()),
-        ("grant_type", "refresh_token"),
-    ];
-    if !client_secret.trim().is_empty() {
-        form.push(("client_secret", client_secret.as_str()));
+    let req = oauth::refresh_request(&client_id, client_secret.trim(), &refresh_token);
+    let (status, body) = send_oauth(&req).await?;
+    let token = oauth::parse_token(status, &body);
+    if !token.get("ok").and_then(Value::as_bool).unwrap_or(false) {
+        return Err(token
+            .get("error")
+            .and_then(Value::as_str)
+            .unwrap_or("刷新令牌失败")
+            .to_string());
     }
-    let res = http
-        .post("https://oauth2.googleapis.com/token")
-        .form(&form)
-        .send()
-        .await
-        .map_err(|e| format!("刷新令牌请求失败：{e}"))?;
-    let ok = res.status().is_success();
-    let resp: TokenResponse = res.json().await.map_err(|e| format!("解析令牌失败：{e}"))?;
-    if !ok {
-        return Err(token_error(&resp, "刷新令牌失败"));
-    }
-    let access = resp.access_token.clone().unwrap_or_default();
+    let access = token
+        .get("accessToken")
+        .and_then(Value::as_str)
+        .unwrap_or("")
+        .to_string();
     if access.is_empty() {
         return Err("Google 未返回访问令牌".to_string());
     }
+    let expires_in = token.get("expiresIn").and_then(Value::as_i64).unwrap_or(3600);
     Ok(json!({
         "accessToken": access,
-        "expiresAt": now_ms() + resp.expires_in.unwrap_or(3600).max(0) as u64 * 1000
+        "expiresAt": now_ms() + expires_in.max(0) as u64 * 1000
     }))
 }
 

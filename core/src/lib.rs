@@ -8,6 +8,7 @@ pub mod cloud;
 pub mod oauth;
 pub mod state;
 pub mod update;
+mod util;
 
 pub const VERSION: &str = "0.1.0";
 
@@ -275,6 +276,44 @@ mod android {
             return std::ptr::null_mut();
         };
         ret_string(&mut env, calc::latest_price(&parse(&asset)).to_string())
+    }
+
+    #[no_mangle]
+    pub extern "system" fn Java_com_xiaoman_app_NativeCore_statusText(
+        mut env: JNIEnv,
+        _class: JClass,
+        status: JString,
+    ) -> jstring {
+        let Ok(status) = take_string(&mut env, &status) else {
+            return std::ptr::null_mut();
+        };
+        ret_string(&mut env, calc::status_text(&status).to_string())
+    }
+
+    #[no_mangle]
+    pub extern "system" fn Java_com_xiaoman_app_NativeCore_displayName(
+        mut env: JNIEnv,
+        _class: JClass,
+        asset: JString,
+    ) -> jstring {
+        let Ok(asset) = take_string(&mut env, &asset) else {
+            return std::ptr::null_mut();
+        };
+        ret_string(&mut env, calc::display_name(&parse(&asset)))
+    }
+
+    #[no_mangle]
+    pub extern "system" fn Java_com_xiaoman_app_NativeCore_newId(
+        mut env: JNIEnv,
+        _class: JClass,
+        prefix: JString,
+        now_ms: jni::sys::jlong,
+        entropy: jni::sys::jlong,
+    ) -> jstring {
+        let Ok(prefix) = take_string(&mut env, &prefix) else {
+            return std::ptr::null_mut();
+        };
+        ret_string(&mut env, calc::new_id(&prefix, now_ms, entropy))
     }
 
     #[no_mangle]
@@ -885,6 +924,21 @@ mod wasm {
     #[wasm_bindgen]
     pub fn latest_price(asset_json: &str) -> String {
         crate::calc::latest_price(&parse(asset_json)).to_string()
+    }
+
+    #[wasm_bindgen]
+    pub fn status_text(status: &str) -> String {
+        crate::calc::status_text(status).to_string()
+    }
+
+    #[wasm_bindgen]
+    pub fn display_name(asset_json: &str) -> String {
+        crate::calc::display_name(&parse(asset_json))
+    }
+
+    #[wasm_bindgen]
+    pub fn new_id(prefix: &str, now_ms: f64, entropy: f64) -> String {
+        crate::calc::new_id(prefix, now_ms as i64, entropy as i64)
     }
 
     #[wasm_bindgen]

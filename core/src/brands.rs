@@ -10,15 +10,17 @@ pub const API_URL: &str = "https://api.github.com/repos/HanYunChenLuo/xiaoman/co
 pub const RAW_URL: &str = "https://raw.githubusercontent.com/HanYunChenLuo/xiaoman/main/data/brands.json";
 const MAX_SCHEMA: i64 = 1;
 
+fn int_value(x: &Value) -> Option<i64> {
+    match x {
+        Value::Number(n) => n.as_i64().or_else(|| n.as_f64().map(|f| f as i64)),
+        Value::String(s) => s.trim().parse::<i64>().ok(),
+        Value::Bool(b) => Some(if *b { 1 } else { 0 }),
+        _ => None,
+    }
+}
+
 fn i64_of(v: &Value, key: &str) -> i64 {
-    v.get(key)
-        .and_then(|x| match x {
-            Value::Number(n) => n.as_i64().or_else(|| n.as_f64().map(|f| f as i64)),
-            Value::String(s) => s.trim().parse::<i64>().ok(),
-            Value::Bool(b) => Some(if *b { 1 } else { 0 }),
-            _ => None,
-        })
-        .unwrap_or(0)
+    v.get(key).and_then(int_value).unwrap_or(0)
 }
 
 pub fn api_url() -> &'static str {
@@ -34,7 +36,7 @@ pub fn raw_url() -> &'static str {
 pub fn validate(data: &Value, app_version_code: i64) -> Value {
     let schema = data
         .get("schema")
-        .and_then(Value::as_i64)
+        .and_then(int_value)
         .unwrap_or(MAX_SCHEMA);
     let version = i64_of(data, "dataVersion");
     let version_name = data
@@ -329,6 +331,11 @@ mod tests {
         let mut high = data.clone();
         high["schema"] = json!(2);
         assert_eq!(validate(&high, 1)["error"], "数据格式版本过高");
+
+        // 字符串形式的 schema 也要按数字处理（旧端 optInt/Number 会转换）。
+        let mut high_text = data.clone();
+        high_text["schema"] = json!("2");
+        assert_eq!(validate(&high_text, 1)["error"], "数据格式版本过高");
 
         let mut future = data.clone();
         future["supportedApp"] = json!({ "minVersionCode": 5 });

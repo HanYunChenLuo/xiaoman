@@ -248,6 +248,59 @@ pub fn latest_price(asset: &Value) -> Value {
     best.cloned().unwrap_or(Value::Null)
 }
 
+/// 状态展示文案。
+pub fn status_text(status: &str) -> &'static str {
+    match status {
+        "retired" => "已退役",
+        "sold" => "已卖出",
+        _ => "服役中",
+    }
+}
+
+/// 展示名称：优先 `name`，空时回退 `model`。
+pub fn display_name(asset: &Value) -> String {
+    let name = opt_str(asset, "name").trim();
+    if name.is_empty() {
+        opt_str(asset, "model").to_string()
+    } else {
+        name.to_string()
+    }
+}
+
+const ID_CHARS: &[u8] = b"0123456789abcdefghijklmnopqrstuvwxyz";
+const ID_SUFFIX_SPACE: i64 = 36 * 36 * 36 * 36;
+
+fn base36(mut n: u64) -> String {
+    if n == 0 {
+        return "0".to_string();
+    }
+    let mut out = Vec::new();
+    while n > 0 {
+        out.push(ID_CHARS[(n % 36) as usize]);
+        n /= 36;
+    }
+    out.reverse();
+    String::from_utf8(out).unwrap_or_default()
+}
+
+fn base36_fixed(n: u64, width: usize) -> String {
+    let s = base36(n);
+    let mut out = String::with_capacity(width.max(s.len()));
+    for _ in s.len()..width {
+        out.push('0');
+    }
+    out.push_str(&s);
+    out
+}
+
+/// 生成跨端一致的本地 id：`prefix + base36(now) + 4 位 base36 熵`。
+/// 熵由调用方提供（Web `Math.random`、Android UUID），核心不取随机源。
+pub fn new_id(prefix: &str, now_ms: i64, entropy: i64) -> String {
+    let ts = base36(now_ms.max(0) as u64);
+    let suffix = base36_fixed(entropy.rem_euclid(ID_SUFFIX_SPACE) as u64, 4);
+    format!("{prefix}{ts}{suffix}")
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -313,6 +366,29 @@ mod tests {
         assert_eq!(v[0]["count"], 3);
         assert_eq!(v[1]["name"], "数码");
         assert_eq!(v[2]["name"], "未分类");
+    }
+
+    #[test]
+    fn status_and_display_name() {
+        assert_eq!(status_text("retired"), "已退役");
+        assert_eq!(status_text("sold"), "已卖出");
+        assert_eq!(status_text("serving"), "服役中");
+        assert_eq!(status_text(""), "服役中");
+
+        assert_eq!(display_name(&json!({ "name": "  ", "model": "iPhone 15" })), "iPhone 15");
+        assert_eq!(display_name(&json!({ "name": " 小白 ", "model": "x" })), "小白");
+        assert_eq!(display_name(&json!({})), "");
+    }
+
+    #[test]
+    fn new_id_is_stable_and_unique_enough() {
+        let id = new_id("a_", 1_795_802_400_000, 123456);
+        assert!(id.starts_with("a_"));
+        assert_eq!(id, new_id("a_", 1_795_802_400_000, 123456));
+        assert_ne!(id, new_id("a_", 1_795_802_400_000, 123457));
+        // 4 位固定熵后缀（36^4 空间）
+        assert_eq!(id.len(), 2 + base36(1_795_802_400_000_u64).len() + 4);
+        assert_ne!(new_id("a_", 0, 0), new_id("a_", 1, 0));
     }
 
     #[test]

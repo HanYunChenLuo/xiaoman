@@ -144,8 +144,8 @@ fn date_of(sec: i64, tz_offset_ms: i64, today: &str) -> String {
 }
 
 fn today_of(now_ms: i64, tz_offset_ms: i64) -> String {
-    let sec = now_ms.div_euclid(1000).max(1);
-    date_of(sec, tz_offset_ms, "1970-01-01")
+    // 与趋势/日期计算共用一份实现，避免两端逻辑漂移。
+    crate::calc::today_string(now_ms, tz_offset_ms)
 }
 
 /// 记录日期：兼容 epoch 秒与 `YYYY-MM-DD` 字符串；缺失时回退今天。

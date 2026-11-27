@@ -9,10 +9,13 @@ import {
   brandsRawUrl,
   brandsValidate,
   decodeIas,
+  displayNameValue,
   encodeIas,
   incomeTotalState,
   latestPriceState,
+  newId,
   stateNormalize,
+  statusTextValue,
   todayString,
   tzOffsetMs
 } from './core'
@@ -115,14 +118,11 @@ export function loadState(): State {
     assets: [],
     categories: [{ id: 'cat_digital', name: '数码' }],
     tags: [],
-    incomeCategories: defaultIncomeCategories(),
+    // 空数组由 core 的 normalize 填入内置收入分类。
+    incomeCategories: [],
     saveMoney: [],
     settings: { currency: 'CNY', decimals: 2, thousands: false, theme: 'system' }
   })
-}
-
-function defaultIncomeCategories(): Category[] {
-  return ['出租', '工资', '理财', '其他'].map((name, i) => ({ id: `inc_cat_${i}`, name }))
 }
 
 export function saveState(s: State): void {
@@ -136,8 +136,9 @@ export function normalize(s: State): State {
   ) as State
 }
 
+/** 跨端一致的本地 id（core 生成格式，Web 提供时间与熵）。 */
 export function uid(prefix: string): string {
-  return prefix + Date.now().toString(36) + Math.random().toString(36).slice(2, 6)
+  return newId(prefix, Date.now(), Math.floor(Math.random() * 0x7fffffff))
 }
 
 export function todayStr(): string {
@@ -178,13 +179,11 @@ export function money(v: number, settings: Settings): string {
 }
 
 export function statusText(s: string): string {
-  if (s === 'retired') return '已退役'
-  if (s === 'sold') return '已卖出'
-  return '服役中'
+  return statusTextValue(s)
 }
 
 export function displayName(a: Asset): string {
-  return a.name?.trim() ? a.name : a.model ?? ''
+  return displayNameValue(a)
 }
 
 /** 某件资产的累计收入（core 计算）。 */

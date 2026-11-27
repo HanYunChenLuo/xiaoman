@@ -11,6 +11,8 @@
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 
+use crate::util::percent_encode;
+
 /// 云端备份文件名，Android 与 Web 共用。
 pub const BACKUP_NAME: &str = "xiaoman_backup.ias";
 const API_ROOT: &str = "https://www.googleapis.com";
@@ -59,26 +61,14 @@ fn with_header(mut req: CloudRequest, key: &str, value: &str) -> CloudRequest {
     req
 }
 
-/// RFC 3986 百分号编码（用于查询值与路径片段）。
-fn enc(s: &str) -> String {
-    let mut out = String::with_capacity(s.len());
-    for b in s.bytes() {
-        match b {
-            b'A'..=b'Z' | b'a'..=b'z' | b'0'..=b'9' | b'-' | b'_' | b'.' | b'~' => out.push(b as char),
-            _ => out.push_str(&format!("%{b:02X}")),
-        }
-    }
-    out
-}
-
 /// 查找云端备份（按修改时间倒序取第一条）。
 pub fn find_request(token: &str) -> CloudRequest {
     let q = format!("name='{}' and trashed=false", BACKUP_NAME);
     let url = format!(
         "{API_ROOT}/drive/v3/files?spaces=appDataFolder&q={}&fields={}&orderBy={}&pageSize=5",
-        enc(&q),
-        enc(&format!("files({FILE_FIELDS})")),
-        enc("modifiedTime desc")
+        percent_encode(&q),
+        percent_encode(&format!("files({FILE_FIELDS})")),
+        percent_encode("modifiedTime desc")
     );
     request("GET", url, token)
 }
@@ -87,7 +77,7 @@ pub fn find_request(token: &str) -> CloudRequest {
 pub fn create_request(token: &str) -> CloudRequest {
     let url = format!(
         "{API_ROOT}/drive/v3/files?fields={}",
-        enc(FILE_FIELDS)
+        percent_encode(FILE_FIELDS)
     );
     let mut req = with_header(request("POST", url, token), "Content-Type", "application/json");
     req.body = Some(
@@ -100,8 +90,8 @@ pub fn create_request(token: &str) -> CloudRequest {
 pub fn upload_request(token: &str, file_id: &str) -> CloudRequest {
     let url = format!(
         "{API_ROOT}/upload/drive/v3/files/{}?uploadType=media&fields={}",
-        enc(file_id),
-        enc(FILE_FIELDS)
+        percent_encode(file_id),
+        percent_encode(FILE_FIELDS)
     );
     with_header(request("PATCH", url, token), "Content-Type", "application/octet-stream")
 }
@@ -110,7 +100,7 @@ pub fn upload_request(token: &str, file_id: &str) -> CloudRequest {
 pub fn download_request(token: &str, file_id: &str) -> CloudRequest {
     let url = format!(
         "{API_ROOT}/drive/v3/files/{}?alt=media",
-        enc(file_id)
+        percent_encode(file_id)
     );
     request("GET", url, token)
 }

@@ -13,7 +13,7 @@
 - **Android**：Kotlin UI + Rust 核心（当前可用）
 - **Web**：Vite + TypeScript，通过 WASM 复用 `core/`；支持资产/心愿/趋势/设置、主图与备注图片、到期时间与浏览器提醒、品牌数据在线更新、`.ias` 导入导出，可安装为 PWA
 - **桌面**：Tauri 外壳加载 Web 构建产物
-- 业务核心（数据、备份、品牌匹配、云同步）集中于 Rust，各平台仅维护 UI 与系统集成
+- 业务核心（数据、备份、统计、品牌匹配、云同步与 Google OAuth）集中于 Rust，各平台仅维护 UI 与系统集成
 
 ## 功能
 
@@ -83,7 +83,7 @@ cd ../desktop/src-tauri && cargo build    # 桌面（需先构建 Web）
 - **Google（Web）**：在同一项目创建「Web 应用」类型 OAuth 客户端，把站点来源（如 `http://localhost:5173` 与线上域名）加入「已获授权的 JavaScript 来源」。SPA 走 GIS Token 模型，无需 client_secret；Client ID 写在 `web/src/cloud.ts` 的 `CLIENT_ID`。
 - **Google（桌面）**：创建「桌面应用」类型 OAuth 客户端（loopback 回调 `http://127.0.0.1:41888`），用 `node desktop/scripts/seed-oauth.mjs` 生成加密凭据文件 `desktop/src-tauri/oauth.enc`（环境变量 `XIAOMAN_GOOGLE_CLIENT_ID` / `XIAOMAN_GOOGLE_CLIENT_SECRET`）。该文件已被 gitignore；没有它时桌面端不显示云同步入口。CI 中通过 Actions Secret `XIAOMAN_OAUTH_ENC`（base64）在构建前写入，见 `.github/workflows/build.yml`。
 
-也可在 `apps/android/local.properties` 写入 `oauth.google.clientId=...` 作为默认值。**Google 跳转登录**：构建时写入 `oauth.google.clientId` 会注册 `com.googleusercontent.apps.<client-id>:/oauth2redirect` 回调，授权后浏览器直接跳回 App；应用内临时填写的 Client ID 因无法动态注册 Scheme，会自动使用 127.0.0.1 loopback 方式。云端保存的是加密 `.ias` 备份，三端共用 `core/src/cloud.rs` 的请求构造与解析；桌面端凭据缺失时自动隐藏云同步。
+也可在 `apps/android/local.properties` 写入 `oauth.google.clientId=...` 作为默认值。**Google 跳转登录**：构建时写入 `oauth.google.clientId` 会注册 `com.googleusercontent.apps.<client-id>:/oauth2redirect` 回调，授权后浏览器直接跳回 App；应用内临时填写的 Client ID 因无法动态注册 Scheme，会自动使用 127.0.0.1 loopback 方式。云端保存的是加密 `.ias` 备份，三端共用 `core/src/cloud.rs` 的请求构造与解析；Google PKCE 授权 URL、令牌交换/续期与响应解析统一在 `core/src/oauth.rs`。桌面端凭据缺失时自动隐藏云同步。
 
 ### 凭据轮换
 

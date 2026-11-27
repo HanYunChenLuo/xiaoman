@@ -48,6 +48,12 @@ object NativeCore {
 
     @JvmStatic external fun latestPrice(assetJson: String): String
 
+    @JvmStatic external fun statusText(status: String): String
+
+    @JvmStatic external fun displayName(assetJson: String): String
+
+    @JvmStatic external fun newId(prefix: String, nowMs: Long, entropy: Long): String
+
     @JvmStatic external fun stateNormalize(stateJson: String, defaultsJson: String): String
 
     // 云备份协议（core/src/cloud.rs）：返回请求 JSON / 解析结果 JSON

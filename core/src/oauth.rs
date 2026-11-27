@@ -10,6 +10,8 @@ use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 use sha2::{Digest, Sha256};
 
+use crate::util::percent_encode;
+
 pub const AUTH_URL: &str = "https://accounts.google.com/o/oauth2/v2/auth";
 pub const TOKEN_URL: &str = "https://oauth2.googleapis.com/token";
 pub const USERINFO_URL: &str = "https://openidconnect.googleapis.com/v1/userinfo";
@@ -25,22 +27,10 @@ pub struct OAuthRequest {
     pub body: Option<String>,
 }
 
-/// RFC 3986 百分号编码。
-fn enc(s: &str) -> String {
-    let mut out = String::with_capacity(s.len());
-    for b in s.bytes() {
-        match b {
-            b'A'..=b'Z' | b'a'..=b'z' | b'0'..=b'9' | b'-' | b'_' | b'.' | b'~' => out.push(b as char),
-            _ => out.push_str(&format!("%{b:02X}")),
-        }
-    }
-    out
-}
-
 fn form(params: &[(&str, &str)]) -> String {
     params
         .iter()
-        .map(|(k, v)| format!("{}={}", enc(k), enc(v)))
+        .map(|(k, v)| format!("{}={}", percent_encode(k), percent_encode(v)))
         .collect::<Vec<_>>()
         .join("&")
 }

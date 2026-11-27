@@ -319,11 +319,7 @@ class Store(c: Context) {
         fun daysBetween(from: String, to: String): Int = NativeCore.daysBetween(from, to)
 
         @JvmStatic
-        fun statusText(s: String): String {
-            if ("retired" == s) return "已退役"
-            if ("sold" == s) return "已卖出"
-            return "服役中"
-        }
+        fun statusText(s: String): String = NativeCore.statusText(s)
 
         @JvmStatic
         fun isWish(a: JSONObject): Boolean = "wish" == a.optString("kind")

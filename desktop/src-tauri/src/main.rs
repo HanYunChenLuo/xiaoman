@@ -296,7 +296,8 @@ async fn google_login(
     let token = exchange_code(&client_id, client_secret.trim(), &code, &verifier, &redirect).await?;
     eprintln!("[xiaoman-desktop] token exchange ok");
     if let Some(scope) = token.get("scope").and_then(Value::as_str) {
-        if !scope.contains("drive.appdata") {
+        // Google 正常会返回 scope；缺失时不要误报成“未授予 Drive 权限”。
+        if !scope.is_empty() && !scope.contains("drive.appdata") {
             return Err(
                 "未授予 Drive 权限：Google 授权页的 Drive 权限需要手动勾选后才能继续".to_string(),
             );

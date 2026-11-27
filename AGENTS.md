@@ -47,7 +47,7 @@ Tauri 通过 `frontendDist: ../../web/dist` 加载 Web 端（编译期嵌入）�
 
 ## 云同步（Android / Web / 桌面）
 
-云端协议（文件名 `xiaoman_backup.ias`、Drive appDataFolder 的 URL/方法/头部、响应解析、中文错误映射）统一在 `core/src/cloud.rs`，通过 JNI 与 wasm 导出；各端只负责 OAuth 授权、token 存储和 HTTP 执行：
+云端协议（文件名 `xiaoman_backup.ias`、Drive appDataFolder 的 URL/方法/头部、响应解析、中文错误映射）统一在 `core/src/cloud.rs`；Google 授权 URL/PKCE/令牌请求与解析在 `core/src/oauth.rs`，均通过 JNI 与 wasm 导出。各端只负责浏览器/回环授权交互、token 存储和 HTTP 执行：
 
 - Android：`apps/android/.../CloudSync.kt` 只负责 Google PKCE + Drive（token 经 `SecretStore` 用 Android Keystore AES-GCM 加密后存 SharedPreferences，旧明文自动迁移）；Drive 请求调用 `NativeCore.cloud*`，云端内容为 `.ias` 字节，手动上传/恢复。Google Client ID 可写在 `apps/android/local.properties` 的 `oauth.google.clientId`，或在 App 内「设置 → 数据同步」填写（该入口仅在构建时未内置 Client ID 或已填写过自定义 ID 时显示，普通发布版不展示）；构建时写入会生成自定义 Scheme 回调并注册 intent-filter（授权后直接跳回 App），应用内填写的 ID 因 Scheme 不可动态注册，自动回退 loopback（需「桌面应用」类型客户端）。MainActivity 为 singleTask 并在 onNewIntent 处理回调。
 - Web：`web/src/cloud.ts` 用 Google Identity Services Token 模型（`web/src/cloud.ts` 内 `CLIENT_ID`，SPA 无 client_secret）+ `core/src/cloud.rs` 的请求描述，`fetch` 执行；设置页「数据同步」提供登录、上传、恢复、退出。token：Web 存 localStorage `xiaoman_google_v1`，桌面存 macOS 钥匙串（服务 `com.xiaoman.desktop`，账户 `google-cloud`）。OAuth 客户端需配置「已获授权的 JavaScript 来源」（localhost:5173、线上域名）。

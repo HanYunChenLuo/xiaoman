@@ -1316,7 +1316,7 @@ class MainActivity : Activity() {
             Runnable {
                 inputDialog("新建分类", "请输入分类名称") { name ->
                     try {
-                        store.arr("categories").put(JSONObject().put("id", "cat_" + System.currentTimeMillis()).put("name", name))
+                        store.arr("categories").put(JSONObject().put("id", newId("cat_")).put("name", name))
                         store.save()
                     } catch (_: Exception) {
                     }
@@ -1356,7 +1356,7 @@ class MainActivity : Activity() {
             Runnable {
                 inputDialog("新建标签", "请输入标签名称") { name ->
                     try {
-                        store.arr("tags").put(JSONObject().put("id", "tag_" + System.currentTimeMillis()).put("name", name))
+                        store.arr("tags").put(JSONObject().put("id", newId("tag_")).put("name", name))
                         store.save()
                     } catch (_: Exception) {
                     }
@@ -2041,7 +2041,7 @@ class MainActivity : Activity() {
             editOriginal = null
             brandAuto = false
             draft = JSONObject()
-            draft.put("id", "a_" + System.currentTimeMillis())
+            draft.put("id", newId("a_"))
             draft.put("name", "")
             draft.put("price", 0)
             draft.put("buyDate", Store.today())
@@ -2433,10 +2433,14 @@ class MainActivity : Activity() {
         parent.addView(row)
     }
 
-    private fun displayName(a: JSONObject): String {
-        val n = a.optString("name")
-        return if (n.isEmpty()) a.optString("model") else n
-    }
+    private fun displayName(a: JSONObject): String = NativeCore.displayName(a.toString())
+
+    /** 本地 id 的格式由 core 统一；平台只提供时间与熵。 */
+    private fun newId(prefix: String): String =
+        NativeCore.newId(prefix, System.currentTimeMillis(), idEntropy())
+
+    private fun idEntropy(): Long =
+        java.util.UUID.randomUUID().mostSignificantBits and Long.MAX_VALUE
 
     private fun matchText(a: JSONObject): String {
         val m = a.optString("model")
@@ -2769,7 +2773,7 @@ class MainActivity : Activity() {
             showAdd()
         }, Runnable {
             inputDialog("新建分类", "请输入分类名称") { name ->
-                val c = JSONObject().put("id", "cat_" + System.currentTimeMillis()).put("name", name)
+                val c = JSONObject().put("id", newId("cat_")).put("name", name)
                 store.arr("categories").put(c)
                 store.save()
                 draft.put("categoryId", c.optString("id"))
@@ -2794,7 +2798,7 @@ class MainActivity : Activity() {
             showAdd()
         }, "新建", Runnable {
             inputDialog("新建标签", "请输入标签名称") { name ->
-                val t = JSONObject().put("id", "tag_" + System.currentTimeMillis()).put("name", name)
+                val t = JSONObject().put("id", newId("tag_")).put("name", name)
                 store.arr("tags").put(t)
                 store.save()
                 pickTags()

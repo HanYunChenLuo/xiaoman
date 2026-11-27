@@ -80,6 +80,19 @@ export function incomeTotalState(asset: unknown): number {
   return wasm.income_total(JSON.stringify(asset))
 }
 
+export function statusTextValue(status: string): string {
+  return wasm.status_text(status)
+}
+
+export function displayNameValue(asset: unknown): string {
+  return wasm.display_name(JSON.stringify(asset))
+}
+
+/** 跨端一致的本地 id；熵由调用方提供。 */
+export function newId(prefix: string, nowMs: number, entropy: number): string {
+  return wasm.new_id(prefix, nowMs, entropy)
+}
+
 export function latestPriceState(asset: unknown): unknown {
   return JSON.parse(wasm.latest_price(JSON.stringify(asset)))
 }

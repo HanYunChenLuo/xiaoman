@@ -81,7 +81,8 @@ jobs:
           shutil.copy(tgz + ".sig", out / "xiaoman-desktop-aarch64.app.tar.gz.sig")
           shutil.copy(dmg, out / "xiaoman-desktop-aarch64.dmg")
           tag = os.environ["TAG"]
-          version = json.load(open("desktop/src-tauri/tauri.conf.json"))["version"]
+          # 版本唯一来源是根目录 version.json；tauri.conf.json 里只是路径引用。
+          version = json.load(open("version.json"))["version"]
           signature = open(tgz + ".sig").read().strip()
           manifest = {
               "version": version,

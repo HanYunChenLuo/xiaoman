@@ -230,6 +230,35 @@ class Store(c: Context) {
 
     fun export(): String = root.toString()
 
+    /** 供 Rust 合并使用的本地快照（深拷贝，避免误改内存中的 store）。 */
+    fun mergeSnapshot(): JSONObject {
+        return JSONObject().apply {
+            put("assets", copyArray("assets"))
+            put("categories", copyArray("categories"))
+            put("tags", copyArray("tags"))
+            put("incomeCategories", copyArray("incomeCategories"))
+            put("saveMoney", JSONArray(rawArray("rawSaveMoney")?.toString() ?: "[]"))
+            put("settings", JSONObject(settings().toString()))
+        }
+    }
+
+    /** 应用 Rust 合并结果：只替换数据数组，保留设置与其他根字段。 */
+    fun applyMergedState(merged: JSONObject) {
+        put("assets", merged.optJSONArray("assets") ?: JSONArray())
+        put("categories", merged.optJSONArray("categories") ?: JSONArray())
+        put("tags", merged.optJSONArray("tags") ?: JSONArray())
+        put("incomeCategories", merged.optJSONArray("incomeCategories") ?: JSONArray())
+        if (merged.has("saveMoney")) put("rawSaveMoney", merged.optJSONArray("saveMoney") ?: JSONArray())
+        save()
+    }
+
+    private fun copyArray(key: String): JSONArray =
+        try {
+            JSONArray(arr(key).toString())
+        } catch (_: Exception) {
+            JSONArray()
+        }
+
     fun clearAll() {
         try {
             root.put("assets", JSONArray())

@@ -11,7 +11,7 @@ apps/android/            # Android 工程（Gradle 单模块 :app）
   app/src/main/java/com/xiaoman/app/   # Kotlin UI（MainActivity/DialogKit/Ui/Store/Backup/NativeCore 等）
   app/src/main/assets/                 # 内置图标；brands/brands.json 由 data/ 同步（gitignore）
   app/build.gradle                     # 版本号、Rust 构建任务、签名配置
-core/                    # Rust 核心：calc.rs（计算）、backup.rs（.ias 编解码）、cloud.rs（Drive 云备份协议）、update.rs（Releases 更新检查）、lib.rs（JNI/wasm 导出）
+core/                    # Rust 核心：calc.rs（计算）、backup.rs（.ias 容器编解码）、state.rs（.ias 字段映射/合并）、cloud.rs（Drive 云备份协议）、update.rs（Releases 更新检查）、lib.rs（JNI/wasm 导出）
 web/                     # Vite + TypeScript Web 端（wasm-bindgen）
 desktop/src-tauri/       # Tauri 桌面外壳：加载 web/dist（编译期嵌入）+ 原生云同步命令
 data/brands.json         # 品牌与型号数据唯一来源（远程更新入口）
@@ -88,7 +88,7 @@ Tauri 通过 `frontendDist: ../../web/dist` 加载 Web 端（编译期嵌入）�
 - Web UI 的尺寸与颜色使用 `web/src/style.css` 顶部变量（`--radius-*` / `--space-*` / `--font-*` / 语义色）；新增样式优先引用变量。
 - Web 端已支持主图/备注图片（Canvas 压缩为 JPEG data URL，存 localStorage；随 `.ias` 的 images/ 条目互通，已在 Android 导入验证）与到期时间字段；图片数量/体积受 localStorage 限制。
 - Web 品牌数据会缓存到 localStorage（`xiaoman_brands_v1`），设置页「品牌与型号数据」可通过 GitHub（Contents API，失败回退 raw）拉取最新版本；分类/标签支持重命名与上下移动；到期提醒使用浏览器 Notification（页面打开时检查，需手动授权）；提供 `public/manifest.webmanifest` 支持安装为 PWA。
-- 计算、`.ias` 编解码与云备份协议以 Rust `core/` 为准，跨端保持一致；改动后在 Android + Web 两端验证导入导出与云同步。
+- 计算、`.ias` 容器与语义映射（`core/src/state.rs` 的字段映射、覆盖/合并、备份时间）、云备份协议以 Rust `core/` 为准，跨端保持一致；各端只保留图片名称 ↔ 本地文件/data URL 的薄适配。改动后在 Android + Web 两端验证导入导出与云同步。
 - 云同步只改 `core/src/cloud.rs` 的协议与各端授权/存储；新增云端字段时同步更新 JNI（`lib.rs`）与 wasm 导出、两端薄适配层（`CloudSync.kt` / `web/src/cloud.ts`）。
 - 品牌数据只改 `data/brands.json`；各端构建/启动时同步。
 - 应用图标/Logo：`apps/android/app/src/main/res/drawable/appicon.png`（浅色版，启动器图标）；`apps/android/app/src/main/assets/img/logo_light.png` 与 `logo_dark.png` 用于 Android 首页顶栏随主题切换；Web 端 `web/public/logo_light.png`/`logo_dark.png`（由 sync-data 从 Android assets 复制，gitignore）用于页面 Logo，favicon/PWA 图标使用浅色版。

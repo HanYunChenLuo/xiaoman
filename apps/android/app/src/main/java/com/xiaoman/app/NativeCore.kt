@@ -12,6 +12,15 @@ object NativeCore {
 
     @JvmStatic external fun encodeIas(payload: String): ByteArray
 
+    // .ias 语义映射（core/src/state.rs）：规范状态 JSON
+    @JvmStatic external fun backupExport(stateJson: String, imagesJson: String, platform: String, nowMs: Long, tzOffsetMs: Long): String
+
+    @JvmStatic external fun backupImport(payloadJson: String, nowMs: Long, tzOffsetMs: Long): String
+
+    @JvmStatic external fun backupMerge(localJson: String, incomingJson: String, replace: Boolean, preferIncoming: Boolean): String
+
+    @JvmStatic external fun backupTimeMs(payloadJson: String): Long
+
     @JvmStatic external fun daysBetween(from: String, to: String): Int
 
     @JvmStatic external fun ageDays(assetJson: String, today: String): Int

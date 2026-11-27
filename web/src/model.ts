@@ -1,4 +1,11 @@
-import { decodeIas, encodeIas } from './core'
+import {
+  backupExport,
+  backupImport,
+  backupMerge,
+  decodeIas,
+  encodeIas,
+  tzOffsetMs
+} from './core'
 
 export interface Category {
   id: string
@@ -17,6 +24,12 @@ export interface PriceRecord {
   id: string
   date: string
   price: number
+}
+
+export interface UsageRecord {
+  id: string
+  date: string
+  note?: string
 }
 
 export interface Asset {
@@ -45,12 +58,15 @@ export interface Asset {
   targetDate?: string
   uses?: number
   customDays?: number
+  targetUsageDays?: number
   coverData?: string
   noteImagesData?: string[]
   expireAt?: string
   favorite?: boolean
   incomeRecords?: IncomeRecord[]
   priceRecords?: PriceRecord[]
+  /** 原 App 的使用记录；Web 不展示，但随备份往返保留。 */
+  usages?: UsageRecord[]
 }
 
 export interface Settings {
@@ -68,6 +84,8 @@ export interface State {
   categories: Category[]
   tags: Category[]
   incomeCategories: Category[]
+  /** 原 App 的存钱记录（不透明数组）；Web 不展示，但随备份往返保留。 */
+  saveMoney: unknown[]
   settings: Settings
 }
 
@@ -88,6 +106,7 @@ export function loadState(): State {
     categories: [{ id: 'cat_digital', name: '数码' }],
     tags: [],
     incomeCategories: defaultIncomeCategories(),
+    saveMoney: [],
     settings: { currency: 'CNY', decimals: 2, thousands: false, theme: 'system' }
   })
 }
@@ -107,9 +126,11 @@ export function normalize(s: State): State {
   if (!Array.isArray(s.incomeCategories) || s.incomeCategories.length === 0) {
     s.incomeCategories = defaultIncomeCategories()
   }
+  if (!Array.isArray(s.saveMoney)) s.saveMoney = []
   for (const a of s.assets) {
     if (!Array.isArray(a.incomeRecords)) a.incomeRecords = []
     if (!Array.isArray(a.priceRecords)) a.priceRecords = []
+    if (!Array.isArray(a.usages)) a.usages = []
   }
   s.settings = {
     currency: s.settings?.currency ?? 'CNY',
@@ -340,29 +361,17 @@ export function autoIcon(text: string): string {
 }
 
 // ---------------- .ias 备份 ----------------
-interface BackupImage {
-  name: string
-  data: string
-}
+// 字段映射与合并策略在 core/src/state.rs（与 Android 共用）；这里只负责
+// 图片名称 ↔ data URL 的转换。
 
-export function exportIas(state: State): Uint8Array {
-  const { data, images } = toBackupData(state)
-  return encodeIas({ data, images })
-}
-
-export function importIas(bytes: Uint8Array): {
+export interface ImportedState {
   state: Partial<State>
   count: number
   exportedAt: number
   /** 备份数据的本地最后修改时间（毫秒）；旧备份没有该字段时为 0。 */
   updatedAt: number
-} {
-  const parsed = decodeIas(bytes) as { data: any; images?: Record<string, string> }
-  const result = fromBackupData(parsed.data, parsed.images ?? {})
-  const exportedAt = Number(parsed.data?.exported_at ?? 0)
-  const rawUpdated = Number(parsed.data?.settings?.updatedAt ?? 0)
-  const updatedAt = Number.isFinite(rawUpdated) && rawUpdated > 0 ? rawUpdated : 0
-  return { ...result, exportedAt, updatedAt }
+  /** 用于和本地比较新旧的备份时间（updatedAt，回退 exported_at）。 */
+  backupTimeMs: number
 }
 
 function dataUrlToBase64(dataUrl: string): string {
@@ -381,309 +390,89 @@ function dataUrlOf(name: string, map: Record<string, string>): string | undefine
   return `data:image/${mime};base64,${b}`
 }
 
-function dateFromEpoch(sec: number): string {
-  if (!sec) return todayStr()
-  const d = new Date(sec * 1000)
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`
-}
-
-/** 收入/价格记录的日期：兼容 epoch 秒与 `YYYY-MM-DD` 字符串。 */
-function recordDate(v: unknown): string {
-  const n = Number(v)
-  if (Number.isFinite(n) && n > 0) return dateFromEpoch(n)
-  const s = typeof v === 'string' ? v : ''
-  return s || todayStr()
-}
-
-function epoch(date: string): number {
-  if (!date) return 0
-  const d = new Date(date + 'T00:00:00')
-  return Math.floor(d.getTime() / 1000)
-}
-
-function toBackupData(state: State): { data: unknown; images: BackupImage[] } {
-  const images: BackupImage[] = []
-  const imageRecords: any[] = []
-  let imgId = 0
-  let sort = 0
+export function exportIas(state: State): Uint8Array {
+  const images: Record<string, string> = {}
   const assets = state.assets.map((a) => {
-    let coverName = ''
+    const c: any = { ...a }
+    delete c.coverData
+    delete c.noteImagesData
     if (a.coverData) {
-      coverName = `images/${a.id}_cover${extOf(a.coverData)}`
-      images.push({ name: coverName, data: dataUrlToBase64(a.coverData) })
-      imageRecords.push({
-        id: `img_${imgId++}`,
-        asset_id: a.id,
-        image_name: coverName,
-        type: 'cover',
-        sort: 0,
-        is_deleted: false,
-        created_at: 0,
-        update_at: 0
-      })
+      const name = `images/${a.id}_cover${extOf(a.coverData)}`
+      images[name] = dataUrlToBase64(a.coverData)
+      c.coverImage = name
     }
-    const noteNames: string[] = []
-    ;(a.noteImagesData ?? []).slice(0, 9).forEach((d, i) => {
-      const nm = `images/${a.id}_note${i}${extOf(d)}`
-      noteNames.push(nm)
-      images.push({ name: nm, data: dataUrlToBase64(d) })
-      imageRecords.push({
-        id: `img_${imgId++}`,
-        asset_id: a.id,
-        image_name: nm,
-        type: 'note',
-        sort: i,
-        is_deleted: false,
-        created_at: 0,
-        update_at: 0
-      })
+    const notes = (a.noteImagesData ?? []).map((d, i) => {
+      const name = `images/${a.id}_note${i}${extOf(d)}`
+      images[name] = dataUrlToBase64(d)
+      return name
     })
-    return {
-      id: a.id,
-      name: a.name ?? '',
-      model: a.model ?? '',
-      icon_name: 'icon_default_object',
-      cover_image: coverName,
-      price: a.price ?? 0,
-      type: a.kind === 'wish' ? 1 : 0,
-      category_id: a.categoryId ?? '',
-      state: 0,
-      buy_date: epoch(a.buyDate),
-      tag_ids: a.tagIds ?? [],
-      target_type: 0,
-      target_cost_unit: '',
-      target_each_increment: 0,
-      target_date: epoch(a.targetDate ?? ''),
-      target_usage_days: 0,
-      target_cost: a.targetCost ?? 0,
-      target_value: 0,
-      additional_item_ids: [],
-      additional_calculation_mode: 0,
-      note: a.note ?? '',
-      note_images: noteNames,
-      is_top: !!a.favorite,
-      is_retirement: a.status === 'retired',
-      retirement_date: epoch(a.retireDate ?? ''),
-      is_sell: a.status === 'sold',
-      used_price: a.soldPrice ?? 0,
-      secondhand_value: a.secondhandValue ?? 0,
-      secondhand_in_cost: a.secondhandInCost ?? true,
-      brand_id: a.brandId ?? '',
-      brand_name: a.brandName ?? '',
-      sell_date: epoch(a.soldDate ?? ''),
-      wish_date: epoch(a.targetDate ?? ''),
-      is_not_include_total: !!a.excludeTotal,
-      is_excluded_from_total: !!a.excludeTotal,
-      sort: sort++,
-      is_deleted: false,
-      created_at: 0,
-      update_at: 0
-    }
+    c.noteImages = notes
+    return c
   })
+  const canonical = {
+    assets,
+    categories: state.categories,
+    tags: state.tags,
+    incomeCategories: state.incomeCategories,
+    saveMoney: state.saveMoney ?? [],
+    settings: { updatedAt: state.settings.updatedAt ?? 0 }
+  }
+  const payload = JSON.parse(
+    backupExport(
+      JSON.stringify(canonical),
+      JSON.stringify(images),
+      'WEB',
+      Date.now(),
+      tzOffsetMs()
+    )
+  )
+  return encodeIas(payload)
+}
 
-  const reminders = state.assets
-    .filter((a) => a.expireAt)
-    .map((a) => ({
-      id: a.id,
-      asset_id: a.id,
-      expiry_at: epoch(a.expireAt!),
-      expiry_remind: 0,
-      remind_time_unit: 'day',
-      remind_at: 0,
-      is_deleted: false,
-      created_at: 0,
-      update_at: 0
-    }))
-
+export function importIas(bytes: Uint8Array): ImportedState {
+  const parsed = decodeIas(bytes) as { data: any; images?: Record<string, string> }
+  const res = JSON.parse(
+    backupImport(JSON.stringify(parsed), Date.now(), tzOffsetMs())
+  ) as { state?: any; meta?: any }
+  const state: any = res.state ?? {}
+  const imageMap = parsed.images ?? {}
+  const assets: any[] = Array.isArray(state.assets) ? state.assets : []
+  for (const a of assets) {
+    const coverName = a.coverImage
+    delete a.coverImage
+    if (coverName) {
+      const cover = dataUrlOf(String(coverName), imageMap)
+      if (cover) a.coverData = cover
+    }
+    const noteNames = a.noteImages
+    delete a.noteImages
+    if (Array.isArray(noteNames)) {
+      const urls = noteNames
+        .map((n) => dataUrlOf(String(n), imageMap))
+        .filter((x): x is string => !!x)
+      if (urls.length) a.noteImagesData = urls
+    }
+    if (!a.icon) a.icon = autoIcon(a.model || a.name)
+    if (!Array.isArray(a.usages)) a.usages = []
+  }
+  const meta = res.meta ?? {}
   return {
-    data: {
-      categories: state.categories.map((c, i) => ({
-        id: c.id,
-        title: c.name,
-        sort: i,
-        is_deleted: false,
-        created_at: 0,
-        update_at: 0
-      })),
-      tags: state.tags.map((t, i) => ({
-        id: t.id,
-        title: t.name,
-        sort: i,
-        is_deleted: false,
-        created_at: 0,
-        update_at: 0
-      })),
-      assets,
-      asset_images: imageRecords,
-      usages: [],
-      income_categories: state.incomeCategories.map((c, i) => ({
-        id: c.id,
-        title: c.name,
-        icon_name: 'icon_income_1',
-        color_hex: '#A3E635',
-        sort: i,
-        is_deleted: false,
-        created_at: 0,
-        update_at: 0
-      })),
-      income_records: state.assets.flatMap((a) =>
-        (a.incomeRecords ?? []).map((r) => ({
-          id: r.id,
-          asset_id: a.id,
-          category_id: r.categoryId ?? '',
-          amount: r.amount ?? 0,
-          income_date: epoch(r.date),
-          note: r.note ?? '',
-          is_deleted: false,
-          created_at: 0,
-          update_at: 0
-        }))
-      ),
-      asset_price_records: state.assets.flatMap((a) =>
-        (a.priceRecords ?? []).map((r) => ({
-          id: r.id,
-          asset_id: a.id,
-          price: r.price ?? 0,
-          record_date: epoch(r.date),
-          is_deleted: false,
-          created_at: 0,
-          update_at: 0
-        }))
-      ),
-      save_money: [],
-      expire_reminders: reminders,
-      platform: 'WEB',
-      version: '1.0.0',
-      settings: { updatedAt: state.settings.updatedAt ?? 0 },
-      exported_at: Math.floor(Date.now() / 1000)
-    },
-    images
+    state: state as Partial<State>,
+    count: Number(meta.count ?? assets.length),
+    exportedAt: Number(meta.exportedAt ?? 0),
+    updatedAt: Number(meta.updatedAt ?? 0),
+    backupTimeMs: Number(meta.backupTimeMs ?? 0)
   }
 }
 
-function fromBackupData(data: any, imageMap: Record<string, string>): { state: Partial<State>; count: number } {
-  const categories: Category[] = []
-  for (const c of data?.categories ?? []) {
-    if (!c || c.is_deleted) continue
-    categories.push({ id: String(c.id ?? uid('cat_')), name: String(c.title ?? '') })
-  }
-  const tags: Category[] = []
-  for (const t of data?.tags ?? []) {
-    if (!t || t.is_deleted) continue
-    tags.push({ id: String(t.id ?? uid('tag_')), name: String(t.title ?? '') })
-  }
-
-  const incomeCategories: Category[] = []
-  for (const c of data?.income_categories ?? []) {
-    if (!c || c.is_deleted) continue
-    const name = String(c.title ?? '')
-    if (!name) continue
-    incomeCategories.push({ id: String(c.id ?? uid('inc_cat_')), name })
-  }
-
-  const incomeByAsset = new Map<string, IncomeRecord[]>()
-  for (const r of data?.income_records ?? []) {
-    if (!r || r.is_deleted) continue
-    const key = String(r.asset_id ?? r.assetId ?? '')
-    if (!key) continue
-    const list = incomeByAsset.get(key) ?? []
-    list.push({
-      id: String(r.id ?? uid('inc_')),
-      amount: Number(r.amount ?? 0),
-      date: recordDate(r.income_date ?? r.date),
-      categoryId: String(r.category_id ?? r.categoryId ?? ''),
-      note: String(r.note ?? '')
-    })
-    incomeByAsset.set(key, list)
-  }
-
-  const priceByAsset = new Map<string, PriceRecord[]>()
-  for (const r of data?.asset_price_records ?? []) {
-    if (!r || r.is_deleted) continue
-    const key = String(r.asset_id ?? r.assetId ?? '')
-    if (!key) continue
-    const list = priceByAsset.get(key) ?? []
-    list.push({
-      id: String(r.id ?? uid('price_')),
-      date: recordDate(r.record_date ?? r.date),
-      price: Number(r.price ?? 0)
-    })
-    priceByAsset.set(key, list)
-  }
-
-  const imageRecords: any[] = Array.isArray(data?.asset_images) ? data.asset_images : []
-  const coverByName = new Map<string, string>()
-  const noteByAsset = new Map<string, string[]>()
-  for (const r of imageRecords) {
-    if (!r || r.is_deleted) continue
-    const name = String(r.image_name ?? '')
-    const url = dataUrlOf(name, imageMap)
-    if (!url) continue
-    const type = String(r.type ?? '')
-    if (type === 'cover' || type === '0') {
-      coverByName.set(String(r.asset_id ?? ''), url)
-    } else {
-      const key = String(r.asset_id ?? '')
-      const list = noteByAsset.get(key) ?? []
-      list.push(url)
-      noteByAsset.set(key, list)
-    }
-  }
-
-  const reminders: any[] = Array.isArray(data?.expire_reminders) ? data.expire_reminders : []
-  const expireByAsset = new Map<string, string>()
-  for (const r of reminders) {
-    if (!r || r.is_deleted) continue
-    const key = String(r.asset_id ?? r.assetId ?? r.id ?? '')
-    if (r.expiry_at) expireByAsset.set(key, dateFromEpoch(Number(r.expiry_at)))
-  }
-
-  const assets: Asset[] = []
-  for (const a of data?.assets ?? []) {
-    if (!a || a.is_deleted) continue
-    const status: Asset['status'] = a.is_sell ? 'sold' : a.is_retirement ? 'retired' : 'serving'
-    const id = String(a.id ?? uid('a_'))
-    const coverName = String(a.cover_image ?? '')
-    const noteNames: string[] = Array.isArray(a.note_images) ? a.note_images.map(String) : []
-    const item: Asset = {
-      id,
-      name: String(a.name ?? ''),
-      model: String(a.model ?? ''),
-      price: Number(a.price ?? a.target_cost ?? 0),
-      buyDate: dateFromEpoch(Number(a.buy_date ?? 0)),
-      kind: Number(a.type ?? 0) === 1 ? 'wish' : 'asset',
-      status,
-      rule: 'day',
-      categoryId: String(a.category_id ?? ''),
-      tagIds: Array.isArray(a.tag_ids) ? a.tag_ids.map(String) : [],
-      icon: '/icons/default.png',
-      note: String(a.note ?? ''),
-      soldPrice: Number(a.used_price ?? 0),
-      soldDate: a.is_sell ? dateFromEpoch(Number(a.sell_date ?? 0)) : '',
-      retireDate: a.is_retirement ? dateFromEpoch(Number(a.retirement_date ?? 0)) : '',
-      secondhandValue: Number(a.secondhand_value ?? 0),
-      secondhandInCost: a.secondhand_in_cost !== false,
-      excludeTotal: !!a.is_not_include_total || !!a.is_excluded_from_total,
-      brandId: String(a.brand_id ?? ''),
-      brandName: String(a.brand_name ?? ''),
-      brandAuto: false,
-      favorite: !!a.is_top,
-      targetCost: Number(a.target_cost ?? 0),
-      targetDate: a.target_date ? dateFromEpoch(Number(a.target_date)) : ''
-    }
-    const cover = dataUrlOf(coverName, imageMap) ?? coverByName.get(id)
-    if (cover) item.coverData = cover
-    const notes = noteNames.map((n) => dataUrlOf(n, imageMap)).filter((x): x is string => !!x)
-    const extraNotes = noteByAsset.get(id) ?? []
-    const allNotes = [...notes, ...extraNotes]
-    if (allNotes.length) item.noteImagesData = allNotes.slice(0, 9)
-    const expire = expireByAsset.get(id)
-    if (expire) item.expireAt = expire
-    const incomes = incomeByAsset.get(id)
-    if (incomes?.length) item.incomeRecords = incomes
-    const prices = priceByAsset.get(id)
-    if (prices?.length) item.priceRecords = prices
-    assets.push(item)
-  }
-  return { state: { assets, categories, tags, incomeCategories }, count: assets.length }
+/** 合并本地与导入状态；返回的数组由 Rust 统一决定去重/取新语义。 */
+export function mergeIasState(
+  local: State,
+  incoming: Partial<State>,
+  replace: boolean,
+  preferIncoming: boolean
+): Partial<State> {
+  return JSON.parse(
+    backupMerge(JSON.stringify(local), JSON.stringify(incoming), replace, preferIncoming)
+  ) as Partial<State>
 }

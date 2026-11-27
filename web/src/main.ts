@@ -25,6 +25,7 @@ import {
   loadBrands,
   loadState,
   matchBrand,
+  mergeIasState,
   money,
   pad,
   saveState,
@@ -1788,10 +1789,10 @@ class App {
 
   /** 解析 .ias 字节并按用户选择覆盖或合并；文件导入与云端恢复共用。 */
   async applyBackup(bytes: Uint8Array, source: string): Promise<void> {
-    const { state, count, exportedAt, updatedAt } = importIas(bytes)
+    const { state, count, backupTimeMs } = importIas(bytes)
     const localCount = this.state.assets.length
     const localTime = this.state.settings.updatedAt ?? 0
-    const backupTime = updatedAt || (exportedAt ? exportedAt * 1000 : 0)
+    const backupTime = backupTimeMs
     const choice = await this.askChoice(
       '导入备份',
       `来源：${source}\n备份：${count} 条，最后修改 ${fmtTime(backupTime)}\n本地：${localCount} 条，最后修改 ${fmtTime(localTime)}\n\n覆盖 = 用备份替换本地；合并 = 保留双方，重复条目取较新的一方。`,
@@ -1799,28 +1800,13 @@ class App {
     )
     if (choice !== 0 && choice !== 1) return
 
-    if (choice === 0) {
-      this.state.assets = state.assets ?? []
-      this.state.categories = state.categories ?? []
-      this.state.tags = state.tags ?? []
-      this.state.incomeCategories = state.incomeCategories ?? []
-    } else {
-      const preferCloud = backupTime > localTime
-      const byId = new Map(this.state.assets.map((a) => [a.id, a]))
-      for (const a of state.assets ?? []) {
-        if (!byId.has(a.id) || preferCloud) byId.set(a.id, a)
-      }
-      this.state.assets = [...byId.values()]
-      for (const c of state.categories ?? []) {
-        if (!this.state.categories.some((x) => x.id === c.id)) this.state.categories.push(c)
-      }
-      for (const t of state.tags ?? []) {
-        if (!this.state.tags.some((x) => x.id === t.id)) this.state.tags.push(t)
-      }
-      for (const c of state.incomeCategories ?? []) {
-        if (!this.state.incomeCategories.some((x) => x.id === c.id)) this.state.incomeCategories.push(c)
-      }
-    }
+    const preferCloud = backupTime > localTime
+    const merged = mergeIasState(this.state, state, choice === 0, preferCloud)
+    this.state.assets = merged.assets ?? []
+    this.state.categories = merged.categories ?? []
+    this.state.tags = merged.tags ?? []
+    this.state.incomeCategories = merged.incomeCategories ?? []
+    this.state.saveMoney = merged.saveMoney ?? []
     // 兼容从其他端导入时没有图标的情况
     for (const a of this.state.assets) {
       if (!a.icon || a.icon.includes('default')) a.icon = autoIcon(a.model || a.name)
@@ -1828,6 +1814,7 @@ class App {
       if (!a.kind) a.kind = 'asset'
       a.incomeRecords ??= []
       a.priceRecords ??= []
+      a.usages ??= []
     }
     this.save()
     this.render()

@@ -1564,7 +1564,7 @@ class MainActivity : Activity() {
     private fun importBackup(uri: Uri) {
         val progress = DialogKit.progress(this, "备份与恢复", "正在解析备份文件…")
         Thread {
-            var root: JSONObject? = null
+            var payload: JSONObject? = null
             var importError: String? = null
             val images = HashMap<String, String>()
             try {
@@ -1577,7 +1577,7 @@ class MainActivity : Activity() {
                         bos.write(buf, 0, n)
                     }
                     val parsed = Backup.readIas(bos.toByteArray())
-                    root = parsed.root
+                    payload = parsed.payload
                     val dir = java.io.File(filesDir, "media")
                     if (!dir.exists()) dir.mkdirs()
                     for (e in parsed.images.entries) {
@@ -1590,24 +1590,24 @@ class MainActivity : Activity() {
             } catch (e: Exception) {
                 importError = e.toString()
             }
-            val parsedRoot = root
+            val parsedPayload = payload
             val errMsg = importError
             runOnUiThread {
                 progress.dismiss()
-                if (parsedRoot == null) {
+                if (parsedPayload == null) {
                     toast("导入失败：" + (errMsg ?: "无法读取文件"))
                     return@runOnUiThread
                 }
                 pendingImages = images
-                chooseImportMode(parsedRoot, "本地备份")
+                chooseImportMode(parsedPayload, "本地备份")
             }
         }.start()
     }
 
-    private fun chooseImportMode(root: JSONObject, source: String) {
-        val count = root.optJSONArray("assets")?.length() ?: 0
+    private fun chooseImportMode(payload: JSONObject, source: String) {
+        val count = payload.optJSONObject("data")?.optJSONArray("assets")?.length() ?: 0
         val localCount = store.objs("assets").size
-        val backupMs = Backup.backupTimeMs(root)
+        val backupMs = Backup.backupTimeMs(payload)
         val localMs = store.updatedAt()
         DialogKit.choice(
             this, "导入备份",
@@ -1617,7 +1617,7 @@ class MainActivity : Activity() {
                     val replace = i == 0
                     val preferIncoming = backupMs > localMs
                     try {
-                        val n = Backup.importInto(store, root, replace, preferIncoming, pendingImages)
+                        val n = Backup.importInto(store, payload, replace, preferIncoming, pendingImages)
                         categoryFilter = "all"
                         filter = "all"
                         for (a in store.objs("assets")) NotificationHelper.schedule(this, a)
@@ -1864,12 +1864,12 @@ class MainActivity : Activity() {
     private fun importCloudBytes(bytes: ByteArray) {
         val progress = DialogKit.progress(this, "备份与恢复", "正在解析备份文件…")
         Thread {
-            var root: JSONObject? = null
+            var payload: JSONObject? = null
             var importError: String? = null
             val images = HashMap<String, String>()
             try {
                 val parsed = Backup.readIas(bytes)
-                root = parsed.root
+                payload = parsed.payload
                 val dir = java.io.File(filesDir, "media")
                 if (!dir.exists()) dir.mkdirs()
                 for (e in parsed.images.entries) {
@@ -1881,16 +1881,16 @@ class MainActivity : Activity() {
             } catch (e: Exception) {
                 importError = e.toString()
             }
-            val parsedRoot = root
+            val parsedPayload = payload
             val errMsg = importError
             runOnUiThread {
                 progress.dismiss()
-                if (parsedRoot == null) {
+                if (parsedPayload == null) {
                     toast("导入失败：" + (errMsg ?: "无法读取文件"))
                     return@runOnUiThread
                 }
                 pendingImages = images
-                chooseImportMode(parsedRoot, "云端备份")
+                chooseImportMode(parsedPayload, "云端备份")
             }
         }.start()
     }

@@ -44,6 +44,38 @@ export function decodeIas(bytes: Uint8Array): unknown {
   return JSON.parse(wasm.decode_ias(bytes))
 }
 
+// ---------------- .ias 语义映射（core/src/state.rs） ----------------
+
+/** 规范状态 + 图片名称 -> 备份 payload JSON（交给 encodeIas）。 */
+export function backupExport(
+  state: string,
+  images: string,
+  platform: string,
+  nowMs: number,
+  tzOffset: number
+): string {
+  return wasm.backup_export(state, images, platform, nowMs, tzOffset)
+}
+
+/** 备份 payload JSON -> `{state, meta}` JSON。 */
+export function backupImport(payload: string, nowMs: number, tzOffset: number): string {
+  return wasm.backup_import(payload, nowMs, tzOffset)
+}
+
+/** 合并本地与导入状态；返回完整状态 JSON。 */
+export function backupMerge(
+  local: string,
+  incoming: string,
+  replace: boolean,
+  preferIncoming: boolean
+): string {
+  return wasm.backup_merge(local, incoming, replace, preferIncoming)
+}
+
+export function backupTimeMs(payload: string): number {
+  return wasm.backup_time_ms(payload)
+}
+
 // ---------------- 云备份协议（core/src/cloud.rs） ----------------
 
 export interface CloudRequest {
@@ -96,6 +128,6 @@ export function cloudParseFile(status: number, body: string): CloudParseResult {
   return JSON.parse(wasm.cloud_parse_file(status, body))
 }
 
-function tzOffsetMs(): number {
+export function tzOffsetMs(): number {
   return -new Date().getTimezoneOffset() * 60000
 }

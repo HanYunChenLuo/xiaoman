@@ -4,6 +4,7 @@
 pub mod backup;
 pub mod calc;
 pub mod cloud;
+pub mod state;
 pub mod update;
 
 pub const VERSION: &str = "0.1.0";
@@ -93,6 +94,102 @@ mod android {
                 std::ptr::null_mut()
             }
         }
+    }
+
+    // ---------- .ias 语义映射（core/src/state.rs） ----------
+
+    fn json_arg(env: &mut JNIEnv, s: &JString) -> Result<Value, String> {
+        let text = take_string(env, s).map_err(|_| "无效参数".to_string())?;
+        from_str(&text).map_err(|e| e.to_string())
+    }
+
+    fn ret_err(env: &mut JNIEnv, msg: &str) -> jstring {
+        let _ = env.throw_new("java/lang/Exception", msg);
+        std::ptr::null_mut()
+    }
+
+    #[no_mangle]
+    pub extern "system" fn Java_com_xiaoman_app_NativeCore_backupExport(
+        mut env: JNIEnv,
+        _class: JClass,
+        state: JString,
+        images: JString,
+        platform: JString,
+        now_ms: jni::sys::jlong,
+        tz_offset_ms: jni::sys::jlong,
+    ) -> jstring {
+        let state = match json_arg(&mut env, &state) {
+            Ok(v) => v,
+            Err(e) => return ret_err(&mut env, &e),
+        };
+        let images = match json_arg(&mut env, &images) {
+            Ok(v) => v,
+            Err(e) => return ret_err(&mut env, &e),
+        };
+        let Ok(platform) = take_string(&mut env, &platform) else {
+            return ret_err(&mut env, "无效参数");
+        };
+        match crate::state::to_payload(&state, &images, &platform, now_ms, tz_offset_ms) {
+            Ok(v) => ret_string(&mut env, v.to_string()),
+            Err(e) => ret_err(&mut env, &e),
+        }
+    }
+
+    #[no_mangle]
+    pub extern "system" fn Java_com_xiaoman_app_NativeCore_backupImport(
+        mut env: JNIEnv,
+        _class: JClass,
+        payload: JString,
+        now_ms: jni::sys::jlong,
+        tz_offset_ms: jni::sys::jlong,
+    ) -> jstring {
+        let payload = match json_arg(&mut env, &payload) {
+            Ok(v) => v,
+            Err(e) => return ret_err(&mut env, &e),
+        };
+        match crate::state::from_backup(&payload, now_ms, tz_offset_ms) {
+            Ok(v) => ret_string(&mut env, v.to_string()),
+            Err(e) => ret_err(&mut env, &e),
+        }
+    }
+
+    #[no_mangle]
+    pub extern "system" fn Java_com_xiaoman_app_NativeCore_backupMerge(
+        mut env: JNIEnv,
+        _class: JClass,
+        local: JString,
+        incoming: JString,
+        replace: jni::sys::jboolean,
+        prefer_incoming: jni::sys::jboolean,
+    ) -> jstring {
+        let local = match json_arg(&mut env, &local) {
+            Ok(v) => v,
+            Err(e) => return ret_err(&mut env, &e),
+        };
+        let incoming = match json_arg(&mut env, &incoming) {
+            Ok(v) => v,
+            Err(e) => return ret_err(&mut env, &e),
+        };
+        match crate::state::merge(&local, &incoming, replace != 0, prefer_incoming != 0) {
+            Ok(v) => ret_string(&mut env, v.to_string()),
+            Err(e) => ret_err(&mut env, &e),
+        }
+    }
+
+    #[no_mangle]
+    pub extern "system" fn Java_com_xiaoman_app_NativeCore_backupTimeMs(
+        mut env: JNIEnv,
+        _class: JClass,
+        payload: JString,
+    ) -> jni::sys::jlong {
+        let payload = match json_arg(&mut env, &payload) {
+            Ok(v) => v,
+            Err(e) => {
+                let _ = env.throw_new("java/lang/Exception", e);
+                return 0;
+            }
+        };
+        crate::state::backup_time_ms(&payload)
     }
 
     #[no_mangle]
@@ -359,6 +456,56 @@ mod wasm {
     #[wasm_bindgen]
     pub fn encode_ias(payload: &str) -> Result<Vec<u8>, JsValue> {
         crate::backup::encode_ias(payload).map_err(|e| JsValue::from_str(&e))
+    }
+
+    // ---------- .ias 语义映射（core/src/state.rs） ----------
+
+    fn js_json(text: &str) -> Result<serde_json::Value, JsValue> {
+        serde_json::from_str(text).map_err(|e| JsValue::from_str(&e.to_string()))
+    }
+
+    #[wasm_bindgen]
+    pub fn backup_export(
+        state: &str,
+        images: &str,
+        platform: &str,
+        now_ms: f64,
+        tz_offset_ms: f64,
+    ) -> Result<String, JsValue> {
+        let state = js_json(state)?;
+        let images = js_json(images)?;
+        crate::state::to_payload(&state, &images, platform, now_ms as i64, tz_offset_ms as i64)
+            .map(|v| v.to_string())
+            .map_err(|e| JsValue::from_str(&e))
+    }
+
+    #[wasm_bindgen]
+    pub fn backup_import(payload: &str, now_ms: f64, tz_offset_ms: f64) -> Result<String, JsValue> {
+        let payload = js_json(payload)?;
+        crate::state::from_backup(&payload, now_ms as i64, tz_offset_ms as i64)
+            .map(|v| v.to_string())
+            .map_err(|e| JsValue::from_str(&e))
+    }
+
+    #[wasm_bindgen]
+    pub fn backup_merge(
+        local: &str,
+        incoming: &str,
+        replace: bool,
+        prefer_incoming: bool,
+    ) -> Result<String, JsValue> {
+        let local = js_json(local)?;
+        let incoming = js_json(incoming)?;
+        crate::state::merge(&local, &incoming, replace, prefer_incoming)
+            .map(|v| v.to_string())
+            .map_err(|e| JsValue::from_str(&e))
+    }
+
+    #[wasm_bindgen]
+    pub fn backup_time_ms(payload: &str) -> f64 {
+        js_json(payload)
+            .map(|v| crate::state::backup_time_ms(&v) as f64)
+            .unwrap_or(0.0)
     }
 
     #[wasm_bindgen]

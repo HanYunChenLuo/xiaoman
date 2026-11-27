@@ -40,6 +40,21 @@ class CloudSync(private val ctx: Context) {
 
     companion object {
         private const val REDIRECT = "http://127.0.0.1"
+
+        /** Drive 返回的 ISO 8601 时间（UTC）转换为毫秒；失败返回 0。 */
+        @JvmStatic
+        fun driveTimeMs(iso: String): Long {
+            if (iso.isEmpty()) return 0L
+            for (pattern in arrayOf("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", "yyyy-MM-dd'T'HH:mm:ss'Z'")) {
+                try {
+                    val f = SimpleDateFormat(pattern, Locale.US)
+                    f.timeZone = java.util.TimeZone.getTimeZone("UTC")
+                    return f.parse(iso)?.time ?: 0L
+                } catch (_: Exception) {
+                }
+            }
+            return 0L
+        }
     }
 
     // ---------- 配置 ----------
@@ -67,7 +82,19 @@ class CloudSync(private val ctx: Context) {
         clearPending()
         SecretStore.clear(prefs, "g_token")
         SecretStore.clear(prefs, "g_refresh")
-        prefs.edit().remove("g_expiry").remove("g_email").remove("g_file").apply()
+        prefs.edit().remove("g_expiry").remove("g_email").remove("g_file").remove("g_remote_ms").apply()
+    }
+
+    /**
+     * 我们最近一次上传后，服务端返回的云端文件修改时间（毫秒）。
+     * 用来区分“云端是别人传的新备份”和“云端仍是我们上次传的那份”。
+     */
+    fun lastRemoteMs(): Long = prefs.getLong("g_remote_ms", 0L)
+
+    private fun rememberRemote(file: JSONObject?) {
+        if (file == null) return
+        val ms = driveTimeMs(file.optString("modifiedTime"))
+        if (ms > 0) prefs.edit().putLong("g_remote_ms", ms).apply()
     }
 
     fun lastSync(provider: String): String = prefs.getString("last_$provider", "") ?: ""
@@ -300,7 +327,8 @@ class CloudSync(private val ctx: Context) {
                     prefs.edit().putString("g_file", id).apply()
                 }
                 val up = execute(cloudReq(NativeCore.cloudUploadRequest(token, id)), bytes)
-                cloudResult(NativeCore.cloudParseFile(up.code, up.text))
+                val parsed = cloudResult(NativeCore.cloudParseFile(up.code, up.text))
+                rememberRemote(parsed.optJSONObject("file"))
                 markSync("google")
                 onDone()
             } catch (e: Exception) {
@@ -331,12 +359,29 @@ class CloudSync(private val ctx: Context) {
         }.start()
     }
 
-    private fun findDriveFile(token: String): String {
+    /** 云端备份的文件信息（含 modifiedTime/size）；没有备份时返回 null。 */
+    fun googleFileInfo(onDone: (JSONObject?) -> Unit, onError: (String) -> Unit) {
+        Thread {
+            try {
+                // 只读取，不更新“我们见过的云端时间”，否则冲突检测会失效。
+                onDone(findDriveFileInfo(googleToken()))
+            } catch (e: Exception) {
+                android.util.Log.w("XiaomanCloud", "file info failed", e)
+                onError(e.message ?: "读取云端备份信息失败")
+            }
+        }.start()
+    }
+
+    private fun findDriveFile(token: String): String = findDriveFileInfo(token)?.optString("id").orEmpty()
+
+    private fun findDriveFileInfo(token: String): JSONObject? {
         val res = execute(cloudReq(NativeCore.cloudFindRequest(token)))
         val parsed = cloudResult(NativeCore.cloudParseFileList(res.code, res.text))
-        val id = parsed.optJSONObject("file")?.optString("id").orEmpty()
-        if (id.isNotEmpty()) prefs.edit().putString("g_file", id).apply()
-        return id
+        val file = parsed.optJSONObject("file")
+        val id = file?.optString("id").orEmpty()
+        if (id.isEmpty()) return null
+        prefs.edit().putString("g_file", id).apply()
+        return file
     }
 
     private fun googleToken(): String {

@@ -14,13 +14,27 @@ import java.util.Locale
 class Store(c: Context) {
     private val sp: SharedPreferences = c.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
     private var root: JSONObject
+    private var quietDepth = 0
 
     init {
         root = JSONObject()
         load()
     }
 
-    private fun load() {
+    /**
+     * 加载、迁移等不属于用户改动的写入不刷新修改时间。
+     * 调用期间 `save()` 只落盘，不动 `settings.updatedAt`。
+     */
+    fun quiet(block: () -> Unit) {
+        quietDepth++
+        try {
+            block()
+        } finally {
+            quietDepth--
+        }
+    }
+
+    private fun load() = quiet {
         root = try {
             JSONObject(sp.getString("data", "{}"))
         } catch (_: Exception) {
@@ -59,7 +73,28 @@ class Store(c: Context) {
     }
 
     fun save() {
+        if (quietDepth == 0) touch()
         sp.edit().putString("data", root.toString()).apply()
+    }
+
+    /** 记录本地最后一次数据修改时间，用于和云端备份比较新旧。 */
+    private fun touch() {
+        try {
+            settings().put("updatedAt", System.currentTimeMillis())
+        } catch (_: Exception) {
+        }
+    }
+
+    /** 本地最后一次修改时间（毫秒）；0 表示从未修改过。 */
+    fun updatedAt(): Long = settings().optLong("updatedAt", 0L)
+
+    fun hasInArray(key: String, id: String): Boolean {
+        val a = arr(key)
+        for (i in 0 until a.length()) {
+            val o = a.optJSONObject(i)
+            if (o != null && id == o.optString("id")) return true
+        }
+        return false
     }
 
     fun putArray(key: String, arr: JSONArray) {

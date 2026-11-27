@@ -43,8 +43,15 @@ object Backup {
     }
 
     // ---------------- 导入 ----------------
+    /** 导入备份；`replace` 用备份替换本地，否则合并。合并时重复条目取较新一方（`preferIncoming`）。 */
     @JvmStatic
-    fun importInto(store: Store, root: JSONObject, replace: Boolean, imagePaths: Map<String, String>?): Int {
+    fun importInto(
+        store: Store,
+        root: JSONObject,
+        replace: Boolean,
+        preferIncoming: Boolean,
+        imagePaths: Map<String, String>?
+    ): Int {
         if (!root.has("assets")) throw Exception("bad backup")
         if (replace) {
             store.putArray("assets", JSONArray())
@@ -55,30 +62,39 @@ object Backup {
         if (cats != null) for (i in 0 until cats.length()) {
             val c = cats.optJSONObject(i)
             if (c == null || c.optBoolean("is_deleted")) continue
-            store.upsertInArray("categories", JSONObject().put("id", c.optString("id")).put("name", c.optString("title")))
+            val id = c.optString("id")
+            if (!replace && store.hasInArray("categories", id)) continue
+            store.upsertInArray("categories", JSONObject().put("id", id).put("name", c.optString("title")))
         }
         val tags = root.optJSONArray("tags")
         if (tags != null) for (i in 0 until tags.length()) {
             val t = tags.optJSONObject(i)
             if (t == null || t.optBoolean("is_deleted")) continue
-            store.upsertInArray("tags", JSONObject().put("id", t.optString("id")).put("name", t.optString("title")))
+            val id = t.optString("id")
+            if (!replace && store.hasInArray("tags", id)) continue
+            store.upsertInArray("tags", JSONObject().put("id", id).put("name", t.optString("title")))
         }
         val incCats = root.optJSONArray("income_categories")
         if (incCats != null) for (i in 0 until incCats.length()) {
             val c = incCats.optJSONObject(i)
             if (c == null || c.optBoolean("is_deleted")) continue
-            store.upsertInArray("incomeCategories", JSONObject().put("id", c.optString("id")).put("name", c.optString("title")))
+            val id = c.optString("id")
+            if (!replace && store.hasInArray("incomeCategories", id)) continue
+            store.upsertInArray("incomeCategories", JSONObject().put("id", id).put("name", c.optString("title")))
         }
 
         var count = 0
         val assets = root.optJSONArray("assets")
         val byId = HashMap<String, JSONObject>()
+        val imported = HashSet<String>()
         for (i in 0 until (assets?.length() ?: 0)) {
             val a = assets!!.optJSONObject(i) ?: continue
             if (a.optBoolean("is_deleted")) continue
             val type = a.optInt("type", 0)
             val item = JSONObject()
             item.put("id", a.optString("id"))
+            // 合并时重复条目取较新一方；本地较新就整条保留（连同其收入/使用记录）。
+            if (!replace && !preferIncoming && store.findAsset(item.optString("id")) != null) continue
             item.put("name", a.optString("name"))
             item.put("model", a.optString("model"))
             var price = a.optDouble("price", 0.0)
@@ -125,6 +141,7 @@ object Backup {
             }
             store.upsertAsset(item)
             byId[item.optString("id")] = item
+            imported.add(item.optString("id"))
             count++
         }
 
@@ -158,7 +175,9 @@ object Backup {
         if (records != null) for (i in 0 until records.length()) {
             val r = records.optJSONObject(i) ?: continue
             if (r.optBoolean("is_deleted")) continue
-            val asset = store.findAsset(r.optString("asset_id", r.optString("assetId"))) ?: continue
+            val aid = r.optString("asset_id", r.optString("assetId"))
+            if (aid !in imported) continue
+            val asset = store.findAsset(aid) ?: continue
             var list = asset.optJSONArray("incomeRecords")
             if (list == null) {
                 list = JSONArray()
@@ -177,7 +196,9 @@ object Backup {
         if (usages != null) for (i in 0 until usages.length()) {
             val r = usages.optJSONObject(i) ?: continue
             if (r.optBoolean("is_deleted")) continue
-            val asset = store.findAsset(r.optString("asset_id", r.optString("assetId"))) ?: continue
+            val aid = r.optString("asset_id", r.optString("assetId"))
+            if (aid !in imported) continue
+            val asset = store.findAsset(aid) ?: continue
             var list = asset.optJSONArray("usages")
             if (list == null) {
                 list = JSONArray()
@@ -194,7 +215,9 @@ object Backup {
         if (prices != null) for (i in 0 until prices.length()) {
             val r = prices.optJSONObject(i) ?: continue
             if (r.optBoolean("is_deleted")) continue
-            val asset = store.findAsset(r.optString("asset_id", r.optString("assetId"))) ?: continue
+            val aid = r.optString("asset_id", r.optString("assetId"))
+            if (aid !in imported) continue
+            val asset = store.findAsset(aid) ?: continue
             var list = asset.optJSONArray("priceRecords")
             if (list == null) {
                 list = JSONArray()
@@ -211,9 +234,9 @@ object Backup {
         if (reminders != null) for (i in 0 until reminders.length()) {
             val r = reminders.optJSONObject(i) ?: continue
             if (r.optBoolean("is_deleted")) continue
-            val aid = r.optString("asset_id", r.optString("assetId"))
-            val asset = if (aid.isEmpty()) store.findAsset(r.optString("id")) else store.findAsset(aid)
-            if (asset == null) continue
+            val aid = r.optString("asset_id", r.optString("assetId")).ifEmpty { r.optString("id") }
+            if (aid !in imported) continue
+            val asset = store.findAsset(aid) ?: continue
             val sec = r.optLong("expiry_at", 0)
             if (sec > 0) asset.put("expireAt", date(sec))
             val remind = r.optInt("expiry_remind", 0)
@@ -229,10 +252,23 @@ object Backup {
             }
         }
         val saveMoney = root.optJSONArray("save_money")
-        if (saveMoney != null) store.setRawArray("rawSaveMoney", saveMoney)
+        val localSaveMoney = store.rawArray("rawSaveMoney")
+        val localSaveMoneyEmpty = localSaveMoney == null || localSaveMoney.length() == 0
+        if (saveMoney != null && (replace || (saveMoney.length() > 0 && localSaveMoneyEmpty))) {
+            store.setRawArray("rawSaveMoney", saveMoney)
+        }
 
         store.save()
         return count
+    }
+
+    /** 备份本身的数据修改时间（毫秒）：优先 settings.updatedAt，旧备份回退 exported_at。 */
+    @JvmStatic
+    fun backupTimeMs(root: JSONObject): Long {
+        val own = root.optJSONObject("settings")?.optLong("updatedAt", 0L) ?: 0L
+        if (own > 0) return own
+        val exported = root.optLong("exported_at", 0L)
+        return if (exported > 0) exported * 1000L else 0L
     }
 
     private fun date(seconds: Long): String {
@@ -262,6 +298,7 @@ object Backup {
         root.put("platform", "AOS")
         root.put("version", "1.0.0")
         root.put("exported_at", System.currentTimeMillis() / 1000)
+        root.put("settings", JSONObject().put("updatedAt", store.updatedAt()))
 
         val imageArr = JSONArray()
         for ((name, bytes) in images) {

@@ -43,6 +43,7 @@ import {
   downloadBackup,
   initDesktopCloud,
   isTauri,
+  lastRemoteAt,
   lastSyncText,
   remoteInfo,
   signIn,
@@ -789,11 +790,29 @@ class App {
     }
   }
 
-  async cloudUpload(): Promise<void> {
+  async cloudUpload(skipCheck = false): Promise<void> {
     if (this.cloudBusy) return
     this.cloudBusy = true
-    toast('正在上传备份…')
     try {
+      if (!skipCheck) {
+        toast('正在检查云端备份…')
+        const info = await remoteInfo()
+        const remoteMs = info?.modifiedTime ? new Date(info.modifiedTime).getTime() : 0
+        const localMs = this.state.settings.updatedAt ?? 0
+        // 云端有别人更新过（晚于本地最后修改、也晚于我们上次见到的时间）时提醒。
+        if (remoteMs > 0 && remoteMs > localMs && remoteMs > lastRemoteAt()) {
+          this.cloudBusy = false
+          const choice = await this.askChoice(
+            '云端备份较新',
+            `云端：最后修改 ${fmtTime(remoteMs)}\n本地：最后修改 ${fmtTime(localMs)}\n\n上传会用本地数据覆盖云端备份。`,
+            ['取消', '仍然上传', '先恢复云端']
+          )
+          if (choice === 1) await this.cloudUpload(true)
+          else if (choice === 2) await this.cloudRestore()
+          return
+        }
+      }
+      toast('正在上传备份…')
       const bytes = exportIas(this.state)
       await uploadBackup(bytes)
       toast('已上传到云端')
@@ -1769,13 +1788,13 @@ class App {
 
   /** 解析 .ias 字节并按用户选择覆盖或合并；文件导入与云端恢复共用。 */
   async applyBackup(bytes: Uint8Array, source: string): Promise<void> {
-    const { state, count, exportedAt } = importIas(bytes)
+    const { state, count, exportedAt, updatedAt } = importIas(bytes)
     const localCount = this.state.assets.length
     const localTime = this.state.settings.updatedAt ?? 0
-    const backupTime = exportedAt ? exportedAt * 1000 : 0
+    const backupTime = updatedAt || (exportedAt ? exportedAt * 1000 : 0)
     const choice = await this.askChoice(
       '导入备份',
-      `来源：${source}\n备份：${count} 条，导出于 ${fmtTime(backupTime)}\n本地：${localCount} 条，最后修改 ${fmtTime(localTime)}\n\n覆盖 = 用备份替换本地；合并 = 保留双方，重复条目取较新的一方。`,
+      `来源：${source}\n备份：${count} 条，最后修改 ${fmtTime(backupTime)}\n本地：${localCount} 条，最后修改 ${fmtTime(localTime)}\n\n覆盖 = 用备份替换本地；合并 = 保留双方，重复条目取较新的一方。`,
       ['覆盖本地', '合并', '取消']
     )
     if (choice !== 0 && choice !== 1) return

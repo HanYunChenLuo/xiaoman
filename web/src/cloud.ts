@@ -34,6 +34,8 @@ export interface CloudAccount {
   expiresAt: number
   lastSyncAt?: number
   refreshToken?: string
+  /** 最近一次上传时服务端返回的修改时间（毫秒），用于判断云端是否是别人传的新备份。 */
+  lastRemoteAt?: number
 }
 
 type TokenResponse = {
@@ -175,6 +177,18 @@ export function lastSyncText(): string {
   return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`
 }
 
+/** 我们最近一次上传后看到的云端修改时间；0 表示不知道。 */
+export function lastRemoteAt(): number {
+  return getAccount()?.lastRemoteAt ?? 0
+}
+
+function markRemote(file?: CloudFile | null): void {
+  const ms = file?.modifiedTime ? new Date(file.modifiedTime).getTime() : 0
+  if (!ms || !Number.isFinite(ms)) return
+  const acc = getAccount()
+  if (acc) saveAccount({ ...acc, lastRemoteAt: ms })
+}
+
 function tokenValid(a: CloudAccount | null): boolean {
   return !!a?.accessToken && a.expiresAt > Date.now() + EXPIRY_MARGIN_MS
 }
@@ -186,7 +200,8 @@ function applyToken(token: string, expiresIn: number, email: string): CloudAccou
     email: email || prev?.email || '',
     accessToken: token,
     expiresAt: Date.now() + Math.max(0, expiresIn * 1000),
-    lastSyncAt: prev?.lastSyncAt
+    lastSyncAt: prev?.lastSyncAt,
+    lastRemoteAt: prev?.lastRemoteAt
   }
   saveAccount(account)
   return account
@@ -342,7 +357,8 @@ export async function signIn(): Promise<CloudAccount> {
       accessToken: r.accessToken,
       expiresAt: r.expiresAt,
       refreshToken: r.refreshToken || prev?.refreshToken,
-      lastSyncAt: prev?.lastSyncAt
+      lastSyncAt: prev?.lastSyncAt,
+      lastRemoteAt: prev?.lastRemoteAt
     }
     saveAccount(account)
     return account
@@ -427,6 +443,7 @@ export async function uploadBackup(bytes: Uint8Array): Promise<CloudFile> {
       if (!r.ok) throw asError(r)
       const acc = getAccount()
       if (acc) saveAccount({ ...acc, lastSyncAt: Date.now() })
+      markRemote(r.file)
       return r.file ?? { id: '' }
     })
   }
@@ -447,6 +464,7 @@ export async function uploadBackup(bytes: Uint8Array): Promise<CloudFile> {
     if (!parsed.ok) throw asError(parsed)
     const acc = getAccount()
     if (acc) saveAccount({ ...acc, lastSyncAt: Date.now() })
+    markRemote(parsed.file ?? file)
     return parsed.file ?? file
   })
 }
@@ -481,6 +499,7 @@ export async function downloadBackup(): Promise<{ bytes: Uint8Array; file: Cloud
       const parsed = cloudParseFile(res.status, await res.text())
       throw asError(parsed)
     }
-    return { bytes: new Uint8Array(await res.arrayBuffer()), file }
+    const bytes = new Uint8Array(await res.arrayBuffer())
+    return { bytes, file }
   })
 }

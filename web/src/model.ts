@@ -354,11 +354,15 @@ export function importIas(bytes: Uint8Array): {
   state: Partial<State>
   count: number
   exportedAt: number
+  /** 备份数据的本地最后修改时间（毫秒）；旧备份没有该字段时为 0。 */
+  updatedAt: number
 } {
   const parsed = decodeIas(bytes) as { data: any; images?: Record<string, string> }
   const result = fromBackupData(parsed.data, parsed.images ?? {})
   const exportedAt = Number(parsed.data?.exported_at ?? 0)
-  return { ...result, exportedAt }
+  const rawUpdated = Number(parsed.data?.settings?.updatedAt ?? 0)
+  const updatedAt = Number.isFinite(rawUpdated) && rawUpdated > 0 ? rawUpdated : 0
+  return { ...result, exportedAt, updatedAt }
 }
 
 function dataUrlToBase64(dataUrl: string): string {
@@ -550,6 +554,7 @@ function toBackupData(state: State): { data: unknown; images: BackupImage[] } {
       expire_reminders: reminders,
       platform: 'WEB',
       version: '1.0.0',
+      settings: { updatedAt: state.settings.updatedAt ?? 0 },
       exported_at: Math.floor(Date.now() / 1000)
     },
     images

@@ -1599,40 +1599,55 @@ class MainActivity : Activity() {
                     return@runOnUiThread
                 }
                 pendingImages = images
-                chooseImportMode(parsedRoot)
+                chooseImportMode(parsedRoot, "本地备份")
             }
         }.start()
     }
 
-    private fun chooseImportMode(root: JSONObject) {
-        val assets = root.optJSONArray("assets")
-        val count = assets?.length() ?: 0
-        val exported = root.optLong("exported_at", 0)
-        val whenText = if (exported > 0) {
-            " · " + SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.getDefault()).format(Date(exported * 1000))
-        } else ""
-        DialogKit.list(this, "导入设置（$count 条记录$whenText）",
-            arrayOf("跳过重复（保留本地数据）", "覆盖旧数据（清空后导入）"), IntConsumer { i ->
-                val replace = i == 1
-                try {
-                    val n = Backup.importInto(store, root, replace, pendingImages)
-                    categoryFilter = "all"
-                    filter = "all"
-                    for (a in store.objs("assets")) NotificationHelper.schedule(this, a)
-                    fillMissingBrands()
-                    fillMissingIcons()
-                    fillMissingModels()
-                    toast("成功导入" + n + "条数据")
-                } catch (e: Exception) {
-                    toast("导入失败：" + e.message)
+    private fun chooseImportMode(root: JSONObject, source: String) {
+        val count = root.optJSONArray("assets")?.length() ?: 0
+        val localCount = store.objs("assets").size
+        val backupMs = Backup.backupTimeMs(root)
+        val localMs = store.updatedAt()
+        DialogKit.choice(
+            this, "导入备份",
+            "来源：$source\n备份：$count 条，最后修改 ${timeText(backupMs)}\n本地：$localCount 条，最后修改 ${timeText(localMs)}\n\n覆盖 = 用备份替换本地；合并 = 保留双方，重复条目取较新的一方。",
+            arrayOf("覆盖本地", "合并", "取消"), IntConsumer { i ->
+                if (i <= 1) {
+                    val replace = i == 0
+                    val preferIncoming = backupMs > localMs
+                    try {
+                        val n = Backup.importInto(store, root, replace, preferIncoming, pendingImages)
+                        categoryFilter = "all"
+                        filter = "all"
+                        for (a in store.objs("assets")) NotificationHelper.schedule(this, a)
+                        fillMissingBrands()
+                        fillMissingIcons()
+                        fillMissingModels()
+                        toast(if (replace) "已覆盖导入 $n 条数据" else "已合并 $n 条数据")
+                    } catch (e: Exception) {
+                        toast("导入失败：" + e.message)
+                    }
                 }
-                when (screen) {
-                    "backup" -> showBackupPage()
-                    "settings" -> showSettings()
-                    else -> showHome()
-                }
-            }, null, null)
+                afterBackupAction()
+            }
+        )
     }
+
+    /** 导入完成后回到来源页面（或首页）。 */
+    private fun afterBackupAction() {
+        when (screen) {
+            "backup" -> showBackupPage()
+            "settings" -> showSettings()
+            "cloud" -> showCloudPage()
+            else -> showHome()
+        }
+    }
+
+    /** 本地时间显示；0 表示没有记录。 */
+    private fun timeText(ms: Long): String =
+        if (ms <= 0) "未知"
+        else SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.getDefault()).format(Date(ms))
 
     private fun exportBackup(uri: Uri) {
         Thread {
@@ -1773,6 +1788,37 @@ class MainActivity : Activity() {
     }
 
     private fun cloudUpload() {
+        val progress = DialogKit.progress(this, "上传备份", "正在检查云端…")
+        cloud.googleFileInfo({ file ->
+            runOnUiThread {
+                progress.dismiss()
+                val remoteMs = CloudSync.driveTimeMs(file?.optString("modifiedTime").orEmpty())
+                val localMs = store.updatedAt()
+                // 云端有别人更新过（晚于本地最后修改、也晚于我们上次见到的时间）时提醒。
+                if (remoteMs > 0 && remoteMs > localMs && remoteMs > cloud.lastRemoteMs()) {
+                    DialogKit.choice(
+                        this, "云端备份较新",
+                        "云端：最后修改 ${timeText(remoteMs)}\n本地：最后修改 ${timeText(localMs)}\n\n上传会用本地数据覆盖云端备份。",
+                        arrayOf("取消", "仍然上传", "先恢复云端"), IntConsumer { i ->
+                            when (i) {
+                                1 -> doCloudUpload()
+                                2 -> cloudRestore()
+                            }
+                        }
+                    )
+                } else {
+                    doCloudUpload()
+                }
+            }
+        }, { msg ->
+            runOnUiThread {
+                progress.dismiss()
+                toast(msg)
+            }
+        })
+    }
+
+    private fun doCloudUpload() {
         val progress = DialogKit.progress(this, "上传备份", "正在生成并上传…")
         Thread {
             try {
@@ -1844,7 +1890,7 @@ class MainActivity : Activity() {
                     return@runOnUiThread
                 }
                 pendingImages = images
-                chooseImportMode(parsedRoot)
+                chooseImportMode(parsedRoot, "云端备份")
             }
         }.start()
     }
@@ -3100,22 +3146,24 @@ class MainActivity : Activity() {
         android.util.Log.i("XiaomanCore", "rust core " + NativeCore.version())
         brandPrefs = getSharedPreferences("xiaoman_brand_data", MODE_PRIVATE)
         loadBrandData()
-        if (!store.bool("modelMigrated", false)) {
-            for (a in store.objs("assets")) {
-                if (a.optString("model").isEmpty()) a.put("model", a.optString("name"))
-            }
-            store.save()
-            store.setBool("modelMigrated", true)
-        }
-        if (!store.bool("brandRepair2", false)) {
-            for (a in store.objs("assets")) {
-                if (!a.optBoolean("brandAuto", false)) {
-                    a.put("brandId", "")
-                    a.put("brandName", "")
+        store.quiet {
+            if (!store.bool("modelMigrated", false)) {
+                for (a in store.objs("assets")) {
+                    if (a.optString("model").isEmpty()) a.put("model", a.optString("name"))
                 }
+                store.save()
+                store.setBool("modelMigrated", true)
             }
-            store.save()
-            store.setBool("brandRepair2", true)
+            if (!store.bool("brandRepair2", false)) {
+                for (a in store.objs("assets")) {
+                    if (!a.optBoolean("brandAuto", false)) {
+                        a.put("brandId", "")
+                        a.put("brandName", "")
+                    }
+                }
+                store.save()
+                store.setBool("brandRepair2", true)
+            }
         }
         fillMissingBrands()
         fillMissingIcons()

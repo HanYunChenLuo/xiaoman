@@ -218,6 +218,44 @@ object DialogKit {
         d.show()
     }
 
+    /** 带说明的多选项确认框；选项纵向排列，第一个为主按钮。 */
+    @JvmStatic
+    fun choice(a: Activity, title: String, message: String, options: Array<String>, onPick: IntConsumer?) {
+        val w = (a.resources.displayMetrics.widthPixels * 0.86f).toInt()
+        val card = cardView(a, w)
+        card.layoutParams = ViewGroup.LayoutParams(w, ViewGroup.LayoutParams.WRAP_CONTENT)
+
+        val t = TextView(a)
+        t.text = title
+        t.setTextSize(FontSize.TITLE_LG)
+        t.setTextColor(ink())
+        t.gravity = Gravity.CENTER
+        t.typeface = Typeface.create("sans-serif-medium", 0)
+        card.addView(t, LinearLayout.LayoutParams(-1, -2))
+
+        val m = TextView(a)
+        m.text = message
+        m.setTextSize(FontSize.META)
+        m.setTextColor(gray())
+        m.gravity = Gravity.CENTER
+        val mp = LinearLayout.LayoutParams(-1, -2)
+        mp.topMargin = dp(a, Spacing.L)
+        card.addView(m, mp)
+
+        val d = dialog(a, card)
+        for (i in options.indices) {
+            val b = button(a, options[i], i == 0)
+            val bp = LinearLayout.LayoutParams(-1, -2)
+            bp.topMargin = dp(a, if (i == 0) Spacing.XXXL else Spacing.L)
+            card.addView(b, bp)
+            b.setOnClickListener {
+                d.dismiss()
+                onPick?.accept(i)
+            }
+        }
+        d.show()
+    }
+
     @JvmStatic
     fun info(a: Activity, title: String, message: String) {
         val w = (a.resources.displayMetrics.widthPixels * 0.86f).toInt()
